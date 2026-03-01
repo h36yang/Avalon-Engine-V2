@@ -1,0 +1,5 @@
+{
+  "name": "Avalon Remote Engine",
+  "description": "A Virtual Game Master for playing The Resistance: Avalon remotely.",
+  "requestFramePermissions": []
+}

@@ -76,6 +76,14 @@ export interface UserProfile {
   total_games: number;
 }
 
+export interface AvailableRoom {
+  id: string;
+  hostName: string;
+  playerCount: number;
+  maxPlayers: number;
+  status: 'waiting' | 'in_game';
+}
+
 interface GameState {
   user: User | null;
   profile: UserProfile | null;
@@ -109,6 +117,8 @@ interface GameState {
   assassinate: (targetSessionId: string) => void;
   continueVoteReveal: () => void;
   pingActivity: () => void;
+  availableRooms: AvailableRoom[];
+  fetchRooms: () => Promise<void>;
 }
 
 const generateSessionId = () => {
@@ -132,6 +142,7 @@ export const useGameStore = create<GameState>()(
       devRequestedRole: undefined,
       idleWarning: false,
       idleCountdown: 0,
+      availableRooms: [],
 
       setLanguage: (lang) => set({ language: lang }),
       setDevRequestedRole: (role) => set({ devRequestedRole: role }),
@@ -278,6 +289,17 @@ export const useGameStore = create<GameState>()(
         socket?.emit("room_activity_ping", { roomId });
         if (_idleTimer) clearInterval(_idleTimer);
         set({ idleWarning: false, idleCountdown: 0, _idleTimer: undefined });
+      },
+
+      fetchRooms: async () => {
+        try {
+          const baseUrl = (import.meta as any).env.VITE_APP_URL || window.location.origin;
+          const res = await fetch(`${baseUrl}/api/rooms`);
+          const data = await res.json();
+          set({ availableRooms: data });
+        } catch (err) {
+          console.error('Failed to fetch rooms:', err);
+        }
       },
     }),
     {

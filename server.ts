@@ -77,6 +77,17 @@ async function startServer() {
     res.json({ status: 'ok' });
   });
 
+  app.get('/api/rooms', (req, res) => {
+    const roomList = Object.values(rooms).map(room => ({
+      id: room.id,
+      hostName: room.players[0]?.name || 'Unknown',
+      playerCount: room.players.length,
+      maxPlayers: 10,
+      status: room.status === 'lobby' ? 'waiting' : 'in_game',
+    }));
+    res.json(roomList);
+  });
+
   // Socket.io logic
   setupSocket(io);
 

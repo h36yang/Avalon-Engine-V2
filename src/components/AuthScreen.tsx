@@ -11,6 +11,7 @@ export default function AuthScreen() {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [betaCode, setBetaCode] = useState('');
   const [devClickCount, setDevClickCount] = useState(0);
   const setAuth = useGameStore((state) => state.setAuth);
 
@@ -41,6 +42,7 @@ export default function AuthScreen() {
         setAuth(data.user, profile);
       } else {
         if (!username.trim()) throw new Error('Username is required');
+        if (betaCode.trim().toLowerCase() !== 'dagong') throw new Error('内测码不正确 / Invalid beta code');
 
         const signUpPromise = supabase.auth.signUp({ email, password });
         const { data, error } = await Promise.race([signUpPromise, timeout(15000)]) as any;
@@ -107,17 +109,30 @@ export default function AuthScreen() {
           )}
 
           {!isLogin && (
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                placeholder="Merlin123"
-                required={!isLogin}
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                  placeholder="Merlin123"
+                  required={!isLogin}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">内测码 / Beta Code</label>
+                <input
+                  type="text"
+                  value={betaCode}
+                  onChange={(e) => setBetaCode(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                  placeholder="Enter beta code"
+                  required={!isLogin}
+                />
+              </div>
+            </>
           )}
 
           <div>

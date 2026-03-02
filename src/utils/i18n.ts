@@ -94,6 +94,16 @@ export const translations = {
     "I'm still here": "I'm still here",
     'Cancel': 'Cancel',
     'Waiting for players...': 'Waiting for players...',
+
+    // Room Browser
+    'Browse Rooms': 'Browse Rooms',
+    'Available Rooms': 'Available Rooms',
+    'No rooms available': 'No rooms available',
+    'Create one from the Join tab': 'Create one from the Join tab',
+    'Waiting': 'Waiting',
+    'In Game': 'In Game',
+    'Room Code': 'Room Code',
+    'Your Identity': 'Your Identity',
   },
   zh: {
     // Roles
@@ -188,6 +198,16 @@ export const translations = {
     "I'm still here": '我还在',
     'Cancel': '取消',
     'Waiting for players...': '等待玩家加入...',
+
+    // Room Browser
+    'Browse Rooms': '浏览房间',
+    'Available Rooms': '可加入的房间',
+    'No rooms available': '暂无房间',
+    'Create one from the Join tab': '去"加入房间"页创建一个',
+    'Waiting': '等待中',
+    'In Game': '游戏中',
+    'Room Code': '房间号',
+    'Your Identity': '你的名字',
   }
 };
 

@@ -81,7 +81,7 @@ export default function AuthScreen() {
       {/* Epic Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/avalon-bg.png)' }}
+        style={{ backgroundImage: 'url(/avalon-bg.jpg)' }}
       />
       {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/70 via-zinc-950/80 to-zinc-950/95" />

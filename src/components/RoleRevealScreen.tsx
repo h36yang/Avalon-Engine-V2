@@ -73,10 +73,10 @@ export default function RoleRevealScreen() {
 
         <div
           className={`relative overflow-hidden rounded-3xl border transition-all duration-700 cursor-pointer shadow-2xl aspect-[3/4] w-full max-w-[320px] mx-auto ${revealed
-              ? isEvil
-                ? "border-red-900/50 shadow-red-900/20"
-                : "border-blue-900/50 shadow-blue-900/20"
-              : "border-amber-900/30 hover:border-amber-500/50 shadow-amber-900/10"
+            ? isEvil
+              ? "border-red-900/50 shadow-red-900/20"
+              : "border-blue-900/50 shadow-blue-900/20"
+            : "border-amber-900/30 hover:border-amber-500/50 shadow-amber-900/10"
             }`}
           onClick={() => setRevealed(!revealed)}
         >

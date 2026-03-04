@@ -105,7 +105,7 @@ export default function LobbyScreen() {
                     )}
                     {!p.isConnected && !p.isBot && (
                       <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-md">
-                        Offline
+                        {t("Offline")}
                       </span>
                     )}
                     {isHost && i !== 0 && (
@@ -131,7 +131,7 @@ export default function LobbyScreen() {
               </h2>
             </div>
             <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-700/40 rounded-xl p-4 text-sm text-zinc-300">
-              {room.players.length < 5 && "Need at least 5 players to see roles."}
+              {room.players.length < 5 && t("Need at least 5 players")}
               {room.players.length === 5 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")}, ${t("Morgana")}, ${t("Assassin")}`}
               {room.players.length === 6 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")} x2, ${t("Morgana")}, ${t("Assassin")}`}
               {room.players.length === 7 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")} x2, ${t("Morgana")}, ${t("Assassin")}, ${t("Oberon")}`}
@@ -153,7 +153,7 @@ export default function LobbyScreen() {
                 }`}
             >
               <Play size={20} />
-              {canStart ? t("Start Game") : "Need 5-10 players"}
+              {canStart ? t("Start Game") : t("Need 5-10 players")}
             </button>
           </div>
         )}

@@ -50,6 +50,7 @@ export interface Room {
   | "team_voting"
   | "team_vote_reveal"
   | "quest_voting"
+  | "quest_result"
   | "assassin"
   | "game_over";
   settings: {
@@ -116,6 +117,7 @@ interface GameState {
   voteQuest: (success: boolean) => void;
   assassinate: (targetSessionId: string) => void;
   continueVoteReveal: () => void;
+  continueQuestResult: () => void;
   pingActivity: () => void;
   availableRooms: AvailableRoom[];
   fetchRooms: () => Promise<void>;
@@ -277,6 +279,11 @@ export const useGameStore = create<GameState>()(
       continueVoteReveal: () => {
         const { socket, roomId } = get();
         socket?.emit("continue_vote_reveal", { roomId });
+      },
+
+      continueQuestResult: () => {
+        const { socket, roomId } = get();
+        socket?.emit("continue_quest_result", { roomId });
       },
 
       restartGame: () => {

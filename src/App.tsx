@@ -109,6 +109,7 @@ export default function App() {
       case "team_voting":
       case "team_vote_reveal":
       case "quest_voting":
+      case "quest_result":
         return <GameScreen />;
       case "assassin":
         return <AssassinScreen />;

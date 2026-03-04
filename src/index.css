@@ -10,8 +10,10 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #09090b; /* zinc-950 */
-  color: #fafafa; /* zinc-50 */
+  background-color: #09090b;
+  /* zinc-950 */
+  color: #fafafa;
+  /* zinc-50 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -104,6 +104,48 @@ export const translations = {
     'In Game': 'In Game',
     'Room Code': 'Room Code',
     'Your Identity': 'Your Identity',
+
+    // GameScreen extras
+    'is choosing the team': 'is choosing the team',
+    'Do you approve of this team?': 'Do you approve of this team?',
+    'Vote Results': 'Vote Results',
+    'You are on the quest. Cast your vote.': 'You are on the quest. Cast your vote.',
+    'Voted': 'Voted',
+    'Waiting for leader to continue...': 'Waiting for leader to continue...',
+    'You are the Leader': 'You are the Leader',
+    'Leader is selecting': 'Leader has selected',
+
+    // AssassinScreen extras
+    'Good completed 3 quests': 'Good has completed 3 quests, but Evil has one last chance. The Assassin must find Merlin.',
+    'Bot assassin hint': 'The Assassin is a bot. As a fellow agent of Evil, you must choose the target!',
+    'If Merlin is killed': 'If they kill Merlin, Evil wins.',
+
+    // GameOverScreen extras
+    'Evil sabotaged quests': 'Evil successfully sabotaged 3 quests or 5 teams were rejected.',
+    'Assassinated': 'Assassinated',
+
+    // LobbyScreen extras
+    'Offline': 'Offline',
+    'Need at least 5 players': 'Need at least 5 players to see roles.',
+    'Need 5-10 players': 'Need 5-10 players',
+
+    // Quest Result
+    'Quest Result': 'Quest Result',
+    'Quest Success!': 'Quest Success!',
+    'Quest Failed!': 'Quest Failed!',
+    'fail votes cast': 'fail vote(s) were cast',
+    'All votes were for success': 'All votes were for success!',
+
+    // Game Over Review
+    'Game Review': 'Game Review',
+    'Quest Timeline': 'Quest Timeline',
+    'Quest': 'Quest',
+    'Team': 'Team',
+    'Result': 'Result',
+    'Pending': 'Pending',
+    'Team Votes': 'Team Votes',
+    'Quest Votes': 'Quest Votes',
+    'failed the quest': 'failed the quest',
   },
   zh: {
     // Roles
@@ -208,6 +250,48 @@ export const translations = {
     'In Game': '游戏中',
     'Room Code': '房间号',
     'Your Identity': '你的名字',
+
+    // GameScreen extras
+    'is choosing the team': '正在选择队伍',
+    'Do you approve of this team?': '你同意这个队伍吗？',
+    'Vote Results': '投票结果',
+    'You are on the quest. Cast your vote.': '你在任务队伍中，请投票。',
+    'Voted': '已投票',
+    'Waiting for leader to continue...': '等待队长继续...',
+    'You are the Leader': '你是队长',
+    'Leader is selecting': '队长已选择',
+
+    // AssassinScreen extras
+    'Good completed 3 quests': '正义阵营已完成3个任务，但邪恶阵营还有最后一次机会。刺客必须找出梅林。',
+    'Bot assassin hint': '刺客是机器人。作为邪恶阵营的成员，你必须选择目标！',
+    'If Merlin is killed': '如果刺客杀死梅林，邪恶阵营获胜。',
+
+    // GameOverScreen extras
+    'Evil sabotaged quests': '邪恶阵营破坏了3个任务或5次组队被否决。',
+    'Assassinated': '被刺杀',
+
+    // LobbyScreen extras
+    'Offline': '离线',
+    'Need at least 5 players': '需要至少5名玩家才能查看角色。',
+    'Need 5-10 players': '需要5-10名玩家',
+
+    // Quest Result
+    'Quest Result': '任务结果',
+    'Quest Success!': '任务成功！',
+    'Quest Failed!': '任务失败！',
+    'fail votes cast': '张失败票',
+    'All votes were for success': '所有投票均为成功！',
+
+    // Game Over Review
+    'Game Review': '游戏复盘',
+    'Quest Timeline': '任务时间线',
+    'Quest': '任务',
+    'Team': '队伍',
+    'Result': '结果',
+    'Pending': '未完成',
+    'Team Votes': '组队投票',
+    'Quest Votes': '任务投票',
+    'failed the quest': '破坏了任务',
   }
 };
 

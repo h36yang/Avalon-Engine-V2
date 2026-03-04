@@ -13,6 +13,7 @@ export default function GameScreen() {
   const voteTeam = useGameStore((state) => state.voteTeam);
   const voteQuest = useGameStore((state) => state.voteQuest);
   const continueVoteReveal = useGameStore((state) => state.continueVoteReveal);
+  const continueQuestResult = useGameStore((state) => state.continueQuestResult);
   const { t } = useTranslation();
 
   const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
@@ -82,7 +83,7 @@ export default function GameScreen() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col max-w-md mx-auto">
-      <VoteHistoryHeader 
+      <VoteHistoryHeader
         title={`${t("Mission")} ${gameState.currentQuestIndex + 1}`}
         viewingHistoryIndex={viewingHistoryIndex}
         setViewingHistoryIndex={setViewingHistoryIndex}
@@ -90,9 +91,9 @@ export default function GameScreen() {
       />
 
       {isViewingHistory ? (
-        <VoteHistoryDetails 
-          viewingHistoryIndex={viewingHistoryIndex} 
-          onBack={() => setViewingHistoryIndex(null)} 
+        <VoteHistoryDetails
+          viewingHistoryIndex={viewingHistoryIndex}
+          onBack={() => setViewingHistoryIndex(null)}
         />
       ) : (
         <>
@@ -104,8 +105,8 @@ export default function GameScreen() {
                   <Crown className="w-8 h-8 mx-auto mb-3 text-amber-500" />
                   <h2 className="text-lg font-medium mb-1">
                     {isLeader
-                      ? "You are the Leader"
-                      : `${players[gameState.leaderIndex].name} is choosing`}
+                      ? t("You are the Leader")
+                      : `${players[gameState.leaderIndex].name} ${t("is choosing the team")}`}
                   </h2>
                   <p className="text-zinc-400 text-sm">
                     {isLeader
@@ -118,13 +119,13 @@ export default function GameScreen() {
                   <Users className="w-8 h-8 mx-auto mb-3 text-indigo-400" />
                   <h2 className="text-lg font-medium mb-1">{t("Vote on Team")}</h2>
                   <p className="text-zinc-400 text-sm">
-                    Do you approve of this team?
+                    {t("Do you approve of this team?")}
                   </p>
                 </>
               ) : status === "team_vote_reveal" ? (
                 <>
                   <Users className="w-8 h-8 mx-auto mb-3 text-indigo-400" />
-                  <h2 className="text-lg font-medium mb-1">Vote Results</h2>
+                  <h2 className="text-lg font-medium mb-1">{t("Vote Results")}</h2>
                   <p className="text-sm text-zinc-400">
                     <span className={viewingVote?.approved ? "text-emerald-400" : "text-red-400"}>
                       {viewingVote?.approved ? t("Team Approved") : t("Team Rejected")}
@@ -137,10 +138,37 @@ export default function GameScreen() {
                   <h2 className="text-lg font-medium mb-1">{t("Quest Phase")}</h2>
                   <p className="text-zinc-400 text-sm">
                     {isOnTeam
-                      ? "You are on the quest. Cast your vote."
+                      ? t("You are on the quest. Cast your vote.")
                       : t("Waiting for team to complete quest...")}
                   </p>
                 </>
+              ) : status === "quest_result" ? (
+                (() => {
+                  const quest = gameState.quests[gameState.currentQuestIndex];
+                  const failed = quest.status === 'fail';
+                  const failCount = Object.values(quest.votes).filter(v => !v).length;
+                  return (
+                    <>
+                      <div className={cn(
+                        "w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 border-2",
+                        failed ? "bg-red-950/30 border-red-500/50" : "bg-blue-950/30 border-blue-500/50"
+                      )}>
+                        {failed ? <ShieldAlert size={28} className="text-red-500" /> : <Shield size={28} className="text-blue-500" />}
+                      </div>
+                      <h2 className={cn(
+                        "text-xl font-serif font-bold mb-1",
+                        failed ? "text-red-400" : "text-blue-400"
+                      )}>
+                        {failed ? t("Quest Failed!") : t("Quest Success!")}
+                      </h2>
+                      <p className="text-zinc-400 text-sm">
+                        {failCount > 0
+                          ? `${failCount} ${t("fail votes cast")}`
+                          : t("All votes were for success")}
+                      </p>
+                    </>
+                  );
+                })()
               ) : null}
             </div>
 
@@ -152,8 +180,8 @@ export default function GameScreen() {
               <div className="space-y-2">
                 {players.map((p, i) => {
                   const isSelected = status === "team_building"
-                      ? selectedTeam.includes(p.sessionId)
-                      : gameState.proposedTeam.includes(p.sessionId);
+                    ? selectedTeam.includes(p.sessionId)
+                    : gameState.proposedTeam.includes(p.sessionId);
 
                   const isCurrentLeader = i === gameState.leaderIndex;
 
@@ -168,9 +196,9 @@ export default function GameScreen() {
                           ? "bg-indigo-950/30 border-indigo-500/50 text-indigo-100"
                           : "bg-zinc-900 border-zinc-800 text-zinc-300",
                         status === "team_building" &&
-                          isLeader &&
-                          !isSelected &&
-                          "hover:border-zinc-700",
+                        isLeader &&
+                        !isSelected &&
+                        "hover:border-zinc-700",
                         status === "team_building" && isLeader && "cursor-pointer",
                         status !== "team_building" || !isLeader
                           ? "cursor-default"
@@ -204,14 +232,25 @@ export default function GameScreen() {
                         {status === "team_voting" &&
                           p.sessionId in gameState.teamVotes && (
                             <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md">
-                              Voted
+                              {t("Voted")}
                             </span>
                           )}
+                        {status === "team_vote_reveal" && viewingVote && (
+                          p.sessionId in viewingVote.votes && (
+                            <div className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded-md text-xs",
+                              viewingVote.votes[p.sessionId] ? "bg-emerald-950/50 text-emerald-400" : "bg-red-950/50 text-red-400"
+                            )}>
+                              {viewingVote.votes[p.sessionId] ? <Check size={12} /> : <X size={12} />}
+                              {viewingVote.votes[p.sessionId] ? t("Approve") : t("Reject")}
+                            </div>
+                          )
+                        )}
                         {status === "quest_voting" &&
                           gameState.proposedTeam.includes(p.sessionId) &&
                           p.sessionId in currentQuest.votes && (
                             <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md">
-                              Voted
+                              {t("Voted")}
                             </span>
                           )}
                       </div>
@@ -235,7 +274,22 @@ export default function GameScreen() {
 
             {status === "team_vote_reveal" && !isLeader && (
               <div className="text-center text-zinc-500 py-4 font-medium">
-                Waiting for leader to continue...
+                {t("Waiting for leader to continue...")}
+              </div>
+            )}
+
+            {status === "quest_result" && isLeader && (
+              <button
+                onClick={continueQuestResult}
+                className="w-full py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white"
+              >
+                {t("Continue")}
+              </button>
+            )}
+
+            {status === "quest_result" && !isLeader && (
+              <div className="text-center text-zinc-500 py-4 font-medium">
+                {t("Waiting for leader to continue...")}
               </div>
             )}
 
@@ -252,6 +306,12 @@ export default function GameScreen() {
               >
                 {t("Propose Team")} ({selectedTeam.length}/{currentQuest.teamSize})
               </button>
+            )}
+
+            {status === "team_building" && !isLeader && (
+              <div className="text-center text-zinc-500 py-4 font-medium">
+                {`${t("Leader is selecting")} ${gameState.proposedTeam.length}/${currentQuest.teamSize}`}
+              </div>
             )}
 
             {status === "team_voting" && !hasVotedTeam && (
@@ -329,7 +389,7 @@ export default function GameScreen() {
             >
               <X size={20} />
             </button>
-            
+
             <div className="flex flex-col items-center gap-6">
               {isEvil ? (
                 <Skull size={64} className="text-red-500" />

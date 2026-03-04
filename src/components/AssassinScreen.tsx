@@ -19,7 +19,7 @@ export default function AssassinScreen() {
   const me = room.players.find((p) => p.sessionId === sessionId);
   const assassinPlayer = room.players.find((p) => p.role === "Assassin");
   const isEvil = me ? ["Assassin", "Morgana", "Mordred", "Minion", "Oberon"].includes(me.role as string) : false;
-  
+
   const canAssassinate = me?.role === "Assassin" || (isEvil && assassinPlayer?.isBot);
 
   const handleAssassinate = () => {
@@ -32,15 +32,15 @@ export default function AssassinScreen() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col max-w-md mx-auto">
-      <VoteHistoryHeader 
+      <VoteHistoryHeader
         title={t("Assassin Phase")}
         viewingHistoryIndex={viewingHistoryIndex}
         setViewingHistoryIndex={setViewingHistoryIndex}
       />
 
       {isViewingHistory ? (
-        <VoteHistoryDetails 
-          viewingHistoryIndex={viewingHistoryIndex} 
+        <VoteHistoryDetails
+          viewingHistoryIndex={viewingHistoryIndex}
           onBack={() => setViewingHistoryIndex(null)}
           backText={t("Back to Assassination")}
         />
@@ -54,8 +54,7 @@ export default function AssassinScreen() {
               {t("Assassin")}
             </h1>
             <p className="text-zinc-400 text-sm max-w-xs mx-auto">
-              Good has completed 3 quests, but Evil has one last chance. The
-              Assassin must find Merlin.
+              {t("Good completed 3 quests")}
             </p>
           </div>
 
@@ -63,7 +62,7 @@ export default function AssassinScreen() {
             <div className="w-full space-y-4">
               {me?.role !== "Assassin" && (
                 <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-lg text-sm mb-4">
-                  The Assassin is a bot. As a fellow agent of Evil, you must choose the target!
+                  {t("Bot assassin hint")}
                 </div>
               )}
               <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
@@ -127,7 +126,7 @@ export default function AssassinScreen() {
                 {t("Waiting for Assassin...")}
               </p>
               <p className="text-zinc-500 text-sm mt-2">
-                If they kill Merlin, Evil wins.
+                {t("If Merlin is killed")}
               </p>
             </div>
           )}

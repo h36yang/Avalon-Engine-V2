@@ -136,7 +136,7 @@ interface BotMemory {
 interface Room {
   id: string;
   players: Player[];
-  status: 'lobby' | 'role_reveal' | 'team_building' | 'team_voting' | 'team_vote_reveal' | 'quest_voting' | 'assassin' | 'game_over';
+  status: 'lobby' | 'role_reveal' | 'team_building' | 'team_voting' | 'team_vote_reveal' | 'quest_voting' | 'quest_result' | 'assassin' | 'game_over';
   settings: {
     optionalRoles: Role[];
   };
@@ -396,27 +396,35 @@ function checkQuestVotes(room: Room, io: Server) {
       }
     });
 
-    const successes = room.gameState.quests.filter(q => q.status === 'success').length;
-    const totalFails = room.gameState.quests.filter(q => q.status === 'fail').length;
-
-    if (successes >= 3) {
-      room.status = 'assassin';
-    } else if (totalFails >= 3) {
-      room.status = 'game_over';
-      room.gameState.winner = 'evil';
-      recordGameStats(room);
-    } else {
-      room.gameState.currentQuestIndex++;
-      room.status = 'team_building';
-      room.gameState.leaderIndex = (room.gameState.leaderIndex + 1) % room.players.length;
-      room.gameState.proposedTeam = [];
-      room.gameState.teamVotes = {};
-    }
+    // Enter quest_result phase to show result before advancing
+    room.status = 'quest_result';
     broadcastRoom(room, io);
     handleBotActions(room, io);
   } else {
     broadcastRoom(room, io);
   }
+}
+
+// Advance from quest_result to the next phase
+function applyQuestResult(room: Room, io: Server) {
+  const successes = room.gameState.quests.filter(q => q.status === 'success').length;
+  const totalFails = room.gameState.quests.filter(q => q.status === 'fail').length;
+
+  if (successes >= 3) {
+    room.status = 'assassin';
+  } else if (totalFails >= 3) {
+    room.status = 'game_over';
+    room.gameState.winner = 'evil';
+    recordGameStats(room);
+  } else {
+    room.gameState.currentQuestIndex++;
+    room.status = 'team_building';
+    room.gameState.leaderIndex = (room.gameState.leaderIndex + 1) % room.players.length;
+    room.gameState.proposedTeam = [];
+    room.gameState.teamVotes = {};
+  }
+  broadcastRoom(room, io);
+  handleBotActions(room, io);
 }
 
 function handleBotActions(room: Room, io: Server) {
@@ -604,6 +612,15 @@ function handleBotActions(room: Room, io: Server) {
         });
         checkQuestVotes(room, io);
       }, 2000);
+    }
+  } else if (room.status === 'quest_result') {
+    // Auto-continue for quest result after 5 seconds if leader is bot
+    const leader = room.players[room.gameState.leaderIndex];
+    if (leader.isBot) {
+      setTimeout(() => {
+        if (room.status !== 'quest_result') return;
+        applyQuestResult(room, io);
+      }, 5000);
     }
   } else if (room.status === 'assassin') {
     const assassin = room.players.find(p => p.role === 'Assassin');
@@ -857,6 +874,18 @@ function setupSocket(io: Server) {
         }
       } catch (err) {
         console.error('Error in continue_vote_reveal:', err);
+      }
+    });
+
+    socket.on('continue_quest_result', ({ roomId }) => {
+      try {
+        const room = rooms[roomId];
+        if (room && room.status === 'quest_result') {
+          touchRoom(room);
+          applyQuestResult(room, io);
+        }
+      } catch (err) {
+        console.error('Error in continue_quest_result:', err);
       }
     });
 

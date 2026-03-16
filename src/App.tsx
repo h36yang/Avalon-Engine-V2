@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { useGameStore } from "./store";
-import { supabase } from "./utils/supabase";
+import { supabase, recreateSupabaseClient } from "./utils/supabase";
 import AuthScreen from "./components/AuthScreen";
 import JoinScreen from "./components/JoinScreen";
 import LobbyScreen from "./components/LobbyScreen";
@@ -24,63 +24,92 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
+    let subscriptionRef: any = null;
 
-        if (session?.user) {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+    const runSetup = async () => {
+      const initAuth = async () => {
+        try {
+          const timeout = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('getSession timeout')), 5000)
+          );
 
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error("Profile fetch error:", profileError);
+          let sessionResult;
+          try {
+            sessionResult = await Promise.race([
+              supabase.auth.getSession(),
+              timeout
+            ]);
+          } catch (err) {
+            console.warn("getSession error/timeout, recreating client:", err);
+            recreateSupabaseClient();
+            throw err;
           }
-          setAuth(session.user, profile);
-        } else {
+
+          const { data: { session }, error: sessionError } = sessionResult;
+          if (sessionError) {
+            console.warn("getSession returned error, recreating client:", sessionError);
+            recreateSupabaseClient();
+            throw sessionError;
+          }
+
+          if (session?.user) {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.error("Profile fetch error:", profileError);
+            }
+            setAuth(session.user, profile);
+          } else {
+            setAuth(null, null);
+          }
+        } catch (err) {
+          console.error("Auth initialization error:", err);
+          setAuth(null, null);
+        } finally {
+          setIsInitializing(false);
+        }
+      };
+
+      await initAuth();
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        try {
+          if (session?.user) {
+            let { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+
+            // If profile doesn't exist, it might be a new user where the insert hasn't finished.
+            // Wait a moment and retry.
+            if (!profile) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              const retry = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+              profile = retry.data;
+            }
+
+            setAuth(session.user, profile);
+          } else {
+            setAuth(null, null);
+          }
+        } catch (err) {
+          console.error("Auth state change error:", err);
           setAuth(null, null);
         }
-      } catch (err) {
-        console.error("Auth initialization error:", err);
-        setAuth(null, null);
-      } finally {
-        setIsInitializing(false);
-      }
+      });
+      subscriptionRef = subscription;
     };
 
-    initAuth();
+    runSetup();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        if (session?.user) {
-          let { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          // If profile doesn't exist, it might be a new user where the insert hasn't finished.
-          // Wait a moment and retry.
-          if (!profile) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const retry = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-            profile = retry.data;
-          }
-
-          setAuth(session.user, profile);
-        } else {
-          setAuth(null, null);
-        }
-      } catch (err) {
-        console.error("Auth state change error:", err);
-        setAuth(null, null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscriptionRef) subscriptionRef.unsubscribe();
+    };
   }, [setAuth]);
 
   if (isInitializing) {

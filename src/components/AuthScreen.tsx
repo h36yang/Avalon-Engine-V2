@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../store';
-import { supabase } from '../utils/supabase';
+import { supabase, recreateSupabaseClient } from '../utils/supabase';
 import { Shield, Loader2, WifiOff } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -72,6 +72,11 @@ export default function AuthScreen() {
       }
     } catch (err: any) {
       console.error("Auth error:", err);
+      const errMessage = err?.message || '';
+      if (errMessage.includes('Network timeout') || errMessage.includes('Failed to fetch')) {
+        console.warn('Network timeout detected, recreating Supabase client...');
+        recreateSupabaseClient();
+      }
       setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);

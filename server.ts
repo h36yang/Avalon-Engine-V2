@@ -1086,7 +1086,7 @@ function setupSocket(io: Server) {
             name,
             role: null,
             isConnected: true,
-            isHost: room.players.length === 0
+            isHost: room.players.length === 0 // First player is host
           });
         }
 

@@ -28,7 +28,8 @@ describe('gameLogic', () => {
                 sessionId: `session_${i}`,
                 name: `Player ${i}`,
                 role: null,
-                isConnected: true
+                isConnected: true,
+                isHost: i === 0,
             }));
 
             assignRoles(players, []);
@@ -50,7 +51,8 @@ describe('gameLogic', () => {
                 sessionId: `session_${i}`,
                 name: `Player ${i}`,
                 role: null,
-                isConnected: true
+                isConnected: true,
+                isHost: i === 0,
             }));
 
             assignRoles(players, []);
@@ -67,7 +69,8 @@ describe('gameLogic', () => {
                 sessionId: `session_${i}`,
                 name: `Player ${i}`,
                 role: null,
-                isConnected: true
+                isConnected: true,
+                isHost: i === 0,
             }));
 
             // Force session_0 to be Mordred (who isn't normally in a 5 player game)
@@ -79,8 +82,8 @@ describe('gameLogic', () => {
 
             assignRoles(players, [], requestedRoles);
 
-            expect(players[0].role).toBe('Mordred');
-            expect(players[1].role).toBe('Assassin');
+            expect(players.find(p => p.sessionId === 'session_0')?.role).toBe('Mordred');
+            expect(players.find(p => p.sessionId === 'session_1')?.role).toBe('Assassin');
 
             const assignedRoles = players.map(p => p.role);
 

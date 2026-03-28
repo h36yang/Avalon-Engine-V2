@@ -91,11 +91,9 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
     });
   }
 
-  // Shuffle remaining roles
-  for (let i = roles.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [roles[i], roles[j]] = [roles[j], roles[i]];
-  }
+  // Shuffle both remaining roles and players
+  shuffle(roles);
+  shuffle(players);
 
   // Assign remaining roles
   players.forEach((p) => {
@@ -103,4 +101,11 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
       p.role = roles.pop()!;
     }
   });
+}
+
+function shuffle<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
 }

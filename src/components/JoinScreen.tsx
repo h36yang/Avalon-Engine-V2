@@ -24,7 +24,7 @@ export default function JoinScreen() {
     }
   }, [activeTab]);
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = (e: React.SubmitEvent) => {
     e.preventDefault();
     if (roomId && name) {
       connect(roomId.toUpperCase(), name);

@@ -21,6 +21,7 @@ export interface Player {
   role: Role | null;
   isConnected: boolean;
   isBot?: boolean;
+  isHost?: boolean;
 }
 
 export interface Quest {

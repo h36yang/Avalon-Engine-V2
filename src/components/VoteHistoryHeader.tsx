@@ -20,7 +20,7 @@ export default function VoteHistoryHeader({ title, viewingHistoryIndex, setViewi
 
   if (!room) return null;
   const { gameState, players } = room;
-  const isHost = players[0]?.sessionId === sessionId;
+  const isHost = players.find(p => p.isHost)?.sessionId === sessionId;
 
   return (
     <>

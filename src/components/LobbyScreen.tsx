@@ -18,7 +18,7 @@ export default function LobbyScreen() {
 
   if (!room) return null;
 
-  const isHost = room.players[0]?.sessionId === sessionId;
+  const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
   const canStart = room.players.length >= 5 && room.players.length <= 10;
   const canAddBot = isHost && room.players.length < 10;
 
@@ -121,7 +121,7 @@ export default function LobbyScreen() {
                     {p.isBot && <Bot size={14} className={room.settings.botDifficulty === "hard" ? "text-amber-500" : "text-zinc-500"} />}
                   </span>
                   <div className="flex items-center gap-2">
-                    {i === 0 && (
+                    {p.isHost && (
                       <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-md">
                         {t("Host")}
                       </span>
@@ -131,7 +131,7 @@ export default function LobbyScreen() {
                         {t("Offline")}
                       </span>
                     )}
-                    {isHost && i !== 0 && (
+                    {isHost && !p.isHost && (
                       <button
                         onClick={() => kickPlayer(p.sessionId)}
                         className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"

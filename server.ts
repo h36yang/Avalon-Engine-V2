@@ -1298,12 +1298,12 @@ function setupSocket(io: Server) {
           room.players = room.players.filter(p => p.sessionId !== sessionId);
 
           // Reassign host if there are human players left
-          const nonBotPlayers = room.players.filter(p => !p.isBot);
-          if (isLeavingHost && nonBotPlayers.length > 0) {
-            room.players.find(p => p.sessionId === nonBotPlayers[0].sessionId).isHost = true;
+          const humanPlayers = room.players.filter(p => !p.isBot);
+          if (isLeavingHost && humanPlayers.length > 0) {
+            room.players.find(p => p.sessionId === humanPlayers[0].sessionId)!.isHost = true;
           }
 
-          if (nonBotPlayers.length === 0) {
+          if (humanPlayers.length === 0) {
             // Clean up room if no humans left
             delete rooms[roomId];
           } else {

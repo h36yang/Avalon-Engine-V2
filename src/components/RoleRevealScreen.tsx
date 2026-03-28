@@ -49,7 +49,7 @@ export default function RoleRevealScreen() {
 
   const handleReady = () => {
     // Only host can advance
-    if (room.players[0].sessionId === sessionId) {
+    if (room.players.find(p => p.isHost)?.sessionId === sessionId) {
       readyTeamBuilding();
     }
   };
@@ -142,7 +142,7 @@ export default function RoleRevealScreen() {
           )}
         </div>
 
-        {room.players[0].sessionId === sessionId ? (
+        {room.players.find(p => p.isHost)?.sessionId === sessionId ? (
           <button
             onClick={handleReady}
             className="w-full max-w-[320px] mx-auto relative group overflow-hidden rounded-xl mt-8"

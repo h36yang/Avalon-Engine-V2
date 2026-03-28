@@ -80,7 +80,7 @@ async function startServer() {
   app.get('/api/rooms', (req, res) => {
     const roomList = Object.values(rooms).map(room => ({
       id: room.id,
-      hostName: room.players[0]?.name || 'Unknown',
+      hostName: room.players.find(p => p.isHost)?.name || 'Unknown',
       playerCount: room.players.length,
       maxPlayers: 10,
       status: room.status === 'lobby' ? 'waiting' : 'in_game',
@@ -1085,7 +1085,8 @@ function setupSocket(io: Server) {
             userId,
             name,
             role: null,
-            isConnected: true
+            isConnected: true,
+            isHost: room.players.length === 0 // First player is host
           });
         }
 
@@ -1121,7 +1122,8 @@ function setupSocket(io: Server) {
             name: `Bot ${room.players.length}`,
             role: null,
             isConnected: true,
-            isBot: true
+            isBot: true,
+            isHost: false,
           });
 
           if (difficulty) {
@@ -1292,10 +1294,17 @@ function setupSocket(io: Server) {
         const room = rooms[roomId];
         if (room) {
           // Remove player from room
+          const isLeavingHost = room.players.find(p => p.sessionId === sessionId)?.isHost;
           room.players = room.players.filter(p => p.sessionId !== sessionId);
 
-          if (room.players.length === 0) {
-            // Clean up empty room
+          // Reassign host if there are human players left
+          const humanPlayers = room.players.filter(p => !p.isBot);
+          if (isLeavingHost && humanPlayers.length > 0) {
+            room.players.find(p => p.sessionId === humanPlayers[0].sessionId)!.isHost = true;
+          }
+
+          if (humanPlayers.length === 0) {
+            // Clean up room if no humans left
             delete rooms[roomId];
           } else {
             // Notify remaining players
@@ -1313,7 +1322,7 @@ function setupSocket(io: Server) {
         const room = rooms[roomId];
         if (room) {
           const sender = room.players.find(p => p.id === socket.id);
-          if (sender && room.players[0]?.sessionId === sender.sessionId) {
+          if (sender && sender.isHost) {
             const targetPlayer = room.players.find(p => p.sessionId === targetSessionId);
             if (targetPlayer) {
               room.players = room.players.filter(p => p.sessionId !== targetSessionId);
@@ -1334,7 +1343,7 @@ function setupSocket(io: Server) {
         const room = rooms[roomId];
         if (room) {
           const sender = room.players.find(p => p.id === socket.id);
-          if (sender && room.players[0]?.sessionId === sender.sessionId) {
+          if (sender && sender.isHost) {
             io.to(roomId).emit('game_ended');
             delete rooms[roomId];
           }
@@ -1350,7 +1359,7 @@ function setupSocket(io: Server) {
         if (room && room.status === 'game_over') {
           // Only host can restart
           const sender = room.players.find(p => p.id === socket.id);
-          if (sender && room.players[0]?.sessionId === sender.sessionId) {
+          if (sender && sender.isHost) {
             // Remove bots, keep human players
             room.players = room.players.filter(p => !p.isBot);
             // Reset all player roles

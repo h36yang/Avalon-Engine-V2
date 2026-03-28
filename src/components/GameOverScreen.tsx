@@ -15,7 +15,7 @@ export default function GameOverScreen() {
 
   const { gameState, players } = room;
   const isEvilWin = gameState.winner === "evil";
-  const isHost = players[0]?.sessionId === sessionId;
+  const isHost = players.find(p => p.isHost)?.sessionId === sessionId;
 
   const getPlayerName = (sid: string) => players.find(p => p.sessionId === sid)?.name || sid;
   const getPlayerRole = (sid: string) => players.find(p => p.sessionId === sid)?.role as string | null;

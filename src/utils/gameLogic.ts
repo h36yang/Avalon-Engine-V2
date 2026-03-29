@@ -9,6 +9,7 @@ export interface Player {
   isConnected: boolean;
   isBot?: boolean;
   isHost: boolean;
+  difficulty?: 'normal' | 'hard'; // Bot difficulty level
 }
 
 export function getQuestConfig(playerCount: number) {

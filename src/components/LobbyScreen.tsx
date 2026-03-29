@@ -15,7 +15,6 @@ export default function LobbyScreen() {
   const endGame = useGameStore((state) => state.endGame);
   const devRequestedRole = useGameStore((state) => state.devRequestedRole);
   const { t } = useTranslation();
-  const [botDifficulty, setBotDifficulty] = useState<'normal' | 'hard'>('normal');
 
   if (!room) return null;
 
@@ -85,35 +84,19 @@ export default function LobbyScreen() {
               {canAddBot && (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setBotDifficulty(botDifficulty === 'normal' ? 'hard' : 'normal')}
-                    className={`text-xs flex items-center gap-1 font-medium transition-all duration-200 px-1.5 py-0.5 rounded-lg border ${
-                      botDifficulty === 'hard'
-                        ? 'text-white bg-gradient-to-r from-amber-600 to-amber-500 border-amber-400/30 hover:from-amber-500 hover:to-amber-400 hover:shadow-lg hover:shadow-amber-500/25'
-                        : 'text-white bg-gradient-to-r from-zinc-700 to-zinc-600 border-zinc-500/30 hover:from-zinc-600 hover:to-zinc-500 hover:shadow-lg hover:shadow-zinc-500/25'
-                    } active:scale-95`}
-                    title={`Current: ${botDifficulty === 'normal' ? 'Normal' : 'Hard'} Bot`}
+                    onClick={() => addBot('normal')}
+                    className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-zinc-700 to-zinc-600 px-1.5 py-0.5 rounded-lg border border-zinc-500/30 hover:from-zinc-600 hover:to-zinc-500 hover:shadow-lg hover:shadow-zinc-500/25 active:scale-95"
+                    title={t("Add Normal Bot")}
                   >
-                    <Bot size={16} strokeWidth={2.5} />
-                    {botDifficulty === 'normal' ? 'Normal' : 'Hard'}
+                    <span>{t('Add Normal Bot')}</span>
                   </button>
                   <button
-                    onClick={() => addBot(botDifficulty)}
-                    className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-indigo-600 to-indigo-500 px-1.5 py-0.5 rounded-lg border border-indigo-400/30 hover:from-indigo-500 hover:to-indigo-400 hover:shadow-lg hover:shadow-indigo-500/25 active:scale-95"
-                    title={t("Add Bot")}
+                    onClick={() => addBot('hard')}
+                    className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-amber-600 to-amber-500 px-1.5 py-0.5 rounded-lg border border-amber-400/30 hover:from-amber-500 hover:to-amber-400 hover:shadow-lg hover:shadow-amber-500/25 active:scale-95"
+                    title={t("Add Hard Bot")}
                   >
-                    <Plus size={16} strokeWidth={2.5} />
-                    <span>Add</span>
+                    <span>{t('Add Hard Bot')}</span>
                   </button>
-                  {botCount > 0 && (
-                    <button
-                      onClick={removeBot}
-                      className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-red-600 to-red-500 px-1.5 py-0.5 rounded-lg border border-red-400/30 hover:from-red-500 hover:to-red-400 hover:shadow-lg hover:shadow-red-500/25 active:scale-95"
-                      title={t("Remove Last Bot")}
-                    >
-                      <span>−</span>
-                      <span>Remove</span>
-                    </button>
-                  )}
                 </div>
               )}
             </div>
@@ -125,7 +108,7 @@ export default function LobbyScreen() {
                 >
                   <span className="font-medium flex items-center gap-2">
                     {p.name} {p.sessionId === sessionId && "(You)"}
-                    {p.isBot && <Bot size={14} className={room.settings.botDifficulty === "hard" ? "text-amber-500" : "text-zinc-500"} />}
+                    {p.isBot && <Bot size={18} className={p.difficulty === "hard" ? "text-amber-400" : "text-zinc-400"} />}
                   </span>
                   <div className="flex items-center gap-2">
                     {p.isHost && (
@@ -141,10 +124,10 @@ export default function LobbyScreen() {
                     {isHost && !p.isHost && (
                       <button
                         onClick={() => kickPlayer(p.sessionId)}
-                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                        className="p-0.5 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors flex items-center justify-center"
                         title={t("Kick")}
                       >
-                        <UserMinus size={14} />
+                        <span className="text-sm leading-none font-bold">×</span>
                       </button>
                     )}
                   </div>

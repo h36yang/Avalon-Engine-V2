@@ -157,6 +157,7 @@ export const useGameStore = create<GameState>()(
         if (existingSocket) {
           existingSocket.disconnect();
         }
+        set({ error: null });
 
         const socketUrl =
           (import.meta as any).env.VITE_APP_URL || window.location.origin;
@@ -252,7 +253,7 @@ export const useGameStore = create<GameState>()(
           socket.emit("leave_room", { roomId, sessionId });
           socket.disconnect();
         }
-        set({ socket: null, room: null, roomId: "" });
+        set({ socket: null, room: null, roomId: "", error: null });
       },
 
       kickPlayer: (targetSessionId: string) => {

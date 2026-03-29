@@ -108,6 +108,7 @@ interface GameState {
   connect: (roomId: string, name: string) => void;
   updateSettings: (settings: Partial<Room["settings"]>) => void;
   addBot: (difficulty?: 'normal' | 'hard') => void;
+  removeBot: () => void;
   startGame: (requestedRoles?: Record<string, Role>) => void;
   leaveRoom: () => void;
   kickPlayer: (targetSessionId: string) => void;
@@ -230,6 +231,14 @@ export const useGameStore = create<GameState>()(
 
         const roomId = room.id;
         socket?.emit("add_bot", { roomId, difficulty: difficulty || 'normal' });
+      },
+
+      removeBot: () => {
+        const { socket, room } = get();
+        if (!socket || !room) return;
+
+        const roomId = room.id;
+        socket?.emit("remove_bot", { roomId });
       },
 
       startGame: (requestedRoles) => {

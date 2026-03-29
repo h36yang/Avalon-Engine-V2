@@ -10,17 +10,19 @@ export default function LobbyScreen() {
   const startGame = useGameStore((state) => state.startGame);
   const leaveRoom = useGameStore((state) => state.leaveRoom);
   const addBot = useGameStore((state) => state.addBot);
+  const removeBot = useGameStore((state) => state.removeBot);
   const kickPlayer = useGameStore((state) => state.kickPlayer);
   const endGame = useGameStore((state) => state.endGame);
   const devRequestedRole = useGameStore((state) => state.devRequestedRole);
   const { t } = useTranslation();
-  const [showBotMenu, setShowBotMenu] = useState(false);
+  const [botDifficulty, setBotDifficulty] = useState<'normal' | 'hard'>('normal');
 
   if (!room) return null;
 
   const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
   const canStart = room.players.length >= 5 && room.players.length <= 10;
   const canAddBot = isHost && room.players.length < 10;
+  const botCount = room.players.filter(p => p.isBot).length;
 
   const toggleRole = (role: Role) => {
     if (!isHost) return;
@@ -81,31 +83,36 @@ export default function LobbyScreen() {
                 {t("Players")}
               </h2>
               {canAddBot && (
-                <div className="relative">
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setShowBotMenu(!showBotMenu)}
-                    className="text-xs flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20"
+                    onClick={() => setBotDifficulty(botDifficulty === 'normal' ? 'hard' : 'normal')}
+                    className={`text-xs flex items-center gap-1 font-medium transition-all duration-200 px-1.5 py-0.5 rounded-lg border ${
+                      botDifficulty === 'hard'
+                        ? 'text-white bg-gradient-to-r from-amber-600 to-amber-500 border-amber-400/30 hover:from-amber-500 hover:to-amber-400 hover:shadow-lg hover:shadow-amber-500/25'
+                        : 'text-white bg-gradient-to-r from-zinc-700 to-zinc-600 border-zinc-500/30 hover:from-zinc-600 hover:to-zinc-500 hover:shadow-lg hover:shadow-zinc-500/25'
+                    } active:scale-95`}
+                    title={`Current: ${botDifficulty === 'normal' ? 'Normal' : 'Hard'} Bot`}
                   >
-                    <Plus size={14} /> {t("Add Bot")} <ChevronDown size={12} className={`transition-transform ${showBotMenu ? 'rotate-180' : ''}`} />
+                    <Bot size={16} strokeWidth={2.5} />
+                    {botDifficulty === 'normal' ? 'Normal' : 'Hard'}
                   </button>
-
-                  {showBotMenu && (
-                    <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700/50 rounded-lg shadow-xl overflow-hidden z-20 min-w-[140px]">
-                      <button
-                        onClick={() => { addBot('normal'); setShowBotMenu(false); }}
-                        className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-2"
-                      >
-                        <Bot size={14} className="text-zinc-400" />
-                        {t("Normal Bot")}
-                      </button>
-                      <button
-                        onClick={() => { addBot('hard'); setShowBotMenu(false); }}
-                        className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-2 border-t border-zinc-800"
-                      >
-                        <Bot size={14} className="text-amber-500" />
-                        {t("Hard Bot")}
-                      </button>
-                    </div>
+                  <button
+                    onClick={() => addBot(botDifficulty)}
+                    className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-indigo-600 to-indigo-500 px-1.5 py-0.5 rounded-lg border border-indigo-400/30 hover:from-indigo-500 hover:to-indigo-400 hover:shadow-lg hover:shadow-indigo-500/25 active:scale-95"
+                    title={t("Add Bot")}
+                  >
+                    <Plus size={16} strokeWidth={2.5} />
+                    <span>Add</span>
+                  </button>
+                  {botCount > 0 && (
+                    <button
+                      onClick={removeBot}
+                      className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-red-600 to-red-500 px-1.5 py-0.5 rounded-lg border border-red-400/30 hover:from-red-500 hover:to-red-400 hover:shadow-lg hover:shadow-red-500/25 active:scale-95"
+                      title={t("Remove Last Bot")}
+                    >
+                      <span>−</span>
+                      <span>Remove</span>
+                    </button>
                   )}
                 </div>
               )}

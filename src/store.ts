@@ -108,6 +108,7 @@ interface GameState {
   connect: (roomId: string, name: string) => void;
   updateSettings: (settings: Partial<Room["settings"]>) => void;
   addBot: (difficulty?: 'normal' | 'hard') => void;
+  removeBot: () => void;
   startGame: (requestedRoles?: Record<string, Role>) => void;
   leaveRoom: () => void;
   kickPlayer: (targetSessionId: string) => void;
@@ -156,6 +157,7 @@ export const useGameStore = create<GameState>()(
         if (existingSocket) {
           existingSocket.disconnect();
         }
+        set({ error: null });
 
         const socketUrl =
           (import.meta as any).env.VITE_APP_URL || window.location.origin;
@@ -232,6 +234,14 @@ export const useGameStore = create<GameState>()(
         socket?.emit("add_bot", { roomId, difficulty: difficulty || 'normal' });
       },
 
+      removeBot: () => {
+        const { socket, room } = get();
+        if (!socket || !room) return;
+
+        const roomId = room.id;
+        socket?.emit("remove_bot", { roomId });
+      },
+
       startGame: (requestedRoles) => {
         const { socket, roomId } = get();
         socket?.emit("start_game", { roomId, requestedRoles });
@@ -243,7 +253,7 @@ export const useGameStore = create<GameState>()(
           socket.emit("leave_room", { roomId, sessionId });
           socket.disconnect();
         }
-        set({ socket: null, room: null, roomId: "" });
+        set({ socket: null, room: null, roomId: "", error: null });
       },
 
       kickPlayer: (targetSessionId: string) => {

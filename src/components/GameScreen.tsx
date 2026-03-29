@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "../store";
-import { Check, X, Crown, Users, Target, ShieldAlert, LogOut, History, Eye, Shield, Skull } from "lucide-react";
+import { Check, X, Crown, Users, Target, ShieldAlert, LogOut, History, Eye, Shield, Skull, MessageSquare, Bot } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
@@ -259,6 +259,33 @@ export default function GameScreen() {
                 })}
               </div>
             </section>
+
+            {/* Bot Opinions Dialog */}
+            {gameState.botOpinions && gameState.botOpinions.length > 0 && (
+              <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mt-8">
+                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <MessageSquare size={14} /> {t("Bot Opinions")}
+                </h3>
+                <div className="space-y-4">
+                  {gameState.botOpinions.map((opinion, idx) => {
+                    const botPlayer = players.find(p => p.sessionId === opinion.botId);
+                    return (
+                      <div key={idx} className="flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
+                          <Bot size={14} className="text-zinc-400" />
+                        </div>
+                        <div className="flex-1 bg-zinc-950/50 rounded-xl p-3 border border-zinc-800/50">
+                          <div className="text-xs font-medium text-indigo-400 mb-1">{botPlayer?.name || "Bot"}</div>
+                          <div className={cn("text-sm", opinion.isError ? "text-red-400" : "text-zinc-300")}>
+                            {opinion.text}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </main>
 
           {/* Action Bar */}

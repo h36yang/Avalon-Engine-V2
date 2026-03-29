@@ -7,8 +7,9 @@ export interface Player {
   name: string;
   role: Role | null;
   isConnected: boolean;
-  isBot?: boolean;
   isHost: boolean;
+  isBot?: boolean;
+  apiKey?: string;
 }
 
 export function getQuestConfig(playerCount: number) {

@@ -3,6 +3,8 @@ import { createServer as createViteServer } from 'vite';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenAI } from '@google/genai';
+import { encode } from '@toon-format/toon';
 import { Role, Player, getQuestConfig, assignRoles } from './src/utils/gameLogic';
 
 const PORT = 3000;
@@ -139,6 +141,12 @@ interface BotMemory {
   percivalCandidates?: { a: string; b: string; merlinLikelihood: Record<string, number> };
 }
 
+interface BotOpinion {
+  botId: string;
+  text: string;
+  isError?: boolean;
+}
+
 interface Room {
   id: string;
   players: Player[];
@@ -158,6 +166,7 @@ interface Room {
     assassinationTarget: string | null;
     voteHistory: TeamVoteHistory[];
     botMemories: Record<string, BotMemory>; // bot sessionId -> memory
+    botOpinions?: BotOpinion[];
   };
   lastActivityTime: number;
   idleWarningEmitted: boolean;
@@ -237,6 +246,145 @@ function broadcastRoom(room: Room, io: Server) {
       io.to(player.id).emit('room_update', sanitized);
     }
   });
+}
+
+function triggerBotOpinions(room: Room, io: Server) {
+  const botsWithKeys = room.players.filter(p => p.isBot && p.apiKey);
+  if (botsWithKeys.length === 0) return;
+
+  room.gameState.botOpinions ??= [];
+  broadcastRoom(room, io);
+
+  console.log('Triggering bot opinions...');
+  botsWithKeys.forEach(async (bot) => {
+    try {
+      const apiKey = bot.apiKey!;
+      const genAI = new GoogleGenAI({ apiKey });
+      const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+
+      const memory = room.gameState.botMemories[bot.sessionId];
+      const leaderName = room.players[room.gameState.leaderIndex].name;
+
+      let conditionalRoleInstructionClause: string | undefined;
+      if (bot.role === 'Merlin') {
+        conditionalRoleInstructionClause = `Only comment on the evil players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
+      } else if (bot.role === 'Percival') {
+        conditionalRoleInstructionClause = `You need to protect Merlin's identity. Only comment on your Merlin candidates when you have strong evidence based on the quests and team vote history. Otherwise, comment on other players.
+
+Your Merlin candidates:
+${encode(mapPercivalCandidatesToNames(room, memory.percivalCandidates.merlinLikelihood))}`;
+      } else if (isEvil) {
+        conditionalRoleInstructionClause = `Form your opinion as if you are a good player. Rat out your evil teammate if necessary.`;
+      }
+
+      const prompt = `Provide a very short opinion about the game state, addressing the other players, based on the following information.
+
+Your current trust of others (0 is completely distrust, 100 is completely trust):
+${encode(mapTrustScoresToNames(room, memory.trustScores))}
+
+Your known roles:
+${encode(mapKnownRolesToNames(room, memory.knownRoles))}
+
+Quest results:
+${encode(getQuestResults(room))}
+
+Team vote history:
+${encode(getVoteHistory(room))}
+
+The current leader forming the team is "${leaderName}".`;
+
+      const response = await genAI.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          systemInstruction: `You are playing the social deduction game Avalon as a player named "${bot.name}", and your secret role is ${bot.role} (${isEvil ? 'Evil' : 'Good'}).
+
+Follow the guidelines below to form your answer:
+- Speak in character as a human player.
+- Keep it casual and brief (2-3 sentences).
+- Do not reveal your secret role.
+- Base your opinion on quests and team vote history. Do not directly reveal your known roles or trust scores.
+- Form your opinion as suggestions for the current leader. If you don't trust the current leader, say so and suggest a different leader.
+- Respond in Chinese and do not use markdown.` + (conditionalRoleInstructionClause ? `
+
+Also follow these role-based guidelines:
+${conditionalRoleInstructionClause}` : ''),
+          temperature: 1.5, // Default: 1.0. Higher = more creative
+        },
+      });
+
+      console.log(`Opinion generated successfully for ${bot.name}.`);
+      room.gameState.botOpinions.push({ botId: bot.sessionId, text: response.text || '' });
+      broadcastRoom(room, io);
+    } catch (err: any) {
+      console.error(`Error generating opinion for ${bot.name}:`, err?.message || err);
+      room.gameState.botOpinions.push({ botId: bot.sessionId, text: 'Failed to generate opinion. API error.', isError: true });
+      broadcastRoom(room, io);
+    }
+  });
+}
+
+function mapTrustScoresToNames(room: Room, trustScores: Record<string, number>): {
+  name: string,
+  score: number,
+}[] {
+  return Object.entries(trustScores).map(([sessionId, score]) => ({
+    name: room.players.find(p => p.sessionId === sessionId)!.name,
+    score
+  }));
+}
+
+function mapKnownRolesToNames(room: Room, knownRoles: Record<string, Role | "Evil" | "Good">): {
+  name: string,
+  role: Role | "Evil" | "Good",
+}[] {
+  return Object.entries(knownRoles).map(([sessionId, role]) => ({
+    name: room.players.find(p => p.sessionId === sessionId)!.name,
+    role
+  }));
+}
+
+function getQuestResults(room: Room): {
+  status: 'pending' | 'success' | 'fail',
+  team: string[],
+  failVotesCount: number,
+}[] {
+  return room.gameState.quests.map((q) => ({
+    status: q.status,
+    team: q.team.map(sessionId => room.players.find(p => p.sessionId === sessionId)!.name),
+    failVotesCount: Object.values(q.votes).filter(v => !v).length
+  }));
+}
+
+function getVoteHistory(room: Room): {
+  questIndex: number;
+  voteTrack: number;
+  leader: string;
+  proposedTeam: string[];
+  votes: { name: string, approved: boolean }[];
+  approved: boolean;
+}[] {
+  return room.gameState.voteHistory.map(v => ({
+    questIndex: v.questIndex,
+    voteTrack: v.voteTrack,
+    leader: room.players[v.leaderIndex].name,
+    proposedTeam: v.proposedTeam.map(sessionId => room.players.find(p => p.sessionId === sessionId)!.name),
+    votes: Object.entries(v.votes).map(([sessionId, approved]) => ({
+      name: room.players.find(p => p.sessionId === sessionId)!.name,
+      approved
+    })),
+    approved: v.approved
+  }));
+}
+
+function mapPercivalCandidatesToNames(room: Room, merlinLikelihood: Record<string, number>): {
+  name: string,
+  likelihood: number,
+}[] {
+  return Object.entries(merlinLikelihood).map(([sessionId, likelihood]) => ({
+    name: room.players.find(p => p.sessionId === sessionId)!.name,
+    likelihood
+  }));
 }
 
 function initializeBotMemories(room: Room) {
@@ -432,6 +580,7 @@ function applyTeamVoteResult(room: Room, io: Server) {
       room.status = 'team_building';
       room.gameState.leaderIndex = (room.gameState.leaderIndex + 1) % room.players.length;
       room.gameState.proposedTeam = [];
+      triggerBotOpinions(room, io);
     }
   }
   broadcastRoom(room, io);
@@ -637,6 +786,7 @@ function applyQuestResult(room: Room, io: Server) {
     room.gameState.leaderIndex = (room.gameState.leaderIndex + 1) % room.players.length;
     room.gameState.proposedTeam = [];
     room.gameState.teamVotes = {};
+    triggerBotOpinions(room, io);
   }
   broadcastRoom(room, io);
   handleBotActions(room, io);
@@ -1138,6 +1288,25 @@ function setupSocket(io: Server) {
         }
       } catch (err) {
         console.error('Error in add_bot:', err);
+      }
+    });
+
+    socket.on('update_bot_api_key', ({ roomId, targetSessionId, apiKey }) => {
+      try {
+        const room = rooms[roomId];
+        if (room && room.status === 'lobby') {
+          const sender = room.players.find(p => p.id === socket.id);
+          if (sender && sender.isHost) {
+            const bot = room.players.find(p => p.sessionId === targetSessionId && p.isBot);
+            if (bot) {
+              bot.apiKey = apiKey;
+              touchRoom(room);
+              broadcastRoom(room, io);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error in update_bot_api_key:', err);
       }
     });
 

@@ -723,10 +723,10 @@ function handleBotActions(room: Room, io: Server) {
             team[currentQuest.teamSize - 1] = leader.sessionId;
           }
 
-          // Baiting: On early quests, chance to include exactly one known evil player to hide identity
+          // Baiting: On quest 0 only, small chance to include exactly one known evil player to hide identity
           // Hard mode does this slightly more effectively, avoiding players with high failAssociation
-          const baitChance = difficulty === 'hard' ? 0.4 : 0.3;
-          if (room.gameState.currentQuestIndex < 2 && Math.random() < baitChance) {
+          const baitChance = difficulty === 'hard' ? 0.2 : 0.15;
+          if (room.gameState.currentQuestIndex === 0 && Math.random() < baitChance) {
             const knownEvil = room.players.filter(p => memory.knownRoles[p.sessionId] === 'Evil' && memory.failAssociation[p.sessionId] === 0);
             if (knownEvil.length > 0) {
               // Replace the least trusted good player in the team (excluding self) with a random evil player
@@ -782,16 +782,19 @@ function handleBotActions(room: Room, io: Server) {
           } else if (bot.role === 'Merlin') {
             // Merlin voting logic: Usually reject evil, but occasionally approve to hide identity
             const hasKnownEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil');
+            const merlinIsProposer = room.players[room.gameState.leaderIndex].sessionId === bot.sessionId;
 
             if (hasKnownEvil) {
-              // Strategic Approval: On early quests, small chance to approve a team with evil
-              if (room.gameState.currentQuestIndex < 2 && Math.random() < 0.15) {
+              if (merlinIsProposer && room.gameState.currentQuestIndex === 0) {
+                // Merlin deliberately baited this team — vote YES to stay consistent with the proposal
                 approve = true;
               } else if (room.gameState.voteTrack === 4) {
                 // Forced to approve on last track to avoid losing
                 approve = true;
               } else {
-                approve = false;
+                // Reject, but with some noise on later quests to avoid a perfect rejection pattern
+                const rejectChance = room.gameState.currentQuestIndex < 2 ? 0.85 : 0.70;
+                approve = Math.random() > rejectChance;
               }
             } else {
               // If no known evil, approve

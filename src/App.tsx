@@ -53,14 +53,20 @@ export default function App() {
           }
 
           if (session?.user) {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
+            let profile = null;
+            try {
+              const { data, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
 
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.error("Profile fetch error:", profileError);
+              if (!profileError) {
+                profile = data;
+              }
+            } catch (err) {
+              // Supabase not configured - skip profile fetch
+              console.debug('Profile fetch skipped (Supabase not configured)');
             }
             setAuth(session.user, profile);
           } else {

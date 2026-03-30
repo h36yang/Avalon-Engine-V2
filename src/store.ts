@@ -23,6 +23,7 @@ export interface Player {
   isHost: boolean;
   isBot?: boolean;
   apiKey?: string;
+  difficulty?: 'normal' | 'hard';
 }
 
 export interface Quest {

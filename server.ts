@@ -1150,6 +1150,8 @@ function handleBotActions(room: Room, io: Server) {
   }
 }
 
+let nextBotIndex = 1;
+
 function setupSocket(io: Server) {
   // Periodic idle room checker (runs every 60 seconds)
   setInterval(() => {
@@ -1273,7 +1275,7 @@ function setupSocket(io: Server) {
           const newBot = {
             id: botId,
             sessionId: botId,
-            name: `Bot ${room.players.length}`,
+            name: `Bot ${nextBotIndex++}`,
             role: null,
             isConnected: true,
             isBot: true,

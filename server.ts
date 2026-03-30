@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { encode } from '@toon-format/toon';
 import { Role, Player, getQuestConfig, assignRoles } from './src/utils/gameLogic';
 
@@ -294,7 +294,7 @@ ${encode(getVoteHistory(room))}
 The current leader forming the team is "${leaderName}".`;
 
       const response = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite-preview',
         contents: prompt,
         config: {
           systemInstruction: `You are playing the social deduction game Avalon as a player named "${bot.name}", and your secret role is ${bot.role} (${isEvil ? 'Evil' : 'Good'}).
@@ -309,7 +309,11 @@ Follow the guidelines below to form your answer:
 
 Also follow these role-based guidelines:
 ${conditionalRoleInstructionClause}` : ''),
-          temperature: 1.5, // Default: 1.0. Higher = more creative
+          thinkingConfig: {
+            // Medium thinking level for balanced thinking.
+            // https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
+            thinkingLevel: ThinkingLevel.MEDIUM,
+          },
         },
       });
 

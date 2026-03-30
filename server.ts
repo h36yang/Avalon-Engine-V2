@@ -310,9 +310,9 @@ Follow the guidelines below to form your answer:
 Also follow these role-based guidelines:
 ${conditionalRoleInstructionClause}` : ''),
           thinkingConfig: {
-            // Medium thinking level for balanced thinking.
+            // High thinking level for dynamic thinking and maximizing reasoning depth.
             // https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
-            thinkingLevel: ThinkingLevel.MEDIUM,
+            thinkingLevel: ThinkingLevel.HIGH,
           },
         },
       });

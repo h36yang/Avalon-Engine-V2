@@ -1314,28 +1314,6 @@ function setupSocket(io: Server) {
       }
     });
 
-    socket.on('remove_bot', ({ roomId }) => {
-      try {
-        const room = rooms[roomId];
-        if (room && room.status === 'lobby') {
-          const lastBotIndex = room.players.findIndex((p, idx) => p.isBot && idx === room.players.length - 1);
-          if (lastBotIndex !== -1) {
-            room.players.splice(lastBotIndex, 1);
-          } else {
-            const botIndex = room.players.findLastIndex(p => p.isBot);
-            if (botIndex !== -1) {
-              room.players.splice(botIndex, 1);
-            }
-          }
-
-          touchRoom(room);
-          broadcastRoom(room, io);
-        }
-      } catch (err) {
-        console.error('Error in remove_bot:', err);
-      }
-    });
-
     socket.on('start_game', ({ roomId, requestedRoles }) => {
       try {
         const room = rooms[roomId];

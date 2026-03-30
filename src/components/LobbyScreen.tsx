@@ -10,7 +10,6 @@ export default function LobbyScreen() {
   const startGame = useGameStore((state) => state.startGame);
   const leaveRoom = useGameStore((state) => state.leaveRoom);
   const addBot = useGameStore((state) => state.addBot);
-  const removeBot = useGameStore((state) => state.removeBot);
   const kickPlayer = useGameStore((state) => state.kickPlayer);
   const endGame = useGameStore((state) => state.endGame);
   const devRequestedRole = useGameStore((state) => state.devRequestedRole);

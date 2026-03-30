@@ -118,6 +118,7 @@ export const translations = {
     'Waiting for leader to continue...': 'Waiting for leader to continue...',
     'You are the Leader': 'You are the Leader',
     'Leader is selecting': 'Leader has selected',
+    'Bot Opinions': 'Bot chats',
 
     // AssassinScreen extras
     'Good completed 3 quests': 'Good has completed 3 quests, but Evil has one last chance. The Assassin must find Merlin.',
@@ -268,6 +269,7 @@ export const translations = {
     'Waiting for leader to continue...': '等待队长继续...',
     'You are the Leader': '你是队长',
     'Leader is selecting': '队长已选择',
+    'Bot Opinions': '机器人发言',
 
     // AssassinScreen extras
     'Good completed 3 quests': '正义阵营已完成3个任务，但邪恶阵营还有最后一次机会。刺客必须找出梅林。',

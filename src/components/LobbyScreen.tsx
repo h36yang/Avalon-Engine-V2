@@ -14,6 +14,7 @@ export default function LobbyScreen() {
   const kickPlayer = useGameStore((state) => state.kickPlayer);
   const endGame = useGameStore((state) => state.endGame);
   const devRequestedRole = useGameStore((state) => state.devRequestedRole);
+  const updateBotApiKey = useGameStore((state) => state.updateBotApiKey);
   const { t } = useTranslation();
 
   if (!room) return null;
@@ -104,33 +105,46 @@ export default function LobbyScreen() {
               {room.players.map((p, i) => (
                 <li
                   key={p.sessionId}
-                  className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-700/40 rounded-xl p-4 flex items-center justify-between"
+                  className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-700/40 rounded-xl flex flex-col"
                 >
-                  <span className="font-medium flex items-center gap-2">
-                    {p.name} {p.sessionId === sessionId && "(You)"}
-                    {p.isBot && <Bot size={18} className={p.difficulty === "hard" ? "text-amber-400" : "text-zinc-400"} />}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {p.isHost && (
-                      <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-md">
-                        {t("Host")}
-                      </span>
-                    )}
-                    {!p.isConnected && !p.isBot && (
-                      <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-md">
-                        {t("Offline")}
-                      </span>
-                    )}
-                    {isHost && !p.isHost && (
-                      <button
-                        onClick={() => kickPlayer(p.sessionId)}
-                        className="p-0.5 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors flex items-center justify-center"
-                        title={t("Kick")}
-                      >
-                        <span className="text-sm leading-none font-bold">×</span>
-                      </button>
-                    )}
+                  <div className="p-4 flex items-center justify-between">
+                    <span className="font-medium flex items-center gap-2">
+                      {p.name} {p.sessionId === sessionId && "(You)"}
+                      {p.isBot && <Bot size={18} className={p.difficulty === "hard" ? "text-amber-400" : "text-zinc-400"} />}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {p.isHost && (
+                        <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-md">
+                          {t("Host")}
+                        </span>
+                      )}
+                      {!p.isConnected && !p.isBot && (
+                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-md">
+                          {t("Offline")}
+                        </span>
+                      )}
+                      {isHost && !p.isHost && (
+                        <button
+                          onClick={() => kickPlayer(p.sessionId)}
+                          className="p-0.5 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors flex items-center justify-center"
+                          title={t("Kick")}
+                        >
+                          <span className="text-sm leading-none font-bold">×</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {p.isBot && isHost && (
+                    <div className="px-4 pb-4 pt-3 border-t border-zinc-800/50">
+                      <input
+                        type="text"
+                        placeholder="Gemini API Key (optional)"
+                        value={p.apiKey || ""}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateBotApiKey(p.sessionId, e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
+                      />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

@@ -20,8 +20,10 @@ export interface Player {
   name: string;
   role: Role | null;
   isConnected: boolean;
-  isBot?: boolean;
   isHost: boolean;
+  isBot?: boolean;
+  apiKey?: string;
+  difficulty?: 'normal' | 'hard';
 }
 
 export interface Quest {
@@ -68,6 +70,7 @@ export interface Room {
     winner: "good" | "evil" | null;
     assassinationTarget: string | null;
     voteHistory: TeamVoteHistory[];
+    botOpinions?: { botId: string; text: string; isError?: boolean }[];
   };
 }
 
@@ -107,6 +110,7 @@ interface GameState {
   setDevRequestedRole: (role?: Role) => void;
   connect: (roomId: string, name: string) => void;
   updateSettings: (settings: Partial<Room["settings"]>) => void;
+  updateBotApiKey: (botSessionId: string, apiKey: string) => void;
   addBot: (difficulty?: 'normal' | 'hard') => void;
   removeBot: () => void;
   startGame: (requestedRoles?: Record<string, Role>) => void;
@@ -224,6 +228,11 @@ export const useGameStore = create<GameState>()(
       updateSettings: (settings) => {
         const { socket, roomId } = get();
         socket?.emit("update_settings", { roomId, settings });
+      },
+
+      updateBotApiKey: (botSessionId, apiKey) => {
+        const { socket, roomId } = get();
+        socket?.emit("update_bot_api_key", { roomId, targetSessionId: botSessionId, apiKey });
       },
 
       addBot: (difficulty?: 'normal' | 'hard') => {

@@ -267,7 +267,7 @@ function triggerBotOpinions(room: Room, io: Server) {
 
       let conditionalRoleInstructionClause: string | undefined;
       if (bot.role === 'Merlin') {
-        conditionalRoleInstructionClause = `Only comment on the evil players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
+        conditionalRoleInstructionClause = `Only comment on other players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
       } else if (bot.role === 'Percival') {
         conditionalRoleInstructionClause = `You need to protect Merlin's identity. Only comment on your Merlin candidates when you have strong evidence based on the quests and team vote history. Otherwise, comment on other players.
 
@@ -1311,28 +1311,6 @@ function setupSocket(io: Server) {
         }
       } catch (err) {
         console.error('Error in update_bot_api_key:', err);
-      }
-    });
-
-    socket.on('remove_bot', ({ roomId }) => {
-      try {
-        const room = rooms[roomId];
-        if (room && room.status === 'lobby') {
-          const lastBotIndex = room.players.findIndex((p, idx) => p.isBot && idx === room.players.length - 1);
-          if (lastBotIndex !== -1) {
-            room.players.splice(lastBotIndex, 1);
-          } else {
-            const botIndex = room.players.findLastIndex(p => p.isBot);
-            if (botIndex !== -1) {
-              room.players.splice(botIndex, 1);
-            }
-          }
-
-          touchRoom(room);
-          broadcastRoom(room, io);
-        }
-      } catch (err) {
-        console.error('Error in remove_bot:', err);
       }
     });
 

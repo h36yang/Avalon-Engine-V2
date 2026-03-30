@@ -1266,10 +1266,11 @@ function setupSocket(io: Server) {
 
     socket.on('add_bot', ({ roomId, difficulty }) => {
       try {
+        console.log('add_bot called with:', { roomId, difficulty });
         const room = rooms[roomId];
         if (room && room.status === 'lobby' && room.players.length < 10) {
           const botId = 'bot_' + Math.random().toString(36).substring(2, 9);
-          room.players.push({
+          const newBot = {
             id: botId,
             sessionId: botId,
             name: `Bot ${room.players.length}`,
@@ -1277,11 +1278,12 @@ function setupSocket(io: Server) {
             isConnected: true,
             isBot: true,
             isHost: false,
-          });
+            difficulty: difficulty || 'normal',
+          };
+          console.log('Created bot:', newBot);
+          room.players.push(newBot);
 
-          if (difficulty) {
-            room.settings.botDifficulty = difficulty;
-          }
+          room.settings.botDifficulty = difficulty || 'normal';
 
           touchRoom(room);
           broadcastRoom(room, io);

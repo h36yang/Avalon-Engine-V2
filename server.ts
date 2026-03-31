@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { encode } from '@toon-format/toon';
 import { Role, Player, getQuestConfig, assignRoles } from './src/utils/gameLogic';
 
@@ -267,7 +267,7 @@ function triggerBotOpinions(room: Room, io: Server) {
 
       let conditionalRoleInstructionClause: string | undefined;
       if (bot.role === 'Merlin') {
-        conditionalRoleInstructionClause = `Only comment on other players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
+        conditionalRoleInstructionClause = `You need to protect your secret identity. Only comment on other players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
       } else if (bot.role === 'Percival') {
         conditionalRoleInstructionClause = `You need to protect Merlin's identity. Only comment on your Merlin candidates when you have strong evidence based on the quests and team vote history. Otherwise, comment on other players.
 
@@ -294,7 +294,7 @@ ${encode(getVoteHistory(room))}
 The current leader forming the team is "${leaderName}".`;
 
       const response = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite-preview',
         contents: prompt,
         config: {
           systemInstruction: `You are playing the social deduction game Avalon as a player named "${bot.name}", and your secret role is ${bot.role} (${isEvil ? 'Evil' : 'Good'}).
@@ -309,7 +309,11 @@ Follow the guidelines below to form your answer:
 
 Also follow these role-based guidelines:
 ${conditionalRoleInstructionClause}` : ''),
-          temperature: 1.5, // Default: 1.0. Higher = more creative
+          thinkingConfig: {
+            // High thinking level for dynamic thinking and maximizing reasoning depth.
+            // https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
+            thinkingLevel: ThinkingLevel.HIGH,
+          },
         },
       });
 

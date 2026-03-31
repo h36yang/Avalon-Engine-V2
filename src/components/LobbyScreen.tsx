@@ -136,7 +136,7 @@ export default function LobbyScreen() {
                   {p.isBot && isHost && (
                     <div className="px-4 pb-4 pt-3 border-t border-zinc-800/50">
                       <input
-                        type="text"
+                        type="password"
                         placeholder="Gemini API Key (optional)"
                         value={p.apiKey || ""}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateBotApiKey(p.sessionId, e.target.value)}

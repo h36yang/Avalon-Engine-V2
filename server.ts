@@ -9,6 +9,13 @@ import { Role, Player, getQuestConfig, assignRoles } from './src/utils/gameLogic
 
 const PORT = 3000;
 
+const DEFAULT_MODELS: Record<string, string> = {
+  gemini: 'gemini-2.0-flash-lite',
+  openrouter: 'google/gemini-2.0-flash-exp:free',
+  groq: 'llama-3.3-70b-versatile',
+  nvidia: 'meta/llama-3.3-70b-instruct',
+};
+
 // Initialize Supabase Admin Client
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -203,31 +210,34 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
   const isViewerEvil = viewerRole ? ['Assassin', 'Morgana', 'Mordred', 'Minion'].includes(viewerRole) : false;
 
   const sanitizedPlayers = room.players.map(p => {
-    if (p.sessionId === viewerSessionId) {
-      return p; // Player always sees their own role
+    // Always strip apiKey before sending to any client
+    const { apiKey: _stripped, ...safeP } = p as any;
+
+    if (safeP.sessionId === viewerSessionId) {
+      return safeP; // Player always sees their own role
     }
 
-    const targetRole = p.role as string | null;
-    if (!targetRole) return { ...p, role: null };
+    const targetRole = safeP.role as string | null;
+    if (!targetRole) return { ...safeP, role: null };
 
     const isTargetEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(targetRole);
 
     // Merlin sees all evil EXCEPT Mordred
     if (viewerRole === 'Merlin' && isTargetEvil && targetRole !== 'Mordred') {
-      return p;
+      return safeP;
     }
 
     // Percival sees Merlin and Morgana (doesn't know which is which — UI only shows names)
     if (viewerRole === 'Percival' && (targetRole === 'Merlin' || targetRole === 'Morgana')) {
-      return p;
+      return safeP;
     }
 
     // Evil (except Oberon) sees fellow evil (except Oberon)
     if (isViewerEvil && ['Assassin', 'Morgana', 'Mordred', 'Minion'].includes(targetRole)) {
-      return p;
+      return safeP;
     }
 
-    return { ...p, role: null }; // Hide role from this viewer
+    return { ...safeP, role: null }; // Hide role from this viewer
   });
 
   const { botMemories, ...safeGameState } = room.gameState as any;
@@ -248,6 +258,29 @@ function broadcastRoom(room: Room, io: Server) {
   });
 }
 
+async function callOpenAICompatible(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<string> {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+  const data = await response.json() as any;
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
 function triggerBotOpinions(room: Room, io: Server) {
   const botsWithKeys = room.players.filter(p => p.isBot && p.apiKey);
   if (botsWithKeys.length === 0) return;
@@ -258,8 +291,6 @@ function triggerBotOpinions(room: Room, io: Server) {
   console.log('Triggering bot opinions...');
   botsWithKeys.forEach(async (bot) => {
     try {
-      const apiKey = bot.apiKey!;
-      const genAI = new GoogleGenAI({ apiKey });
       const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
 
       const memory = room.gameState.botMemories[bot.sessionId];
@@ -293,11 +324,7 @@ ${encode(getVoteHistory(room))}
 
 The current leader forming the team is "${leaderName}".`;
 
-      const response = await genAI.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
-        contents: prompt,
-        config: {
-          systemInstruction: `You are playing the social deduction game Avalon as a player named "${bot.name}", and your secret role is ${bot.role} (${isEvil ? 'Evil' : 'Good'}).
+      const systemInstruction = `You are playing the social deduction game Avalon as a player named "${bot.name}", and your secret role is ${bot.role} (${isEvil ? 'Evil' : 'Good'}).
 
 Follow the guidelines below to form your answer:
 - Speak in character as a human player.
@@ -308,17 +335,38 @@ Follow the guidelines below to form your answer:
 - Respond in Chinese and do not use markdown.` + (conditionalRoleInstructionClause ? `
 
 Also follow these role-based guidelines:
-${conditionalRoleInstructionClause}` : ''),
-          thinkingConfig: {
-            // High thinking level for dynamic thinking and maximizing reasoning depth.
-            // https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
-            thinkingLevel: ThinkingLevel.HIGH,
+${conditionalRoleInstructionClause}` : '');
+
+      const provider = bot.provider ?? 'gemini';
+      const model = bot.model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
+
+      let text: string;
+      if (provider === 'gemini') {
+        const genAI = new GoogleGenAI({ apiKey: bot.apiKey! });
+        const response = await genAI.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            systemInstruction,
+            thinkingConfig: {
+              // High thinking level for dynamic thinking and maximizing reasoning depth.
+              // https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
+              thinkingLevel: ThinkingLevel.HIGH,
+            },
           },
-        },
-      });
+        });
+        text = response.text || '';
+      } else {
+        const BASE_URLS: Record<string, string> = {
+          openrouter: 'https://openrouter.ai/api/v1',
+          groq: 'https://api.groq.com/openai/v1',
+          nvidia: 'https://integrate.api.nvidia.com/v1',
+        };
+        text = await callOpenAICompatible(BASE_URLS[provider], bot.apiKey!, model, systemInstruction, prompt);
+      }
 
       console.log(`Opinion generated successfully for ${bot.name}.`);
-      room.gameState.botOpinions.push({ botId: bot.sessionId, text: response.text || '' });
+      room.gameState.botOpinions.push({ botId: bot.sessionId, text });
       broadcastRoom(room, io);
     } catch (err: any) {
       console.error(`Error generating opinion for ${bot.name}:`, err?.message || err);
@@ -1299,7 +1347,7 @@ function setupSocket(io: Server) {
       }
     });
 
-    socket.on('update_bot_api_key', ({ roomId, targetSessionId, apiKey }) => {
+    socket.on('update_bot_api_key', ({ roomId, targetSessionId, apiKey, provider, model }) => {
       try {
         const room = rooms[roomId];
         if (room && room.status === 'lobby') {
@@ -1308,6 +1356,8 @@ function setupSocket(io: Server) {
             const bot = room.players.find(p => p.sessionId === targetSessionId && p.isBot);
             if (bot) {
               bot.apiKey = apiKey;
+              bot.provider = provider ?? 'gemini';
+              bot.model = model || undefined;
               touchRoom(room);
               broadcastRoom(room, io);
             }

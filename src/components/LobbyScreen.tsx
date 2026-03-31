@@ -3,6 +3,39 @@ import { Users, Settings, Play, LogOut, Bot, UserMinus, Plus, ChevronDown } from
 import { useTranslation } from "../utils/i18n";
 import { useState } from "react";
 
+type Provider = 'gemini' | 'openrouter' | 'groq' | 'nvidia';
+
+const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
+  gemini: [
+    { label: 'Gemini 2.0 Flash Lite (free)', value: 'gemini-2.0-flash-lite' },
+    { label: 'Gemini 2.0 Flash (free)', value: 'gemini-2.0-flash' },
+    { label: 'Gemini 1.5 Flash (free)', value: 'gemini-1.5-flash' },
+    { label: 'Gemini 1.5 Flash 8B (free)', value: 'gemini-1.5-flash-8b' },
+    { label: 'Gemini 2.5 Flash Preview', value: 'gemini-2.5-flash-preview-04-17' },
+  ],
+  openrouter: [
+    { label: 'Gemini 2.0 Flash Exp (free)', value: 'google/gemini-2.0-flash-exp:free' },
+    { label: 'Llama 3.3 70B (free)', value: 'meta-llama/llama-3.3-70b-instruct:free' },
+    { label: 'DeepSeek Chat V3 (free)', value: 'deepseek/deepseek-chat-v3-0324:free' },
+    { label: 'DeepSeek R1 (free)', value: 'deepseek/deepseek-r1:free' },
+    { label: 'Mistral Small 3.1 (free)', value: 'mistralai/mistral-small-3.1-24b-instruct:free' },
+  ],
+  groq: [
+    { label: 'Llama 3.3 70B Versatile', value: 'llama-3.3-70b-versatile' },
+    { label: 'Llama 3.1 70B Versatile', value: 'llama-3.1-70b-versatile' },
+    { label: 'Llama 3.1 8B Instant', value: 'llama-3.1-8b-instant' },
+    { label: 'Gemma 2 9B', value: 'gemma2-9b-it' },
+    { label: 'Mixtral 8x7B', value: 'mixtral-8x7b-32768' },
+  ],
+  nvidia: [
+    { label: 'Llama 3.3 70B Instruct', value: 'meta/llama-3.3-70b-instruct' },
+    { label: 'Nemotron 70B Instruct', value: 'nvidia/llama-3.1-nemotron-70b-instruct' },
+    { label: 'DeepSeek R1', value: 'deepseek-ai/deepseek-r1' },
+    { label: 'MiniMax-01', value: 'minimax/minimax-01' },
+    { label: 'Mixtral 8x7B Instruct', value: 'mistralai/mixtral-8x7b-instruct-v0.1' },
+  ],
+};
+
 export default function LobbyScreen() {
   const room = useGameStore((state) => state.room);
   const sessionId = useGameStore((state) => state.sessionId);
@@ -14,9 +47,62 @@ export default function LobbyScreen() {
   const endGame = useGameStore((state) => state.endGame);
   const devRequestedRole = useGameStore((state) => state.devRequestedRole);
   const updateBotApiKey = useGameStore((state) => state.updateBotApiKey);
+  const saveBotPreferences = useGameStore((state) => state.saveBotPreferences);
+  const loadBotPreferences = useGameStore((state) => state.loadBotPreferences);
+  const user = useGameStore((state) => state.user);
   const { t } = useTranslation();
 
+  const [botConfigs, setBotConfigs] = useState<Record<string, {
+    provider: Provider;
+    apiKey: string;
+    model: string;
+    customModel: string;
+  }>>(() => {
+    const saved = loadBotPreferences();
+    if (!saved) return {};
+    const presets = PROVIDER_MODELS[saved.provider as Provider]?.map(m => m.value) ?? [];
+    const isPreset = presets.includes(saved.model);
+    const entry = {
+      provider: saved.provider as Provider,
+      apiKey: saved.apiKey,
+      model: isPreset ? saved.model : (saved.model ? 'custom' : PROVIDER_MODELS[saved.provider as Provider][0].value),
+      customModel: isPreset ? '' : saved.model,
+    };
+    return Object.fromEntries(
+      (room?.players ?? []).filter(p => p.isBot).map(p => [p.sessionId, entry])
+    );
+  });
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
   if (!room) return null;
+
+  const getBotConfig = (sid: string) =>
+    botConfigs[sid] ?? { provider: 'gemini' as Provider, apiKey: '', model: PROVIDER_MODELS.gemini[0].value, customModel: '' };
+
+  const resolveModel = (cfg: ReturnType<typeof getBotConfig>) =>
+    cfg.model === 'custom' ? cfg.customModel : cfg.model;
+
+  const updateLocalBotConfig = (
+    sid: string,
+    patch: Partial<{ provider: Provider; apiKey: string; model: string; customModel: string }>
+  ) => {
+    const current = getBotConfig(sid);
+    let next = { ...current, ...patch };
+    if (patch.provider && patch.provider !== current.provider) {
+      next.model = PROVIDER_MODELS[patch.provider][0].value;
+      next.customModel = '';
+    }
+    setBotConfigs(prev => ({ ...prev, [sid]: next }));
+    updateBotApiKey(sid, next.apiKey, next.provider, resolveModel(next) || undefined);
+  };
+
+  const handleSavePreferences = async (sid: string) => {
+    const cfg = getBotConfig(sid);
+    setSaveStatus('saving');
+    await saveBotPreferences(cfg.provider, cfg.apiKey, resolveModel(cfg));
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
+  };
 
   const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
   const canStart = room.players.length >= 5 && room.players.length <= 10;
@@ -134,14 +220,59 @@ export default function LobbyScreen() {
                     </div>
                   </div>
                   {p.isBot && isHost && (
-                    <div className="px-4 pb-4 pt-3 border-t border-zinc-800/50">
+                    <div className="px-4 pb-4 pt-3 border-t border-zinc-800/50 flex flex-col gap-2">
+                      {/* Provider */}
+                      <select
+                        value={getBotConfig(p.sessionId).provider}
+                        onChange={(e) => updateLocalBotConfig(p.sessionId, { provider: e.target.value as Provider })}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
+                      >
+                        <option value="gemini">Google Gemini (aistudio.google.com)</option>
+                        <option value="openrouter">OpenRouter (openrouter.ai)</option>
+                        <option value="groq">Groq (console.groq.com)</option>
+                        <option value="nvidia">NVIDIA NIM (build.nvidia.com)</option>
+                      </select>
+                      {/* API Key */}
                       <input
                         type="password"
-                        placeholder="Gemini API Key (optional)"
-                        value={p.apiKey || ""}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateBotApiKey(p.sessionId, e.target.value)}
+                        placeholder={
+                          getBotConfig(p.sessionId).provider === 'gemini' ? 'Gemini API Key' :
+                          getBotConfig(p.sessionId).provider === 'openrouter' ? 'OpenRouter API Key' :
+                          getBotConfig(p.sessionId).provider === 'groq' ? 'Groq API Key' : 'NVIDIA NIM API Key'
+                        }
+                        value={getBotConfig(p.sessionId).apiKey}
+                        onChange={(e) => updateLocalBotConfig(p.sessionId, { apiKey: e.target.value })}
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
                       />
+                      {/* Model selector */}
+                      <select
+                        value={getBotConfig(p.sessionId).model}
+                        onChange={(e) => updateLocalBotConfig(p.sessionId, { model: e.target.value })}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
+                      >
+                        {PROVIDER_MODELS[getBotConfig(p.sessionId).provider].map(m => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                        <option value="custom">Custom model...</option>
+                      </select>
+                      {/* Custom model input */}
+                      {getBotConfig(p.sessionId).model === 'custom' && (
+                        <input
+                          type="text"
+                          placeholder="Enter model name"
+                          value={getBotConfig(p.sessionId).customModel}
+                          onChange={(e) => updateLocalBotConfig(p.sessionId, { customModel: e.target.value })}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-400 focus:outline-none focus:border-indigo-500/50"
+                        />
+                      )}
+                      {/* Save button */}
+                      <button
+                        onClick={() => handleSavePreferences(p.sessionId)}
+                        disabled={saveStatus === 'saving'}
+                        className="w-full text-xs py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-indigo-500/50 transition-colors disabled:opacity-50"
+                      >
+                        {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved ✓' : user ? 'Save to account' : 'Save locally'}
+                      </button>
                     </div>
                   )}
                 </li>

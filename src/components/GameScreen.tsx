@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "../store";
-import { Check, X, Crown, Users, Target, ShieldAlert, LogOut, History, Eye, Shield, Skull, MessageSquare, Bot } from "lucide-react";
+import { Check, X, Crown, Users, Target, ShieldAlert, LogOut, History, Eye, Shield, Skull, MessageSquare, Bot, Sparkles } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
@@ -226,6 +226,9 @@ export default function GameScreen() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {p.isBot && p.hasApiKey && (
+                          <Sparkles size={13} className="text-indigo-400" />
+                        )}
                         {isCurrentLeader && (
                           <Crown size={16} className="text-amber-500" />
                         )}

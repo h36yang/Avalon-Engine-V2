@@ -23,6 +23,7 @@ export interface Player {
   isHost: boolean;
   isBot?: boolean;
   apiKey?: string;
+  hasApiKey?: boolean;
   provider?: 'gemini' | 'openrouter' | 'groq' | 'nvidia';
   model?: string;
   difficulty?: 'normal' | 'hard';
@@ -113,6 +114,7 @@ interface GameState {
   connect: (roomId: string, name: string) => void;
   updateSettings: (settings: Partial<Room["settings"]>) => void;
   updateBotApiKey: (botSessionId: string, apiKey: string, provider?: 'gemini' | 'openrouter' | 'groq' | 'nvidia', model?: string) => void;
+  testBotApiKey: (provider: 'gemini' | 'openrouter' | 'groq' | 'nvidia', apiKey: string, model?: string) => Promise<{ success: boolean; message: string }>;
   addBot: (difficulty?: 'normal' | 'hard') => void;
   startGame: (requestedRoles?: Record<string, Role>) => void;
   leaveRoom: () => void;
@@ -234,6 +236,18 @@ export const useGameStore = create<GameState>()(
       updateBotApiKey: (botSessionId, apiKey, provider, model) => {
         const { socket, roomId } = get();
         socket?.emit("update_bot_api_key", { roomId, targetSessionId: botSessionId, apiKey, provider, model });
+      },
+
+      testBotApiKey: (provider, apiKey, model) => {
+        const { socket } = get();
+        return new Promise((resolve) => {
+          if (!socket) { resolve({ success: false, message: 'Not connected' }); return; }
+          const timer = setTimeout(() => resolve({ success: false, message: 'Timeout' }), 20000);
+          socket.emit('test_api_key', { provider, apiKey, model }, (result: { success: boolean; message: string }) => {
+            clearTimeout(timer);
+            resolve(result);
+          });
+        });
       },
 
       addBot: (difficulty?: 'normal' | 'hard') => {

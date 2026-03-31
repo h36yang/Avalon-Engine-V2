@@ -369,8 +369,23 @@ ${conditionalRoleInstructionClause}` : '');
       room.gameState.botOpinions.push({ botId: bot.sessionId, text });
       broadcastRoom(room, io);
     } catch (err: any) {
-      console.error(`Error generating opinion for ${bot.name}:`, err?.message || err);
-      room.gameState.botOpinions.push({ botId: bot.sessionId, text: 'Failed to generate opinion. API error.', isError: true });
+      const raw = err?.message || String(err);
+      console.error(`Error generating opinion for ${bot.name}:`, raw);
+      const httpMatch = raw.match(/HTTP (\d+)/);
+      let userMsg: string;
+      if (httpMatch) {
+        const s = parseInt(httpMatch[1]);
+        if (s === 401) userMsg = 'API error: Invalid API key (401)';
+        else if (s === 403) userMsg = 'API error: Access denied (403)';
+        else if (s === 404) userMsg = 'API error: Model not found (404)';
+        else if (s === 429) userMsg = 'API error: Rate limited (429)';
+        else userMsg = `API error: HTTP ${s}`;
+      } else if (/timeout/i.test(raw)) {
+        userMsg = 'API error: Connection timeout';
+      } else {
+        userMsg = 'API error: ' + raw.slice(0, 120);
+      }
+      room.gameState.botOpinions.push({ botId: bot.sessionId, text: userMsg, isError: true });
       broadcastRoom(room, io);
     }
   });
@@ -1356,6 +1371,7 @@ function setupSocket(io: Server) {
             const bot = room.players.find(p => p.sessionId === targetSessionId && p.isBot);
             if (bot) {
               bot.apiKey = apiKey;
+              bot.hasApiKey = !!apiKey;
               bot.provider = provider ?? 'gemini';
               bot.model = model || undefined;
               touchRoom(room);
@@ -1365,6 +1381,46 @@ function setupSocket(io: Server) {
         }
       } catch (err) {
         console.error('Error in update_bot_api_key:', err);
+      }
+    });
+
+    socket.on('test_api_key', async ({ provider, apiKey, model }, callback) => {
+      try {
+        const resolvedModel = model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
+        let reply: string;
+        if (provider === 'gemini') {
+          const genAI = new GoogleGenAI({ apiKey });
+          const response = await genAI.models.generateContent({
+            model: resolvedModel,
+            contents: 'Say "ok" in one word.',
+          });
+          reply = response.text || '';
+        } else {
+          const BASE_URLS: Record<string, string> = {
+            openrouter: 'https://openrouter.ai/api/v1',
+            groq: 'https://api.groq.com/openai/v1',
+            nvidia: 'https://integrate.api.nvidia.com/v1',
+          };
+          reply = await callOpenAICompatible(BASE_URLS[provider], apiKey, resolvedModel, 'You are a test assistant.', 'Say "ok" in one word.');
+        }
+        callback({ success: true, message: `✅ Connected! Reply: "${reply.slice(0, 40)}"` });
+      } catch (err: any) {
+        const raw = err?.message || String(err);
+        const httpMatch = raw.match(/HTTP (\d+)/);
+        let msg: string;
+        if (httpMatch) {
+          const s = parseInt(httpMatch[1]);
+          if (s === 401) msg = 'Invalid API key (401)';
+          else if (s === 403) msg = 'Access denied (403)';
+          else if (s === 404) msg = 'Model not found (404)';
+          else if (s === 429) msg = 'Rate limited (429)';
+          else msg = `HTTP ${s}`;
+        } else if (/timeout/i.test(raw)) {
+          msg = 'Connection timeout';
+        } else {
+          msg = raw.slice(0, 100);
+        }
+        callback({ success: false, message: `❌ ${msg}` });
       }
     });
 

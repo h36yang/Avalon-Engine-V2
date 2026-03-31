@@ -47,9 +47,6 @@ export default function LobbyScreen() {
   const endGame = useGameStore((state) => state.endGame);
   const devRequestedRole = useGameStore((state) => state.devRequestedRole);
   const updateBotApiKey = useGameStore((state) => state.updateBotApiKey);
-  const saveBotPreferences = useGameStore((state) => state.saveBotPreferences);
-  const loadBotPreferences = useGameStore((state) => state.loadBotPreferences);
-  const user = useGameStore((state) => state.user);
   const { t } = useTranslation();
 
   const [botConfigs, setBotConfigs] = useState<Record<string, {
@@ -57,22 +54,7 @@ export default function LobbyScreen() {
     apiKey: string;
     model: string;
     customModel: string;
-  }>>(() => {
-    const saved = loadBotPreferences();
-    if (!saved) return {};
-    const presets = PROVIDER_MODELS[saved.provider as Provider]?.map(m => m.value) ?? [];
-    const isPreset = presets.includes(saved.model);
-    const entry = {
-      provider: saved.provider as Provider,
-      apiKey: saved.apiKey,
-      model: isPreset ? saved.model : (saved.model ? 'custom' : PROVIDER_MODELS[saved.provider as Provider][0].value),
-      customModel: isPreset ? '' : saved.model,
-    };
-    return Object.fromEntries(
-      (room?.players ?? []).filter(p => p.isBot).map(p => [p.sessionId, entry])
-    );
-  });
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  }>>({});
 
   if (!room) return null;
 
@@ -94,14 +76,6 @@ export default function LobbyScreen() {
     }
     setBotConfigs(prev => ({ ...prev, [sid]: next }));
     updateBotApiKey(sid, next.apiKey, next.provider, resolveModel(next) || undefined);
-  };
-
-  const handleSavePreferences = async (sid: string) => {
-    const cfg = getBotConfig(sid);
-    setSaveStatus('saving');
-    await saveBotPreferences(cfg.provider, cfg.apiKey, resolveModel(cfg));
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
   };
 
   const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
@@ -265,14 +239,6 @@ export default function LobbyScreen() {
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-400 focus:outline-none focus:border-indigo-500/50"
                         />
                       )}
-                      {/* Save button */}
-                      <button
-                        onClick={() => handleSavePreferences(p.sessionId)}
-                        disabled={saveStatus === 'saving'}
-                        className="w-full text-xs py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-indigo-500/50 transition-colors disabled:opacity-50"
-                      >
-                        {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved ✓' : user ? 'Save to account' : 'Save locally'}
-                      </button>
                     </div>
                   )}
                 </li>

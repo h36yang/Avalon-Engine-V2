@@ -113,8 +113,6 @@ interface GameState {
   connect: (roomId: string, name: string) => void;
   updateSettings: (settings: Partial<Room["settings"]>) => void;
   updateBotApiKey: (botSessionId: string, apiKey: string, provider?: 'gemini' | 'openrouter' | 'groq' | 'nvidia', model?: string) => void;
-  saveBotPreferences: (provider: 'gemini' | 'openrouter' | 'groq' | 'nvidia', apiKey: string, model: string) => Promise<void>;
-  loadBotPreferences: () => { provider: 'gemini' | 'openrouter' | 'groq' | 'nvidia'; apiKey: string; model: string } | null;
   addBot: (difficulty?: 'normal' | 'hard') => void;
   startGame: (requestedRoles?: Record<string, Role>) => void;
   leaveRoom: () => void;
@@ -236,34 +234,6 @@ export const useGameStore = create<GameState>()(
       updateBotApiKey: (botSessionId, apiKey, provider, model) => {
         const { socket, roomId } = get();
         socket?.emit("update_bot_api_key", { roomId, targetSessionId: botSessionId, apiKey, provider, model });
-      },
-
-      saveBotPreferences: async (provider, apiKey, model) => {
-        const prefs = { ai_provider: provider, ai_api_key: apiKey, ai_model: model };
-        const { user } = get();
-        if (user) {
-          const { supabase } = await import('./utils/supabase');
-          await supabase.auth.updateUser({ data: prefs });
-        } else {
-          localStorage.setItem('bot_preferences', JSON.stringify(prefs));
-        }
-      },
-
-      loadBotPreferences: () => {
-        const { user } = get();
-        let prefs: any = null;
-        if ((user as any)?.user_metadata?.ai_provider) {
-          prefs = (user as any).user_metadata;
-        } else {
-          const stored = localStorage.getItem('bot_preferences');
-          if (stored) { try { prefs = JSON.parse(stored); } catch { /* ignore */ } }
-        }
-        if (!prefs) return null;
-        return {
-          provider: prefs.ai_provider ?? 'gemini',
-          apiKey: prefs.ai_api_key ?? '',
-          model: prefs.ai_model ?? '',
-        };
       },
 
       addBot: (difficulty?: 'normal' | 'hard') => {

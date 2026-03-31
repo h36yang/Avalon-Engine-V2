@@ -1,5 +1,5 @@
 import { useGameStore, Role } from "../store";
-import { Users, Settings, Play, LogOut, Bot, UserMinus, Plus, ChevronDown } from "lucide-react";
+import { Users, Settings, Play, LogOut, Bot, UserMinus, Plus, ChevronDown, Sparkles } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { useState } from "react";
 
@@ -47,6 +47,7 @@ export default function LobbyScreen() {
   const endGame = useGameStore((state) => state.endGame);
   const devRequestedRole = useGameStore((state) => state.devRequestedRole);
   const updateBotApiKey = useGameStore((state) => state.updateBotApiKey);
+  const testBotApiKey = useGameStore((state) => state.testBotApiKey);
   const { t } = useTranslation();
 
   const [botConfigs, setBotConfigs] = useState<Record<string, {
@@ -55,6 +56,7 @@ export default function LobbyScreen() {
     model: string;
     customModel: string;
   }>>({});
+  const [testStatus, setTestStatus] = useState<Record<string, string>>({});
 
   if (!room) return null;
 
@@ -76,6 +78,16 @@ export default function LobbyScreen() {
     }
     setBotConfigs(prev => ({ ...prev, [sid]: next }));
     updateBotApiKey(sid, next.apiKey, next.provider, resolveModel(next) || undefined);
+    // Clear test result when config changes
+    setTestStatus(prev => ({ ...prev, [sid]: '' }));
+  };
+
+  const handleTestApiKey = async (sid: string) => {
+    const cfg = getBotConfig(sid);
+    if (!cfg.apiKey) return;
+    setTestStatus(prev => ({ ...prev, [sid]: 'testing' }));
+    const result = await testBotApiKey(cfg.provider, cfg.apiKey, resolveModel(cfg) || undefined);
+    setTestStatus(prev => ({ ...prev, [sid]: result.message }));
   };
 
   const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
@@ -170,6 +182,7 @@ export default function LobbyScreen() {
                     <span className="font-medium flex items-center gap-2">
                       {p.name} {p.sessionId === sessionId && "(You)"}
                       {p.isBot && <Bot size={18} className={p.difficulty === "hard" ? "text-amber-400" : "text-zinc-400"} />}
+                      {p.isBot && p.hasApiKey && <Sparkles size={14} className="text-indigo-400" />}
                     </span>
                     <div className="flex items-center gap-2">
                       {p.isHost && (
@@ -218,6 +231,19 @@ export default function LobbyScreen() {
                         onChange={(e) => updateLocalBotConfig(p.sessionId, { apiKey: e.target.value })}
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
                       />
+                      {/* Test key button */}
+                      <button
+                        onClick={() => handleTestApiKey(p.sessionId)}
+                        disabled={!getBotConfig(p.sessionId).apiKey || testStatus[p.sessionId] === 'testing'}
+                        className="w-full text-xs py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-indigo-500/50 transition-colors disabled:opacity-40"
+                      >
+                        {testStatus[p.sessionId] === 'testing' ? 'Testing...' : 'Test Key'}
+                      </button>
+                      {testStatus[p.sessionId] && testStatus[p.sessionId] !== 'testing' && (
+                        <div className={`text-xs px-2 py-1 rounded-lg ${String(testStatus[p.sessionId]).startsWith('✅') ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                          {testStatus[p.sessionId]}
+                        </div>
+                      )}
                       {/* Model selector */}
                       <select
                         value={getBotConfig(p.sessionId).model}

@@ -267,7 +267,7 @@ function triggerBotOpinions(room: Room, io: Server) {
 
       let conditionalRoleInstructionClause: string | undefined;
       if (bot.role === 'Merlin') {
-        conditionalRoleInstructionClause = `Only comment on other players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
+        conditionalRoleInstructionClause = `You need to protect your secret identity. Only comment on other players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
       } else if (bot.role === 'Percival') {
         conditionalRoleInstructionClause = `You need to protect Merlin's identity. Only comment on your Merlin candidates when you have strong evidence based on the quests and team vote history. Otherwise, comment on other players.
 

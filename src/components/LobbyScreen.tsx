@@ -29,9 +29,9 @@ const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
   ],
   nvidia: [
     { label: 'Llama 3.3 70B Instruct', value: 'meta/llama-3.3-70b-instruct' },
-    { label: 'Nemotron 70B Instruct', value: 'nvidia/llama-3.1-nemotron-70b-instruct' },
-    { label: 'DeepSeek R1', value: 'deepseek-ai/deepseek-r1' },
-    { label: 'MiniMax-01', value: 'minimax/minimax-01' },
+    { label: 'Nemotron Super 49B', value: 'nvidia/llama-3.3-nemotron-super-49b-v1.5' },
+    { label: 'DeepSeek R1 (0528)', value: 'deepseek-ai/deepseek-r1-0528' },
+    { label: 'MiniMax M2.5', value: 'minimaxai/minimax-m2.5' },
     { label: 'Mixtral 8x7B Instruct', value: 'mistralai/mixtral-8x7b-instruct-v0.1' },
   ],
 };

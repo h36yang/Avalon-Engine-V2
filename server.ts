@@ -1594,8 +1594,18 @@ function handleBotActions(room: Room, io: Server) {
   }
 }
 
-let nextBotIndex = 1;
-let nextAIIndex = 1;
+function getNextBotName(room: Room, isAI: boolean): string {
+  const prefix = isAI ? 'AI' : 'Bot';
+  const existing = new Set(
+    room.players
+      .filter(p => p.isBot && p.name.startsWith(prefix + ' '))
+      .map(p => parseInt(p.name.slice(prefix.length + 1), 10))
+      .filter(n => !isNaN(n))
+  );
+  let next = 1;
+  while (existing.has(next)) next++;
+  return `${prefix} ${next}`;
+}
 
 function setupSocket(io: Server) {
   // Periodic idle room checker (runs every 60 seconds)
@@ -1723,7 +1733,7 @@ function setupSocket(io: Server) {
           const newBot: Player = {
             id: botId,
             sessionId: botId,
-            name: isAI ? `AI ${nextAIIndex++}` : `Bot ${nextBotIndex++}`,
+            name: getNextBotName(room, isAI),
             role: null,
             isConnected: true,
             isBot: true,

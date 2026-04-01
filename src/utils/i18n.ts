@@ -30,8 +30,10 @@ export const translations = {
     'Add Bot': 'Add Bot',
     'Add Normal Bot': '+ Normal Bot',
     'Add Hard Bot': '+ Hard Bot',
+    'Add AI Bot': '+ AI Agent',
     'Normal Bot': 'Normal Bot',
     'Hard Bot': 'Hard Bot',
+    'AI Bot': 'AI Agent',
     'Leave Room': 'Leave Room',
     'End Game': 'End Game',
     'Kick': 'Kick',
@@ -151,6 +153,9 @@ export const translations = {
     'Team Votes': 'Team Votes',
     'Quest Votes': 'Quest Votes',
     'failed the quest': 'failed the quest',
+    'AI Mind Log': 'AI Mind Log',
+    'Copy Log': 'Copy Log',
+    'Copied!': 'Copied!',
   },
   zh: {
     // Roles
@@ -181,8 +186,10 @@ export const translations = {
     'Add Bot': '添加机器人',
     'Add Normal Bot': '+ 普通机器人',
     'Add Hard Bot': '+ 困难机器人',
+    'Add AI Bot': '+ 智能体',
     'Normal Bot': '普通机器人',
     'Hard Bot': '困难机器人',
+    'AI Bot': '智能体',
     'Leave Room': '离开房间',
     'End Game': '结束游戏',
     'Kick': '踢出',
@@ -302,6 +309,9 @@ export const translations = {
     'Team Votes': '组队投票',
     'Quest Votes': '任务投票',
     'failed the quest': '破坏了任务',
+    'AI Mind Log': 'AI 思维日志',
+    'Copy Log': '复制日志',
+    'Copied!': '已复制！',
   }
 };
 

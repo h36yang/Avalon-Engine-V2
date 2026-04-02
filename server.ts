@@ -16,6 +16,7 @@ const __projectDir = typeof __dirname !== 'undefined' ? __dirname : dirname(file
 
 // Load role prompt files for AI bots
 const ROLE_PROMPTS: Record<string, string> = {};
+let COMMON_STRATEGY_PROMPT = '';
 const ROLE_PROMPT_FILES: Record<string, string> = {
   'Merlin': 'merlin.md',
   'Percival': 'percival.md',
@@ -26,6 +27,12 @@ const ROLE_PROMPT_FILES: Record<string, string> = {
   'Oberon': 'oberon.md',
   'Minion': 'minion.md',
 };
+try {
+  COMMON_STRATEGY_PROMPT = readFileSync(join(__projectDir, 'server', 'prompts', 'common_strategy.md'), 'utf-8');
+} catch {
+  console.warn('Warning: Could not load shared strategy prompt from server/prompts/common_strategy.md');
+  COMMON_STRATEGY_PROMPT = '';
+}
 for (const [role, file] of Object.entries(ROLE_PROMPT_FILES)) {
   try {
     ROLE_PROMPTS[role] = readFileSync(join(__projectDir, 'server', 'prompts', file), 'utf-8');
@@ -33,6 +40,14 @@ for (const [role, file] of Object.entries(ROLE_PROMPT_FILES)) {
     console.warn(`Warning: Could not load prompt for ${role} from server/prompts/${file}`);
     ROLE_PROMPTS[role] = `You are playing Avalon as ${role}. Play strategically.`;
   }
+}
+
+function getBotSystemPrompt(role: string): string {
+  const rolePrompt = ROLE_PROMPTS[role] || '';
+  if (COMMON_STRATEGY_PROMPT && rolePrompt) {
+    return `${COMMON_STRATEGY_PROMPT}\n\n${rolePrompt}`;
+  }
+  return COMMON_STRATEGY_PROMPT || rolePrompt;
 }
 
 const PORT = 3000;
@@ -361,8 +376,8 @@ ${encode(getVoteHistory(room))}
 
 The current leader forming the team is "${leaderName}".`;
 
-      const rolePrompt = ROLE_PROMPTS[bot.role as string] || '';
-      const systemInstruction = `${rolePrompt}
+      const combinedRolePrompt = getBotSystemPrompt(bot.role as string);
+      const systemInstruction = `${combinedRolePrompt}
 
 你正在以 "${bot.name}" 的身份发言，你的秘密角色是 ${bot.role}（${isEvil ? '邪恶阵营' : '好人阵营'}）。
 
@@ -990,7 +1005,7 @@ function addMindLog(room: Room, botId: string, phase: string, prompt: string, re
 }
 
 async function aiTeamBuilding(room: Room, bot: Player, teamSize: number, io: Server): Promise<string[]> {
-  const rolePrompt = ROLE_PROMPTS[bot.role as string] || '';
+  const rolePrompt = getBotSystemPrompt(bot.role as string);
   const gameContext = buildAIGameContext(room, bot);
   const playerNames = room.players.map(p => p.name);
 
@@ -1054,7 +1069,7 @@ async function aiTeamBuilding(room: Room, bot: Player, teamSize: number, io: Ser
 }
 
 async function aiTeamVote(room: Room, bot: Player): Promise<boolean> {
-  const rolePrompt = ROLE_PROMPTS[bot.role as string] || '';
+  const rolePrompt = getBotSystemPrompt(bot.role as string);
   const gameContext = buildAIGameContext(room, bot);
   const leaderName = room.players[room.gameState.leaderIndex]?.name;
   const teamNames = room.gameState.proposedTeam.map(id => room.players.find(p => p.sessionId === id)?.name).join(', ');
@@ -1088,7 +1103,7 @@ async function aiTeamVote(room: Room, bot: Player): Promise<boolean> {
 }
 
 async function aiQuestVote(room: Room, bot: Player): Promise<boolean> {
-  const rolePrompt = ROLE_PROMPTS[bot.role as string] || '';
+  const rolePrompt = getBotSystemPrompt(bot.role as string);
   const gameContext = buildAIGameContext(room, bot);
   const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
   const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
@@ -1130,7 +1145,7 @@ ${isEvil ? '作为邪恶阵营，你可以选择投失败来破坏任务，也�
 }
 
 async function aiAssassinate(room: Room, bot: Player): Promise<string> {
-  const rolePrompt = ROLE_PROMPTS[bot.role as string] || '';
+  const rolePrompt = getBotSystemPrompt(bot.role as string);
   const gameContext = buildAIGameContext(room, bot);
   const goodPlayers = room.players.filter(p => !['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(p.role as string));
 

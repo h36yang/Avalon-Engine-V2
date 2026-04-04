@@ -977,7 +977,7 @@ function buildAIGameContext(room: Room, bot: Player): string {
 async function callAIForDecision(bot: Player, systemPrompt: string, userPrompt: string): Promise<string> {
   const provider = bot.provider ?? 'gemini';
   const model = bot.model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
-  const AI_TIMEOUT_MS = 30000;
+  const AI_TIMEOUT_MS = 60000;
 
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error(`AI decision timeout after ${AI_TIMEOUT_MS}ms`)), AI_TIMEOUT_MS)

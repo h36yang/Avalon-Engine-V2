@@ -977,26 +977,33 @@ function buildAIGameContext(room: Room, bot: Player): string {
 async function callAIForDecision(bot: Player, systemPrompt: string, userPrompt: string): Promise<string> {
   const provider = bot.provider ?? 'gemini';
   const model = bot.model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
+  const AI_TIMEOUT_MS = 30000;
 
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`AI decision timeout after ${AI_TIMEOUT_MS}ms`)), AI_TIMEOUT_MS)
+  );
+
+  let apiPromise: Promise<string>;
   if (provider === 'gemini') {
     const genAI = new GoogleGenAI({ apiKey: bot.apiKey! });
-    const response = await genAI.models.generateContent({
+    apiPromise = genAI.models.generateContent({
       model,
       contents: userPrompt,
       config: {
         systemInstruction: systemPrompt,
         thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
       },
-    });
-    return response.text || '';
+    }).then(response => response.text || '');
   } else {
     const BASE_URLS: Record<string, string> = {
       openrouter: 'https://openrouter.ai/api/v1',
       groq: 'https://api.groq.com/openai/v1',
       nvidia: 'https://integrate.api.nvidia.com/v1',
     };
-    return await callOpenAICompatible(BASE_URLS[provider], bot.apiKey!, model, systemPrompt, userPrompt);
+    apiPromise = callOpenAICompatible(BASE_URLS[provider], bot.apiKey!, model, systemPrompt, userPrompt);
   }
+
+  return Promise.race([apiPromise, timeoutPromise]);
 }
 
 function addMindLog(room: Room, botId: string, phase: string, prompt: string, response: string, decision: string) {

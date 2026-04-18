@@ -62,6 +62,15 @@ export default function JoinScreen() {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/85 to-zinc-950/95" />
 
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 bg-zinc-900/50 hover:bg-red-950/40 border border-zinc-800/50 hover:border-red-900/50 text-zinc-400 hover:text-red-400 rounded-xl backdrop-blur-md transition-all shadow-lg"
+        title={t("Sign Out")}
+      >
+        <LogOut size={18} />
+        <span className="text-sm font-medium hidden sm:block">{t("Sign Out")}</span>
+      </button>
+
       <div className="w-full max-w-md relative z-10">
 
         {/* User Profile Card */}
@@ -79,13 +88,6 @@ export default function JoinScreen() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition-colors"
-              title="Sign Out"
-            >
-              <LogOut size={18} />
-            </button>
           </div>
         )}
 

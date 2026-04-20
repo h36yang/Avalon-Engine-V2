@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
 import VoteHistoryDetails from "./VoteHistoryDetails";
+import { EVIL_ROLES, Role } from "../utils/gameLogic";
 
 export default function AssassinScreen() {
   const room = useGameStore((state) => state.room);
@@ -18,7 +19,7 @@ export default function AssassinScreen() {
 
   const me = room.players.find((p) => p.sessionId === sessionId);
   const assassinPlayer = room.players.find((p) => p.role === "Assassin");
-  const isEvil = me ? ["Assassin", "Morgana", "Mordred", "Minion", "Oberon"].includes(me.role as string) : false;
+  const isEvil = me ? EVIL_ROLES.has(me.role as Role) : false;
 
   const canAssassinate = me?.role === "Assassin" || (isEvil && assassinPlayer?.isBot);
 

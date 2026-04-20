@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
 import VoteHistoryDetails from "./VoteHistoryDetails";
+import { EVIL_ROLES, Role } from "../utils/gameLogic";
 
 const BOT_LOADING_WORDS = [
   "Scheming", "Pondering", "Napping", "Caffeinating",
@@ -43,13 +44,7 @@ export default function GameScreen() {
   const isLeader = players[gameState.leaderIndex].sessionId === sessionId;
   const me = players.find((p) => p.sessionId === sessionId);
 
-  const isEvil = me ? [
-    "Assassin",
-    "Morgana",
-    "Mordred",
-    "Minion",
-    "Oberon",
-  ].includes(me.role as string) : false;
+  const isEvil = me ? EVIL_ROLES.has(me.role as Role) : false;
 
   let info: string[] = [];
   if (me?.role === "Merlin") {
@@ -403,19 +398,11 @@ export default function GameScreen() {
                 <button
                   onClick={() => voteQuest(false)}
                   disabled={
-                    ![
-                      "Assassin",
-                      "Morgana",
-                      "Mordred",
-                      "Minion",
-                      "Oberon",
-                    ].includes(me?.role as string)
+                    !EVIL_ROLES.has(me?.role as Role)
                   }
                   className={cn(
                     "py-4 rounded-xl font-medium border transition-colors flex items-center justify-center gap-2",
-                    ["Assassin", "Morgana", "Mordred", "Minion", "Oberon"].includes(
-                      me?.role as string,
-                    )
+                    EVIL_ROLES.has(me?.role as Role)
                       ? "bg-red-950/30 border-red-500/50 text-red-400 hover:bg-red-900/40"
                       : "bg-zinc-900 border-zinc-800 text-zinc-600 cursor-not-allowed",
                   )}

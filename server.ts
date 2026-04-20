@@ -5,7 +5,7 @@ import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { encode } from '@toon-format/toon';
-import { Role, Player, getQuestConfig, assignRoles } from './src/utils/gameLogic';
+import { Role, Player, getQuestConfig, assignRoles, EVIL_ROLES } from './src/utils/gameLogic';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -272,7 +272,7 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
     const targetRole = safeP.role as string | null;
     if (!targetRole) return { ...safeP, role: null };
 
-    const isTargetEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(targetRole);
+    const isTargetEvil = EVIL_ROLES.has(targetRole as Role);
 
     // Merlin sees all evil EXCEPT Mordred
     if (viewerRole === 'Merlin' && isTargetEvil && targetRole !== 'Mordred') {
@@ -343,7 +343,7 @@ function triggerBotOpinions(room: Room, io: Server) {
   console.log('Triggering bot opinions...');
   botsWithKeys.forEach(async (bot) => {
     try {
-      const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+      const isEvil = EVIL_ROLES.has(bot.role as Role);
 
       const memory = room.gameState.botMemories[bot.sessionId];
       const leaderName = room.players[room.gameState.leaderIndex].name;
@@ -522,7 +522,7 @@ function initializeBotMemories(room: Room) {
       votePatterns: {}
     };
 
-    const isBotEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+    const isBotEvil = EVIL_ROLES.has(bot.role as Role);
     let merlinCandidateA: string | null = null;
     let merlinCandidateB: string | null = null;
 
@@ -545,7 +545,7 @@ function initializeBotMemories(room: Room) {
 
       const botRole = bot.role as Role;
       const targetRole = p.role as Role;
-      const isTargetEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(targetRole);
+      const isTargetEvil = EVIL_ROLES.has(targetRole as Role);
 
       if (botRole === 'Merlin') {
         // Merlin knows all evil except Mordred
@@ -613,7 +613,7 @@ function checkTeamVotes(room: Room, io: Server) {
 
     room.players.filter(p => p.isBot).forEach(bot => {
       const memory = room.gameState.botMemories[bot.sessionId];
-      const isBotEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+      const isBotEvil = EVIL_ROLES.has(bot.role as Role);
 
       const teamHadKnownEvil = room.gameState.proposedTeam.some(id => memory.knownRoles[id] === 'Evil' || (isBotEvil && id === bot.sessionId));
 
@@ -716,7 +716,7 @@ function recordGameStats(room: Room) {
   room.players.forEach(player => {
     if (player.isBot || !player.userId) return;
 
-    const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(player.role as string);
+    const isEvil = EVIL_ROLES.has(player.role as Role);
     const isWinner = (room.gameState.winner === 'evil' && isEvil) || (room.gameState.winner === 'good' && !isEvil);
 
     updatePlayerStats(player.userId, isWinner);
@@ -746,7 +746,7 @@ function checkQuestVotes(room: Room, io: Server) {
 
     room.players.filter(p => p.isBot).forEach(bot => {
       const memory = room.gameState.botMemories[bot.sessionId];
-      const isBotEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+      const isBotEvil = EVIL_ROLES.has(bot.role as Role);
 
       if (!isBotEvil) {
         // Good bots learn from quest results
@@ -919,7 +919,7 @@ function applyQuestResult(room: Room, io: Server) {
 
 function buildAIGameContext(room: Room, bot: Player): string {
   const memory = room.gameState.botMemories[bot.sessionId];
-  const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+  const isEvil = EVIL_ROLES.has(bot.role as Role);
 
   let context = `你是 "${bot.name}"，你的秘密角色是 ${bot.role}（${isEvil ? '邪恶阵营' : '好人阵营'}）。\n\n`;
 
@@ -1112,7 +1112,7 @@ async function aiTeamVote(room: Room, bot: Player): Promise<boolean> {
 async function aiQuestVote(room: Room, bot: Player): Promise<boolean> {
   const rolePrompt = getBotSystemPrompt(bot.role as string);
   const gameContext = buildAIGameContext(room, bot);
-  const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+  const isEvil = EVIL_ROLES.has(bot.role as Role);
   const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
   const teamNames = room.gameState.proposedTeam.map(id => room.players.find(p => p.sessionId === id)?.name).join(', ');
 
@@ -1154,7 +1154,7 @@ ${isEvil ? '作为邪恶阵营，你可以选择投失败来破坏任务，也�
 async function aiAssassinate(room: Room, bot: Player): Promise<string> {
   const rolePrompt = getBotSystemPrompt(bot.role as string);
   const gameContext = buildAIGameContext(room, bot);
-  const goodPlayers = room.players.filter(p => !['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(p.role as string));
+  const goodPlayers = room.players.filter(p => !EVIL_ROLES.has(p.role as Role));
 
   const userPrompt = `${gameContext}
 
@@ -1232,7 +1232,7 @@ function handleBotActions(room: Room, io: Server) {
           return trustB - trustA;
         });
 
-        const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(leader.role as string);
+        const isEvil = EVIL_ROLES.has(leader.role as Role);
         let team: string[] = [];
 
         if (isEvil) {
@@ -1345,37 +1345,56 @@ function handleBotActions(room: Room, io: Server) {
     if (ruleBots.length > 0) {
       setTimeout(() => {
         if (room.status !== 'team_voting') return;
+
+        const goodPlayersCount = room.players.filter(p => !EVIL_ROLES.has(p.role!)).length;
+        const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
+        const proposedTeam = room.gameState.proposedTeam;
+
         ruleBots.forEach(bot => {
           const memory = room.gameState.botMemories[bot.sessionId];
-          const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
-          const proposedTeam = room.gameState.proposedTeam;
-          const difficulty = room.settings.botDifficulty || 'normal';
+          const difficulty = bot.difficulty || 'normal';
+          const isEvil = EVIL_ROLES.has(bot.role!);
+          const isBotInProposedTeam = proposedTeam.includes(bot.sessionId);
+
+          if (room.gameState.voteTrack === 4) {
+            // For all players, forced to approve on last track to avoid losing
+            room.gameState.teamVotes[bot.sessionId] = true;
+            return;
+          }
 
           let approve = false;
 
+          // Evil logic: Approve if team has evil, reject if all good
           if (isEvil) {
-            // Evil logic: Approve if team has evil, reject if all good (unless it's vote 5)
             const hasEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil' || id === bot.sessionId);
             if (hasEvil) {
-              approve = true;
-            } else if (room.gameState.voteTrack === 4) {
-              // Forced to approve on last track to avoid losing
               approve = true;
             } else {
               // Sometimes randomly approve all-good teams to blend in
               approve = Math.random() > 0.8;
             }
-          } else if (bot.role === 'Merlin') {
-            // Merlin voting logic: Usually reject evil, but occasionally approve to hide identity
+
+            room.gameState.teamVotes[bot.sessionId] = approve;
+            return;
+          }
+
+          // Good logic
+          if (proposedTeam.length === goodPlayersCount
+            && !currentQuest.requiresTwoFails
+            && !isBotInProposedTeam) {
+            // Always reject a team that requires all good players to succeed, does not require 2 fails, and does not have itself.
+            room.gameState.teamVotes[bot.sessionId] = false;
+            return;
+          }
+
+          if (bot.role === 'Merlin') {
+            // Good logic (Merlin): Usually reject evil, but occasionally approve to hide identity
             const hasKnownEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil');
             const merlinIsProposer = room.players[room.gameState.leaderIndex].sessionId === bot.sessionId;
 
             if (hasKnownEvil) {
               if (merlinIsProposer && room.gameState.currentQuestIndex === 0) {
                 // Merlin deliberately baited this team — vote YES to stay consistent with the proposal
-                approve = true;
-              } else if (room.gameState.voteTrack === 4) {
-                // Forced to approve on last track to avoid losing
                 approve = true;
               } else {
                 // Reject, but with some noise on later quests to avoid a perfect rejection pattern
@@ -1402,7 +1421,7 @@ function handleBotActions(room: Room, io: Server) {
             } else {
               const avgTrust = proposedTeam.reduce((sum, id) => sum + (memory.trustScores[id] || 50), 0) / proposedTeam.length;
 
-              let threshold = proposedTeam.includes(bot.sessionId) ? 45 : (room.gameState.currentQuestIndex < 2 ? 50 : 55);
+              let threshold = isBotInProposedTeam ? 45 : (room.gameState.currentQuestIndex < 2 ? 50 : 55);
 
               if (difficulty === 'hard') {
                 // Hard Good bots are fiercely skeptical of people who fail quests
@@ -1411,20 +1430,14 @@ function handleBotActions(room: Room, io: Server) {
                   threshold += 15; // Strictly reject teams containing failed quest members
                 }
                 // Hard Good bots don't blindly approve Round 1 teams they aren't on giving leader free pass
-                if (!proposedTeam.includes(bot.sessionId) && room.gameState.currentQuestIndex === 0) {
+                if (!isBotInProposedTeam && room.gameState.currentQuestIndex === 0) {
                   threshold = 52; // Forces average trust to be > 50, requiring they've earned trust.
                 }
               }
 
               approve = avgTrust >= threshold;
-
-              // If it's the last vote track, good players might be forced to approve if trust isn't terrible
-              if (room.gameState.voteTrack === 4 && avgTrust > 30) {
-                approve = true;
-              }
             }
           }
-
           room.gameState.teamVotes[bot.sessionId] = approve;
         });
         checkTeamVotes(room, io);
@@ -1462,11 +1475,11 @@ function handleBotActions(room: Room, io: Server) {
         if (room.status !== 'quest_voting') return;
 
         // Coordinate evil votes to avoid double fails if possible
-        const evilBotsOnTeam = ruleQuestBots.filter(p => ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(p.role as string));
+        const evilBotsOnTeam = ruleQuestBots.filter(p => EVIL_ROLES.has(p.role as Role));
         const difficulty = room.settings.botDifficulty || 'normal';
 
         ruleQuestBots.forEach(bot => {
-          const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(bot.role as string);
+          const isEvil = EVIL_ROLES.has(bot.role as Role);
           if (isEvil) {
             // --- Improvement E: Strategic Evil Play (Hard mode) ---
             if (difficulty === 'hard') {
@@ -1539,7 +1552,7 @@ function handleBotActions(room: Room, io: Server) {
     }
   } else if (room.status === 'assassin') {
     const assassin = room.players.find(p => p.role === 'Assassin');
-    const evilPlayers = room.players.filter(p => ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(p.role as string));
+    const evilPlayers = room.players.filter(p => EVIL_ROLES.has(p.role as Role));
     const hasHumanEvil = evilPlayers.some(p => !p.isBot);
 
     if (assassin?.isBot && !hasHumanEvil && !room.gameState.assassinationTarget) {
@@ -1561,7 +1574,7 @@ function handleBotActions(room: Room, io: Server) {
         if (room.status !== 'assassin') return;
 
         const memory = room.gameState.botMemories[assassin.sessionId];
-        const goodPlayers = room.players.filter(p => !['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(p.role as string));
+        const goodPlayers = room.players.filter(p => !EVIL_ROLES.has(p.role as Role));
 
         // --- Improvement C: Smarter Assassin ---
         const difficulty = room.settings.botDifficulty || 'normal';
@@ -1971,7 +1984,7 @@ function setupSocket(io: Server) {
           touchRoom(room);
           const sender = room.players.find(p => p.sessionId === sessionId);
           const assassin = room.players.find(p => p.role === 'Assassin');
-          const isEvil = sender && ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(sender.role as string);
+          const isEvil = sender && EVIL_ROLES.has(sender.role as Role);
 
           const canAssassinate = sender?.role === 'Assassin' || (isEvil && assassin?.isBot);
 

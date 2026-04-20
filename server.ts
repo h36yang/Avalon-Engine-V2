@@ -180,8 +180,6 @@ interface TeamVoteHistory {
   approved: boolean;
 }
 
-type BotDifficulty = 'normal' | 'hard';
-
 interface BotMemory {
   trustScores: Record<string, number>; // sessionId -> score (0-100)
   knownRoles: Record<string, Role | 'Good' | 'Evil'>; // sessionId -> known role/alignment
@@ -211,7 +209,6 @@ interface Room {
   status: 'lobby' | 'role_reveal' | 'team_building' | 'team_voting' | 'team_vote_reveal' | 'quest_voting' | 'quest_result' | 'assassin' | 'game_over';
   settings: {
     optionalRoles: Role[];
-    botDifficulty: BotDifficulty;
   };
   gameState: {
     quests: Quest[];
@@ -511,9 +508,8 @@ function mapPercivalCandidatesToNames(room: Room, merlinLikelihood: Record<strin
 }
 
 function initializeBotMemories(room: Room) {
-  const difficulty = room.settings.botDifficulty || 'normal';
-
   room.players.filter(p => p.isBot).forEach(bot => {
+    const difficulty = bot.difficulty || 'normal';
     const memory: BotMemory = {
       trustScores: {},
       knownRoles: {},
@@ -605,13 +601,13 @@ function checkTeamVotes(room: Room, io: Server) {
       approved
     });
 
-    // --- Improvement A: Vote History Analysis ---
-    // Good bots learn who approves/rejects teams with evil. Evil bots learn who acts like Merlin.
-    const difficulty = room.settings.botDifficulty || 'normal';
-    const trustDelta = difficulty === 'hard' ? 15 : 5;
-    const suspicionDelta = difficulty === 'hard' ? 15 : 5;
-
     room.players.filter(p => p.isBot).forEach(bot => {
+      // --- Improvement A: Vote History Analysis ---
+      // Good bots learn who approves/rejects teams with evil. Evil bots learn who acts like Merlin.
+      const difficulty = bot.difficulty || 'normal';
+      const trustDelta = difficulty === 'hard' ? 15 : 5;
+      const suspicionDelta = difficulty === 'hard' ? 15 : 5;
+
       const memory = room.gameState.botMemories[bot.sessionId];
       const isBotEvil = EVIL_ROLES.has(bot.role as Role);
 
@@ -731,9 +727,6 @@ function checkQuestVotes(room: Room, io: Server) {
 
     quest.status = failed ? 'fail' : 'success';
 
-    // Update bot memories based on quest result
-    const difficulty = room.settings.botDifficulty || 'normal';
-
     // Track fail association for everyone on the team
     if (failed) {
       quest.team.forEach(memberId => {
@@ -744,7 +737,9 @@ function checkQuestVotes(room: Room, io: Server) {
       });
     }
 
+    // Update bot memories based on quest result
     room.players.filter(p => p.isBot).forEach(bot => {
+      const difficulty = bot.difficulty || 'normal';
       const memory = room.gameState.botMemories[bot.sessionId];
       const isBotEvil = EVIL_ROLES.has(bot.role as Role);
 
@@ -1221,7 +1216,7 @@ function handleBotActions(room: Room, io: Server) {
         const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
         const memory = room.gameState.botMemories[leader.sessionId];
 
-        const difficulty = room.settings.botDifficulty || 'normal';
+        const difficulty = leader.difficulty || 'normal';
 
         // Sort players by trust score descending, but also penalize for failAssociation
         const sortedPlayers = [...room.players].sort((a, b) => {
@@ -1476,9 +1471,9 @@ function handleBotActions(room: Room, io: Server) {
 
         // Coordinate evil votes to avoid double fails if possible
         const evilBotsOnTeam = ruleQuestBots.filter(p => EVIL_ROLES.has(p.role as Role));
-        const difficulty = room.settings.botDifficulty || 'normal';
 
         ruleQuestBots.forEach(bot => {
+          const difficulty = bot.difficulty || 'normal';
           const isEvil = EVIL_ROLES.has(bot.role as Role);
           if (isEvil) {
             // --- Improvement E: Strategic Evil Play (Hard mode) ---
@@ -1577,7 +1572,7 @@ function handleBotActions(room: Room, io: Server) {
         const goodPlayers = room.players.filter(p => !EVIL_ROLES.has(p.role as Role));
 
         // --- Improvement C: Smarter Assassin ---
-        const difficulty = room.settings.botDifficulty || 'normal';
+        const difficulty = assassin.difficulty || 'normal';
         let target = goodPlayers[0];
 
         if (difficulty === 'hard') {
@@ -1693,7 +1688,7 @@ function setupSocket(io: Server) {
             id: roomId,
             players: [],
             status: 'lobby',
-            settings: { optionalRoles: [], botDifficulty: 'normal' },
+            settings: { optionalRoles: [] },
             gameState: {
               quests: [],
               currentQuestIndex: 0,
@@ -1778,11 +1773,6 @@ function setupSocket(io: Server) {
           };
           console.log('Created bot:', newBot);
           room.players.push(newBot);
-
-          // Only set room-level botDifficulty for non-AI bots
-          if (!isAI) {
-            room.settings.botDifficulty = (resolvedBotClass as 'normal' | 'hard') || 'normal';
-          }
 
           touchRoom(room);
           broadcastRoom(room, io);

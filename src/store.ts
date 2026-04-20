@@ -62,7 +62,6 @@ export interface Room {
   | "game_over";
   settings: {
     optionalRoles: Role[];
-    botDifficulty?: 'normal' | 'hard';
   };
   gameState: {
     quests: Quest[];

@@ -1409,7 +1409,14 @@ function handleBotActions(room: Room, io: Server) {
             if (hasKnownEvil) {
               approve = false;
             } else {
-              const avgTrust = proposedTeam.reduce((sum, id) => sum + (memory.trustScores[id] || 50), 0) / proposedTeam.length;
+              let avgTrust = proposedTeam.reduce((sum, id) => sum + (memory.trustScores[id] || 50), 0) / proposedTeam.length;
+
+              // Reduce overall trust if team requires all good players but does not have bot itself.
+              if (proposedTeam.length === goodPlayersCount
+                && !currentQuest.requiresTwoFails
+                && !isBotInProposedTeam) {
+                avgTrust -= difficulty === 'hard' ? 25 : 15;
+              }
 
               let threshold = isBotInProposedTeam ? 45 : (room.gameState.currentQuestIndex < 2 ? 50 : 55);
 

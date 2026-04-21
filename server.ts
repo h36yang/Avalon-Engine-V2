@@ -1359,8 +1359,8 @@ function handleBotActions(room: Room, io: Server) {
 
           let approve = false;
 
-          // Evil logic: Approve if team has evil, reject if all good
           if (isEvil) {
+            // Evil logic: Approve if team has evil, reject if all good
             const hasEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil' || id === bot.sessionId);
             if (hasEvil) {
               approve = true;
@@ -1368,21 +1368,7 @@ function handleBotActions(room: Room, io: Server) {
               // Sometimes randomly approve all-good teams to blend in
               approve = Math.random() > 0.8;
             }
-
-            room.gameState.teamVotes[bot.sessionId] = approve;
-            return;
-          }
-
-          // Good logic
-          if (proposedTeam.length === goodPlayersCount
-            && !currentQuest.requiresTwoFails
-            && !isBotInProposedTeam) {
-            // Always reject a team that requires all good players to succeed, does not require 2 fails, and does not have itself.
-            room.gameState.teamVotes[bot.sessionId] = false;
-            return;
-          }
-
-          if (bot.role === 'Merlin') {
+          } else if (bot.role === 'Merlin') {
             // Good logic (Merlin): Usually reject evil, but occasionally approve to hide identity
             const hasKnownEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil');
             const merlinIsProposer = room.players[room.gameState.leaderIndex].sessionId === bot.sessionId;
@@ -1409,6 +1395,15 @@ function handleBotActions(room: Room, io: Server) {
               const { a, b, merlinLikelihood } = memory.percivalCandidates;
               if (merlinLikelihood[a] >= 65 && proposedTeam.includes(b)) hasKnownEvil = true; // b is Morgana
               if (merlinLikelihood[b] >= 65 && proposedTeam.includes(a)) hasKnownEvil = true; // a is Morgana
+              if (proposedTeam.includes(a) && proposedTeam.includes(b)) hasKnownEvil = true; // both Merlin and Morgana are in the team
+            }
+
+            // If team requires all good players but does not have good bot itself, it must contain evil.
+            if (proposedTeam.length === goodPlayersCount
+              && !currentQuest.requiresTwoFails
+              && !isBotInProposedTeam
+              && difficulty === 'hard') {
+              hasKnownEvil = true;
             }
 
             if (hasKnownEvil) {

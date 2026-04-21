@@ -1359,8 +1359,8 @@ function handleBotActions(room: Room, io: Server) {
 
           let approve = false;
 
-          // Evil logic: Approve if team has evil, reject if all good
           if (isEvil) {
+            // Evil logic: Approve if team has evil, reject if all good
             const hasEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil' || id === bot.sessionId);
             if (hasEvil) {
               approve = true;
@@ -1368,21 +1368,7 @@ function handleBotActions(room: Room, io: Server) {
               // Sometimes randomly approve all-good teams to blend in
               approve = Math.random() > 0.8;
             }
-
-            room.gameState.teamVotes[bot.sessionId] = approve;
-            return;
-          }
-
-          // Good logic
-          if (proposedTeam.length === goodPlayersCount
-            && !currentQuest.requiresTwoFails
-            && !isBotInProposedTeam) {
-            // Always reject a team that requires all good players to succeed, does not require 2 fails, and does not have itself.
-            room.gameState.teamVotes[bot.sessionId] = false;
-            return;
-          }
-
-          if (bot.role === 'Merlin') {
+          } else if (bot.role === 'Merlin') {
             // Good logic (Merlin): Usually reject evil, but occasionally approve to hide identity
             const hasKnownEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil');
             const merlinIsProposer = room.players[room.gameState.leaderIndex].sessionId === bot.sessionId;
@@ -1414,7 +1400,14 @@ function handleBotActions(room: Room, io: Server) {
             if (hasKnownEvil) {
               approve = false;
             } else {
-              const avgTrust = proposedTeam.reduce((sum, id) => sum + (memory.trustScores[id] || 50), 0) / proposedTeam.length;
+              let avgTrust = proposedTeam.reduce((sum, id) => sum + (memory.trustScores[id] || 50), 0) / proposedTeam.length;
+
+              // Reduce overall trust if team requires all good players but does not have bot itself.
+              if (proposedTeam.length === goodPlayersCount
+                && !currentQuest.requiresTwoFails
+                && !isBotInProposedTeam) {
+                avgTrust -= difficulty === 'hard' ? 25 : 15;
+              }
 
               let threshold = isBotInProposedTeam ? 45 : (room.gameState.currentQuestIndex < 2 ? 50 : 55);
 

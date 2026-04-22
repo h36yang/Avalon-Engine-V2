@@ -3,6 +3,7 @@ import { useGameStore } from "../store";
 import { Crown, Skull, Shield, RefreshCw, Check, X, ChevronDown, ChevronUp, ShieldAlert, Users, Target, Brain, Copy, CheckCheck } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
+import { EVIL_ROLES, Role } from "../utils/gameLogic";
 
 export default function GameOverScreen() {
   const room = useGameStore((state) => state.room);
@@ -23,7 +24,7 @@ export default function GameOverScreen() {
   const getPlayerRole = (sid: string) => players.find(p => p.sessionId === sid)?.role as string | null;
   const isPlayerEvil = (sid: string) => {
     const role = getPlayerRole(sid);
-    return role ? ["Assassin", "Morgana", "Mordred", "Minion", "Oberon"].includes(role) : false;
+    return role ? EVIL_ROLES.has(role as Role) : false;
   };
 
   return (
@@ -68,9 +69,7 @@ export default function GameOverScreen() {
         </h3>
         <div className="space-y-2">
           {players.map((p) => {
-            const isEvil = [
-              "Assassin", "Morgana", "Mordred", "Minion", "Oberon",
-            ].includes(p.role as string);
+            const isEvil = EVIL_ROLES.has(p.role as Role);
             const isTarget = gameState.assassinationTarget === p.sessionId;
 
             return (

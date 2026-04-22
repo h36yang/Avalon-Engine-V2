@@ -1,5 +1,7 @@
 export type Role = 'Merlin' | 'Assassin' | 'Percival' | 'Morgana' | 'Mordred' | 'Oberon' | 'Loyal Servant' | 'Minion';
 
+export const EVIL_ROLES: ReadonlySet<Role> = new Set(['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon']);
+
 export interface Player {
   id: string; // socket id
   sessionId: string; // persistent id
@@ -71,11 +73,11 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
           roles.splice(roleIndexInPool, 1);
         } else {
           // No: Forced to swap. We need to maintain alignment balance.
-          const isEvil = ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(desiredRole);
+          const isEvil = EVIL_ROLES.has(desiredRole);
 
           if (isEvil) {
             // Find another evil role to remove
-            const evilIndex = roles.findIndex(r => ['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon'].includes(r));
+            const evilIndex = roles.findIndex(r => EVIL_ROLES.has(r));
             if (evilIndex !== -1) {
               roles.splice(evilIndex, 1);
             } else {

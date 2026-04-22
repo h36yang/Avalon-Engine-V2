@@ -3,6 +3,7 @@ import { useGameStore } from "../store";
 import { EyeOff } from "lucide-react";
 import { ROLE_IMAGES } from "../assets/roleImages";
 import { useTranslation } from "../utils/i18n";
+import { EVIL_ROLES, Role } from "../utils/gameLogic";
 
 export default function RoleRevealScreen() {
   const room = useGameStore((state) => state.room);
@@ -16,13 +17,7 @@ export default function RoleRevealScreen() {
   const me = room.players.find((p) => p.sessionId === sessionId);
   if (!me) return null;
 
-  const isEvil = [
-    "Assassin",
-    "Morgana",
-    "Mordred",
-    "Minion",
-    "Oberon",
-  ].includes(me.role as string);
+  const isEvil = EVIL_ROLES.has(me.role as Role);
 
   // Determine what information this player sees
   let info: string[] = [];

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "../store";
-import { EyeOff } from "lucide-react";
+import { EyeOff, Play } from "lucide-react";
 import { ROLE_IMAGES } from "../assets/roleImages";
 import { useTranslation } from "../utils/i18n";
 import { EVIL_ROLES, Role } from "../utils/gameLogic";
@@ -19,117 +19,82 @@ export default function RoleRevealScreen() {
 
   const isEvil = EVIL_ROLES.has(me.role as Role);
 
-  // Determine what information this player sees
   let info: string[] = [];
   if (me.role === "Merlin") {
-    info = room.players
-      .filter((p) =>
-        ["Assassin", "Morgana", "Minion", "Oberon"].includes(p.role as string),
-      )
-      .map((p) => p.name);
+    info = room.players.filter(p => ["Assassin", "Morgana", "Minion", "Oberon"].includes(p.role as string)).map(p => p.name);
   } else if (me.role === "Percival") {
-    info = room.players
-      .filter((p) => ["Merlin", "Morgana"].includes(p.role as string))
-      .map((p) => p.name);
+    info = room.players.filter(p => ["Merlin", "Morgana"].includes(p.role as string)).map(p => p.name);
   } else if (isEvil && me.role !== "Oberon") {
-    info = room.players
-      .filter(
-        (p) =>
-          ["Assassin", "Morgana", "Mordred", "Minion"].includes(
-            p.role as string,
-          ) && p.sessionId !== sessionId,
-      )
-      .map((p) => p.name);
+    info = room.players.filter(p => ["Assassin", "Morgana", "Mordred", "Minion"].includes(p.role as string) && p.sessionId !== sessionId).map(p => p.name);
   }
 
   const handleReady = () => {
-    // Only host can advance
-    if (room.players.find(p => p.isHost)?.sessionId === sessionId) {
-      readyTeamBuilding();
-    }
+    if (room.players.find(p => p.isHost)?.sessionId === sessionId) readyTeamBuilding();
   };
 
-  const roleImageKey = me.role as string;
-
-  const imageUrl = ROLE_IMAGES[roleImageKey];
+  const imageUrl = ROLE_IMAGES[me.role as string];
   const cardBackUrl = ROLE_IMAGES["CardBack"];
+  const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8 text-center">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-serif font-bold tracking-tight text-amber-100">
-            {t("Your Role")}
-          </h1>
-          <p className="text-amber-500/60 text-sm uppercase tracking-widest font-medium">
-            {t("Keep this secret from others")}
-          </p>
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center justify-center px-5 py-12">
+      <div className="w-full max-w-sm space-y-6 text-center">
+
+        {/* Header */}
+        <div>
+          <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest mb-1">{t("Keep this secret")}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-50">{t("Your Role")}</h1>
         </div>
 
+        {/* Card */}
         <div
-          className={`relative overflow-hidden rounded-3xl border transition-all duration-700 cursor-pointer shadow-2xl aspect-[3/4] w-full max-w-[320px] mx-auto ${revealed
-            ? isEvil
-              ? "border-red-900/50 shadow-red-900/20"
-              : "border-blue-900/50 shadow-blue-900/20"
-            : "border-amber-900/30 hover:border-amber-500/50 shadow-amber-900/10"
-            }`}
+          className={`relative overflow-hidden rounded-2xl border transition-all duration-500 cursor-pointer shadow-2xl aspect-[3/4] w-full max-w-[280px] mx-auto ${
+            revealed
+              ? isEvil
+                ? "border-red-800/50 shadow-red-950/30"
+                : "border-blue-800/50 shadow-blue-950/30"
+              : "border-zinc-800 hover:border-zinc-600"
+          }`}
           onClick={() => setRevealed(!revealed)}
         >
-          {/* Background Image */}
           <div
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-1000"
+            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
             style={{
               backgroundImage: `url(${revealed ? imageUrl : cardBackUrl})`,
-              transform: revealed ? 'scale(1.05)' : 'scale(1)'
+              transform: revealed ? 'scale(1.04)' : 'scale(1)',
             }}
           />
 
           {!revealed ? (
-            // Card Back Overlay
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-8 transition-opacity duration-300">
-              <div className="flex flex-col items-center gap-6 text-amber-500/80">
-                <div className="w-20 h-20 rounded-full border border-amber-500/30 flex items-center justify-center bg-black/40 backdrop-blur-md">
-                  <EyeOff size={32} />
-                </div>
-                <span className="font-serif font-bold uppercase tracking-[0.3em] text-sm text-amber-100 drop-shadow-md">
-                  {t("Tap to Reveal")}
-                </span>
+            <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-5">
+              <div className="w-16 h-16 rounded-full border border-zinc-600 flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm">
+                <EyeOff size={26} className="text-zinc-400" />
               </div>
+              <span className="text-sm font-bold uppercase tracking-[0.25em] text-zinc-300">
+                {t("Tap to Reveal")}
+              </span>
             </div>
           ) : (
-            // Revealed Card Content
             <div className="absolute inset-0 flex flex-col justify-end animate-in fade-in duration-500">
-              {/* Gradient Overlay for Text Readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent h-3/5 mt-auto" />
-
-              <div className="relative z-10 p-6 flex flex-col items-center text-center">
-                <div>
-                  <h2
-                    className={`text-4xl font-serif font-bold mb-1 drop-shadow-lg ${isEvil ? "text-red-400" : "text-blue-400"}`}
-                  >
-                    {t(me.role as string)}
-                  </h2>
-                  <p className="text-zinc-300 font-medium uppercase tracking-widest text-[10px] opacity-80">
-                    {isEvil ? t("Minion of Mordred") : t("Loyal Servant of Arthur")}
-                  </p>
-                </div>
+              <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-black via-black/70 to-transparent" />
+              <div className="relative z-10 p-5 text-center">
+                <h2 className={`text-3xl font-serif font-bold drop-shadow-lg mb-0.5 ${isEvil ? "text-red-300" : "text-blue-300"}`}>
+                  {t(me.role as string)}
+                </h2>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
+                  {isEvil ? t("Minion of Mordred") : t("Loyal Servant of Arthur")}
+                </p>
 
                 {info.length > 0 && (
-                  <div className="mt-6 p-4 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 w-full">
-                    <h3 className="text-[10px] font-medium text-amber-500/70 uppercase tracking-widest mb-2">
-                      {me.role === "Merlin"
-                        ? t("You see evil:")
-                        : me.role === "Percival"
-                          ? t("Merlin or Morgana:")
-                          : t("Your fellow evil:")}
-                    </h3>
-                    <ul className="space-y-1">
-                      {info.map((name) => (
-                        <li key={name} className="font-serif text-lg text-amber-50 drop-shadow-md">
-                          {name}
-                        </li>
+                  <div className="mt-4 p-3.5 bg-black/50 backdrop-blur-sm rounded-xl border border-white/10">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">
+                      {me.role === "Merlin" ? t("You see evil:") : me.role === "Percival" ? t("Merlin or Morgana:") : t("Your fellow evil:")}
+                    </p>
+                    <div className="space-y-1">
+                      {info.map(name => (
+                        <p key={name} className="font-bold text-zinc-100 text-sm">{name}</p>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>
@@ -137,18 +102,17 @@ export default function RoleRevealScreen() {
           )}
         </div>
 
-        {room.players.find(p => p.isHost)?.sessionId === sessionId ? (
+        {/* Action */}
+        {isHost ? (
           <button
             onClick={handleReady}
-            className="w-full max-w-[320px] mx-auto relative group overflow-hidden rounded-xl mt-8"
+            className="w-full max-w-[280px] mx-auto py-3.5 rounded-xl font-bold text-sm bg-zinc-50 hover:bg-white text-zinc-950 transition-all flex items-center justify-center gap-2 shadow-lg"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-yellow-600 transition-transform duration-300 group-hover:scale-105" />
-            <div className="relative px-4 py-4 flex items-center justify-center gap-2 text-black font-bold tracking-wide uppercase text-sm">
-              {t("Everyone is Ready")}
-            </div>
+            <Play size={15} />
+            {t("Everyone is Ready")}
           </button>
         ) : (
-          <p className="text-amber-500/50 text-xs uppercase tracking-widest font-medium mt-8">
+          <p className="text-zinc-600 text-xs font-semibold uppercase tracking-widest">
             {t("Waiting for host to continue...")}
           </p>
         )}

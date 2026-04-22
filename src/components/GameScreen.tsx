@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "../store";
-import { Check, X, Crown, Users, Target, ShieldAlert, LogOut, History, Eye, Shield, Skull, MessageSquare, Bot, Sparkles, Loader2 } from "lucide-react";
+import { Check, X, Crown, Users, Target, ShieldAlert, Eye, Shield, Skull, MessageSquare, Bot, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
@@ -8,11 +8,9 @@ import VoteHistoryDetails from "./VoteHistoryDetails";
 import { EVIL_ROLES, Role } from "../utils/gameLogic";
 
 const BOT_LOADING_WORDS = [
-  "Scheming", "Pondering", "Napping", "Caffeinating",
-  "Conspiring", "Buffering", "Philosophizing", "Daydreaming",
-  "Overthinking", "Manifesting", "Procrastinating", "Plotting",
-  "Vibing", "Computing", "Calculating", "Meditating", "Strategizing",
-  "Deliberating", "Hesitating", "Snoozing",
+  "Scheming", "Pondering", "Conspiring", "Buffering",
+  "Philosophizing", "Overthinking", "Plotting", "Computing",
+  "Calculating", "Strategizing", "Deliberating", "Hesitating",
 ];
 
 export default function GameScreen() {
@@ -43,36 +41,21 @@ export default function GameScreen() {
   const currentQuest = gameState.quests[gameState.currentQuestIndex];
   const isLeader = players[gameState.leaderIndex].sessionId === sessionId;
   const me = players.find((p) => p.sessionId === sessionId);
-
   const isEvil = me ? EVIL_ROLES.has(me.role as Role) : false;
 
   let info: string[] = [];
   if (me?.role === "Merlin") {
-    info = room.players
-      .filter((p) =>
-        ["Assassin", "Morgana", "Minion", "Oberon"].includes(p.role as string),
-      )
-      .map((p) => p.name);
+    info = room.players.filter(p => ["Assassin", "Morgana", "Minion", "Oberon"].includes(p.role as string)).map(p => p.name);
   } else if (me?.role === "Percival") {
-    info = room.players
-      .filter((p) => ["Merlin", "Morgana"].includes(p.role as string))
-      .map((p) => p.name);
+    info = room.players.filter(p => ["Merlin", "Morgana"].includes(p.role as string)).map(p => p.name);
   } else if (isEvil && me?.role !== "Oberon") {
-    info = room.players
-      .filter(
-        (p) =>
-          ["Assassin", "Morgana", "Mordred", "Minion"].includes(
-            p.role as string,
-          ) && p.sessionId !== sessionId,
-      )
-      .map((p) => p.name);
+    info = room.players.filter(p => ["Assassin", "Morgana", "Mordred", "Minion"].includes(p.role as string) && p.sessionId !== sessionId).map(p => p.name);
   }
 
   const togglePlayer = (id: string) => {
     if (status !== "team_building" || !isLeader) return;
-
     if (selectedTeam.includes(id)) {
-      setSelectedTeam(selectedTeam.filter((p) => p !== id));
+      setSelectedTeam(selectedTeam.filter(p => p !== id));
     } else if (selectedTeam.length < currentQuest.teamSize) {
       setSelectedTeam([...selectedTeam, id]);
     }
@@ -88,9 +71,63 @@ export default function GameScreen() {
   const hasVotedTeam = sessionId in gameState.teamVotes;
   const hasVotedQuest = sessionId in currentQuest.votes;
   const isOnTeam = gameState.proposedTeam.includes(sessionId);
-
   const viewingVote = status === 'team_vote_reveal' ? gameState.voteHistory[gameState.voteHistory.length - 1] : null;
   const isViewingHistory = viewingHistoryIndex !== null;
+
+  const getStatusConfig = () => {
+    if (status === "team_building") {
+      return {
+        icon: <Crown size={20} className="text-amber-400" />,
+        label: isLeader ? t("You are the Leader") : `${players[gameState.leaderIndex].name} ${t("is choosing the team")}`,
+        sub: isLeader ? `${t("Select")} ${currentQuest.teamSize} ${t("team members")}` : t("Waiting for leader"),
+        accent: "border-l-amber-500/60",
+      };
+    }
+    if (status === "team_voting") {
+      return {
+        icon: <Users size={20} className="text-indigo-400" />,
+        label: t("Vote on Team"),
+        sub: t("Do you approve of this team?"),
+        accent: "border-l-indigo-500/60",
+      };
+    }
+    if (status === "team_vote_reveal") {
+      return {
+        icon: <Users size={20} className="text-indigo-400" />,
+        label: t("Vote Results"),
+        sub: viewingVote?.approved
+          ? <span className="text-emerald-400">{t("Team Approved")}</span>
+          : <span className="text-red-400">{t("Team Rejected")}</span>,
+        accent: "border-l-indigo-500/60",
+      };
+    }
+    if (status === "quest_voting") {
+      return {
+        icon: <Target size={20} className="text-emerald-400" />,
+        label: t("Quest Phase"),
+        sub: isOnTeam ? t("You are on the quest. Cast your vote.") : t("Waiting for team to complete quest..."),
+        accent: "border-l-emerald-500/60",
+      };
+    }
+    if (status === "quest_result") {
+      const quest = gameState.quests[gameState.currentQuestIndex];
+      const failed = quest.status === 'fail';
+      const failCount = Object.values(quest.votes).filter(v => !v).length;
+      return {
+        icon: failed
+          ? <ShieldAlert size={20} className="text-red-400" />
+          : <Shield size={20} className="text-blue-400" />,
+        label: <span className={failed ? "text-red-400" : "text-blue-400"}>
+          {failed ? t("Quest Failed!") : t("Quest Success!")}
+        </span>,
+        sub: failCount > 0 ? `${failCount} ${t("fail votes cast")}` : t("All votes were for success"),
+        accent: failed ? "border-l-red-500/60" : "border-l-blue-500/60",
+      };
+    }
+    return null;
+  };
+
+  const statusConfig = getStatusConfig();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col max-w-md mx-auto">
@@ -108,180 +145,104 @@ export default function GameScreen() {
         />
       ) : (
         <>
-          <main className="flex-1 p-6 space-y-8">
-            {/* Status Banner */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
-              {status === "team_building" ? (
-                <>
-                  <Crown className="w-8 h-8 mx-auto mb-3 text-amber-500" />
-                  <h2 className="text-lg font-medium mb-1">
-                    {isLeader
-                      ? t("You are the Leader")
-                      : `${players[gameState.leaderIndex].name} ${t("is choosing the team")}`}
-                  </h2>
-                  <p className="text-zinc-400 text-sm">
-                    {isLeader
-                      ? `${t("Select team members")} (${currentQuest.teamSize})`
-                      : t("Waiting for leader")}
-                  </p>
-                </>
-              ) : status === "team_voting" ? (
-                <>
-                  <Users className="w-8 h-8 mx-auto mb-3 text-indigo-400" />
-                  <h2 className="text-lg font-medium mb-1">{t("Vote on Team")}</h2>
-                  <p className="text-zinc-400 text-sm">
-                    {t("Do you approve of this team?")}
-                  </p>
-                </>
-              ) : status === "team_vote_reveal" ? (
-                <>
-                  <Users className="w-8 h-8 mx-auto mb-3 text-indigo-400" />
-                  <h2 className="text-lg font-medium mb-1">{t("Vote Results")}</h2>
-                  <p className="text-sm text-zinc-400">
-                    <span className={viewingVote?.approved ? "text-emerald-400" : "text-red-400"}>
-                      {viewingVote?.approved ? t("Team Approved") : t("Team Rejected")}
-                    </span>
-                  </p>
-                </>
-              ) : status === "quest_voting" ? (
-                <>
-                  <Target className="w-8 h-8 mx-auto mb-3 text-emerald-400" />
-                  <h2 className="text-lg font-medium mb-1">{t("Quest Phase")}</h2>
-                  <p className="text-zinc-400 text-sm">
-                    {isOnTeam
-                      ? t("You are on the quest. Cast your vote.")
-                      : t("Waiting for team to complete quest...")}
-                  </p>
-                </>
-              ) : status === "quest_result" ? (
-                (() => {
-                  const quest = gameState.quests[gameState.currentQuestIndex];
-                  const failed = quest.status === 'fail';
-                  const failCount = Object.values(quest.votes).filter(v => !v).length;
-                  return (
-                    <>
-                      <div className={cn(
-                        "w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 border-2",
-                        failed ? "bg-red-950/30 border-red-500/50" : "bg-blue-950/30 border-blue-500/50"
-                      )}>
-                        {failed ? <ShieldAlert size={28} className="text-red-500" /> : <Shield size={28} className="text-blue-500" />}
-                      </div>
-                      <h2 className={cn(
-                        "text-xl font-serif font-bold mb-1",
-                        failed ? "text-red-400" : "text-blue-400"
-                      )}>
-                        {failed ? t("Quest Failed!") : t("Quest Success!")}
-                      </h2>
-                      <p className="text-zinc-400 text-sm">
-                        {failCount > 0
-                          ? `${failCount} ${t("fail votes cast")}`
-                          : t("All votes were for success")}
-                      </p>
-                    </>
-                  );
-                })()
-              ) : null}
-            </div>
+          <main className="flex-1 overflow-y-auto px-5 py-5 space-y-5 pb-32">
+
+            {/* Status Card */}
+            {statusConfig && (
+              <div className={cn(
+                "bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 border-l-4",
+                statusConfig.accent
+              )}>
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
+                    {statusConfig.icon}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-zinc-100 text-sm leading-tight">{statusConfig.label}</p>
+                    <p className="text-zinc-500 text-xs mt-1">{statusConfig.sub}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Player List */}
             <section>
-              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
-                {t("Players")}
-              </h3>
-              <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest mb-3">{t("Players")}</p>
+              <div className="space-y-1.5">
                 {players.map((p, i) => {
                   const isSelected = status === "team_building"
                     ? selectedTeam.includes(p.sessionId)
                     : gameState.proposedTeam.includes(p.sessionId);
-
                   const isCurrentLeader = i === gameState.leaderIndex;
+                  const canToggle = status === "team_building" && isLeader;
 
                   return (
                     <button
                       key={p.sessionId}
                       onClick={() => togglePlayer(p.sessionId)}
-                      disabled={status !== "team_building" || !isLeader}
+                      disabled={!canToggle}
                       className={cn(
-                        "w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left",
+                        "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left",
                         isSelected
-                          ? "bg-indigo-950/30 border-indigo-500/50 text-indigo-100"
-                          : "bg-zinc-900 border-zinc-800 text-zinc-300",
-                        status === "team_building" &&
-                        isLeader &&
-                        !isSelected &&
-                        "hover:border-zinc-700",
-                        status === "team_building" && isLeader && "cursor-pointer",
-                        status !== "team_building" || !isLeader
-                          ? "cursor-default"
-                          : "",
+                          ? "bg-indigo-950/30 border-indigo-700/50"
+                          : "bg-zinc-900 border-zinc-800/80",
+                        canToggle && !isSelected && "hover:border-zinc-700 hover:bg-zinc-900/80",
+                        canToggle ? "cursor-pointer" : "cursor-default",
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center border",
-                            isSelected
-                              ? "bg-indigo-600 border-indigo-500 text-white"
-                              : "bg-zinc-800 border-zinc-700 text-zinc-500",
-                          )}
-                        >
-                          {isSelected ? (
-                            <Check size={16} />
-                          ) : (
-                            <span className="text-xs">{p.name.charAt(0)}</span>
-                          )}
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center border text-xs font-bold shrink-0",
+                          isSelected
+                            ? "bg-indigo-600 border-indigo-500 text-white"
+                            : "bg-zinc-800 border-zinc-700 text-zinc-500"
+                        )}>
+                          {isSelected ? <Check size={14} /> : p.name.charAt(0)}
                         </div>
-                        <span className="font-medium">
-                          {p.name} {p.sessionId === sessionId && "(You)"}
-                        </span>
+                        <div>
+                          <span className={cn("font-semibold text-sm", isSelected ? "text-indigo-100" : "text-zinc-200")}>
+                            {p.name}
+                            {p.sessionId === sessionId && <span className="font-normal text-zinc-500 ml-1">(You)</span>}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {p.isBot && p.hasApiKey && (
-                          <Sparkles size={13} className="text-indigo-400" />
+                      <div className="flex items-center gap-2 shrink-0">
+                        {p.isBot && p.hasApiKey && <Sparkles size={12} className="text-indigo-400" />}
+                        {isCurrentLeader && <Crown size={14} className="text-amber-400" />}
+
+                        {/* Voting states */}
+                        {status === "team_voting" && p.isBot && p.hasApiKey && !(p.sessionId in gameState.teamVotes) && (
+                          <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full flex items-center gap-1 border border-zinc-700">
+                            <Loader2 size={9} className="animate-spin" />{BOT_LOADING_WORDS[loadingWordIndex]}
+                          </span>
                         )}
-                        {isCurrentLeader && (
-                          <Crown size={16} className="text-amber-500" />
+                        {status === "team_voting" && p.sessionId in gameState.teamVotes && (
+                          <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                            {t("Voted")}
+                          </span>
                         )}
-                        {status === "team_voting" && p.isBot && p.hasApiKey &&
-                          !(p.sessionId in gameState.teamVotes) && (
-                            <span className="text-xs bg-indigo-950/50 text-indigo-400 px-2 py-1 rounded-md flex items-center gap-1">
-                              <Loader2 size={10} className="animate-spin" />
-                              {BOT_LOADING_WORDS[loadingWordIndex]}
-                            </span>
-                          )}
-                        {status === "team_voting" &&
-                          p.sessionId in gameState.teamVotes && (
-                            <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md">
-                              {t("Voted")}
-                            </span>
-                          )}
-                        {status === "team_vote_reveal" && viewingVote && (
-                          p.sessionId in viewingVote.votes && (
-                            <div className={cn(
-                              "flex items-center gap-1 px-2 py-1 rounded-md text-xs",
-                              viewingVote.votes[p.sessionId] ? "bg-emerald-950/50 text-emerald-400" : "bg-red-950/50 text-red-400"
-                            )}>
-                              {viewingVote.votes[p.sessionId] ? <Check size={12} /> : <X size={12} />}
-                              {viewingVote.votes[p.sessionId] ? t("Approve") : t("Reject")}
-                            </div>
-                          )
+                        {status === "team_vote_reveal" && viewingVote && p.sessionId in viewingVote.votes && (
+                          <div className={cn(
+                            "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border",
+                            viewingVote.votes[p.sessionId]
+                              ? "bg-emerald-950/40 text-emerald-400 border-emerald-800/40"
+                              : "bg-red-950/40 text-red-400 border-red-800/40"
+                          )}>
+                            {viewingVote.votes[p.sessionId] ? <Check size={10} /> : <X size={10} />}
+                            {viewingVote.votes[p.sessionId] ? t("Approve") : t("Reject")}
+                          </div>
                         )}
-                        {status === "quest_voting" && p.isBot && p.hasApiKey &&
-                          gameState.proposedTeam.includes(p.sessionId) &&
-                          !(p.sessionId in currentQuest.votes) && (
-                            <span className="text-xs bg-indigo-950/50 text-indigo-400 px-2 py-1 rounded-md flex items-center gap-1">
-                              <Loader2 size={10} className="animate-spin" />
-                              {BOT_LOADING_WORDS[loadingWordIndex]}
-                            </span>
-                          )}
-                        {status === "quest_voting" &&
-                          gameState.proposedTeam.includes(p.sessionId) &&
-                          p.sessionId in currentQuest.votes && (
-                            <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md">
-                              {t("Voted")}
-                            </span>
-                          )}
+                        {status === "quest_voting" && p.isBot && p.hasApiKey && gameState.proposedTeam.includes(p.sessionId) && !(p.sessionId in currentQuest.votes) && (
+                          <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full flex items-center gap-1 border border-zinc-700">
+                            <Loader2 size={9} className="animate-spin" />{BOT_LOADING_WORDS[loadingWordIndex]}
+                          </span>
+                        )}
+                        {status === "quest_voting" && gameState.proposedTeam.includes(p.sessionId) && p.sessionId in currentQuest.votes && (
+                          <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                            {t("Voted")}
+                          </span>
+                        )}
                       </div>
                     </button>
                   );
@@ -289,25 +250,25 @@ export default function GameScreen() {
               </div>
             </section>
 
-            {/* Bot Opinions Dialog */}
+            {/* Bot Opinions */}
             {gameState.botOpinions && gameState.botOpinions.length > 0 && (
-              <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mt-8">
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <MessageSquare size={14} /> {t("Bot Opinions")}
-                </h3>
-                <div className="space-y-4">
+              <section>
+                <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <MessageSquare size={11} /> {t("Bot Opinions")}
+                </p>
+                <div className="space-y-3">
                   {gameState.botOpinions.map((opinion, idx) => {
                     const botPlayer = players.find(p => p.sessionId === opinion.botId);
                     return (
                       <div key={idx} className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
-                          <Bot size={14} className="text-zinc-400" />
+                        <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <Bot size={13} className="text-zinc-500" />
                         </div>
-                        <div className="flex-1 bg-zinc-950/50 rounded-xl p-3 border border-zinc-800/50">
-                          <div className="text-xs font-medium text-indigo-400 mb-1">{botPlayer?.name || "Bot"}</div>
-                          <div className={cn("text-sm", opinion.isError ? "text-red-400" : "text-zinc-300")}>
+                        <div className="flex-1 bg-zinc-900 rounded-xl px-3.5 py-3 border border-zinc-800/80">
+                          <p className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider mb-1.5">{botPlayer?.name || "Bot"}</p>
+                          <p className={cn("text-sm leading-relaxed", opinion.isError ? "text-red-400" : "text-zinc-300")}>
                             {opinion.text}
-                          </div>
+                          </p>
                         </div>
                       </div>
                     );
@@ -318,110 +279,94 @@ export default function GameScreen() {
           </main>
 
           {/* Action Bar */}
-          <div className="p-6 border-t border-zinc-900 bg-zinc-950/80 backdrop-blur-xl sticky bottom-0 z-10">
-            {status === "team_vote_reveal" && isLeader && (
+          <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-900 z-10">
+
+            {/* Continue buttons */}
+            {(status === "team_vote_reveal" || status === "quest_result") && isLeader && (
               <button
-                onClick={continueVoteReveal}
-                className="w-full py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white"
+                onClick={status === "team_vote_reveal" ? continueVoteReveal : continueQuestResult}
+                className="w-full py-3.5 rounded-xl font-bold text-sm transition-all bg-zinc-50 hover:bg-white text-zinc-950 shadow-lg flex items-center justify-center gap-2"
               >
                 {t("Continue")}
               </button>
             )}
-
-            {status === "team_vote_reveal" && !isLeader && (
-              <div className="text-center text-zinc-500 py-4 font-medium">
-                {t("Waiting for leader to continue...")}
-              </div>
+            {(status === "team_vote_reveal" || status === "quest_result") && !isLeader && (
+              <p className="text-center text-zinc-600 text-sm py-3.5">{t("Waiting for leader to continue...")}</p>
             )}
 
-            {status === "quest_result" && isLeader && (
-              <button
-                onClick={continueQuestResult}
-                className="w-full py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white"
-              >
-                {t("Continue")}
-              </button>
-            )}
-
-            {status === "quest_result" && !isLeader && (
-              <div className="text-center text-zinc-500 py-4 font-medium">
-                {t("Waiting for leader to continue...")}
-              </div>
-            )}
-
+            {/* Team building */}
             {status === "team_building" && isLeader && (
               <button
                 onClick={handlePropose}
                 disabled={selectedTeam.length !== currentQuest.teamSize}
                 className={cn(
-                  "w-full py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2",
+                  "w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2",
                   selectedTeam.length === currentQuest.teamSize
-                    ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-                    : "bg-zinc-800 text-zinc-500 cursor-not-allowed",
+                    ? "bg-zinc-50 hover:bg-white text-zinc-950 shadow-lg"
+                    : "bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed"
                 )}
               >
-                {t("Propose Team")} ({selectedTeam.length}/{currentQuest.teamSize})
+                {t("Propose Team")}
+                <span className={cn(
+                  "text-xs font-semibold px-2 py-0.5 rounded-full",
+                  selectedTeam.length === currentQuest.teamSize ? "bg-zinc-900 text-zinc-700" : "bg-zinc-800 text-zinc-600"
+                )}>
+                  {selectedTeam.length}/{currentQuest.teamSize}
+                </span>
               </button>
             )}
-
             {status === "team_building" && !isLeader && (
-              <div className="text-center text-zinc-500 py-4 font-medium">
+              <p className="text-center text-zinc-600 text-sm py-3.5">
                 {`${t("Leader is selecting")} ${gameState.proposedTeam.length}/${currentQuest.teamSize}`}
-              </div>
+              </p>
             )}
 
+            {/* Team voting */}
             {status === "team_voting" && !hasVotedTeam && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => voteTeam(false)}
-                  className="py-4 rounded-xl font-medium bg-red-950/30 border border-red-500/50 text-red-400 hover:bg-red-900/40 transition-colors flex items-center justify-center gap-2"
+                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-900 border border-red-800/50 text-red-400 hover:bg-red-950/20 transition-all flex items-center justify-center gap-2"
                 >
-                  <X size={20} /> {t("Reject")}
+                  <X size={16} /> {t("Reject")}
                 </button>
                 <button
                   onClick={() => voteTeam(true)}
-                  className="py-4 rounded-xl font-medium bg-emerald-950/30 border border-emerald-500/50 text-emerald-400 hover:bg-emerald-900/40 transition-colors flex items-center justify-center gap-2"
+                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-50 hover:bg-white text-zinc-950 transition-all flex items-center justify-center gap-2 shadow-lg"
                 >
-                  <Check size={20} /> {t("Approve")}
+                  <Check size={16} /> {t("Approve")}
                 </button>
               </div>
             )}
-
             {status === "team_voting" && hasVotedTeam && (
-              <div className="text-center text-zinc-500 py-4 font-medium">
-                {t("Waiting for others to vote...")}
-              </div>
+              <p className="text-center text-zinc-600 text-sm py-3.5">{t("Waiting for others to vote...")}</p>
             )}
 
+            {/* Quest voting */}
             {status === "quest_voting" && isOnTeam && !hasVotedQuest && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => voteQuest(false)}
-                  disabled={
-                    !EVIL_ROLES.has(me?.role as Role)
-                  }
+                  disabled={!EVIL_ROLES.has(me?.role as Role)}
                   className={cn(
-                    "py-4 rounded-xl font-medium border transition-colors flex items-center justify-center gap-2",
+                    "py-3.5 rounded-xl font-bold text-sm border transition-all flex items-center justify-center gap-2",
                     EVIL_ROLES.has(me?.role as Role)
-                      ? "bg-red-950/30 border-red-500/50 text-red-400 hover:bg-red-900/40"
-                      : "bg-zinc-900 border-zinc-800 text-zinc-600 cursor-not-allowed",
+                      ? "bg-zinc-900 border-red-800/50 text-red-400 hover:bg-red-950/20"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-700 cursor-not-allowed"
                   )}
                 >
-                  <ShieldAlert size={20} /> {t("Fail")}
+                  <ShieldAlert size={16} /> {t("Fail")}
                 </button>
                 <button
                   onClick={() => voteQuest(true)}
-                  className="py-4 rounded-xl font-medium bg-blue-950/30 border border-blue-500/50 text-blue-400 hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2"
+                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-50 hover:bg-white text-zinc-950 transition-all flex items-center justify-center gap-2 shadow-lg"
                 >
-                  <Target size={20} /> {t("Success")}
+                  <Target size={16} /> {t("Success")}
                 </button>
               </div>
             )}
-
             {status === "quest_voting" && (!isOnTeam || hasVotedQuest) && (
-              <div className="text-center text-zinc-500 py-4 font-medium">
-                {t("Waiting for team to complete quest...")}
-              </div>
+              <p className="text-center text-zinc-600 text-sm py-3.5">{t("Waiting for team to complete quest...")}</p>
             )}
           </div>
         </>
@@ -429,52 +374,58 @@ export default function GameScreen() {
 
       {/* Role Info Modal */}
       {showRoleModal && me && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 max-w-sm w-full relative">
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-5 bg-black/70 backdrop-blur-sm" onClick={() => setShowRoleModal(false)}>
+          <div
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm relative"
+            onClick={e => e.stopPropagation()}
+          >
             <button
               onClick={() => setShowRoleModal(false)}
-              className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="absolute top-4 right-4 p-1.5 text-zinc-600 hover:text-zinc-400 transition-colors"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
-            <div className="flex flex-col items-center gap-6">
-              {isEvil ? (
-                <Skull size={64} className="text-red-500" />
-              ) : (
-                <Shield size={64} className="text-blue-500" />
-              )}
-
-              <div className="text-center">
-                <h2
-                  className={`text-4xl font-serif font-bold mb-2 ${isEvil ? "text-red-400" : "text-blue-400"}`}
-                >
+            <div className="flex items-center gap-4 mb-5">
+              <div className={cn(
+                "w-12 h-12 rounded-xl border flex items-center justify-center",
+                isEvil ? "bg-red-950/30 border-red-800/50" : "bg-blue-950/30 border-blue-800/50"
+              )}>
+                {isEvil ? <Skull size={24} className="text-red-400" /> : <Shield size={24} className="text-blue-400" />}
+              </div>
+              <div>
+                <h2 className={cn("text-xl font-serif font-bold", isEvil ? "text-red-300" : "text-blue-300")}>
                   {t(me.role as string)}
                 </h2>
-                <p className="text-zinc-400 font-medium uppercase tracking-widest text-xs">
+                <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
                   {isEvil ? t("Minion of Mordred") : t("Loyal Servant of Arthur")}
                 </p>
               </div>
-
-              {info.length > 0 && (
-                <div className="w-full mt-4 p-4 bg-black/40 rounded-xl border border-white/5">
-                  <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3 text-center">
-                    {me.role === "Merlin"
-                      ? t("You see evil:")
-                      : me.role === "Percival"
-                        ? t("Merlin or Morgana:")
-                        : t("Your fellow evil:")}
-                  </h3>
-                  <ul className="space-y-2 text-center">
-                    {info.map((name) => (
-                      <li key={name} className="font-medium text-zinc-300">
-                        {name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
+
+            {info.length > 0 && (
+              <div className="bg-zinc-950/60 rounded-xl p-4 border border-zinc-800/60">
+                <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+                  {me.role === "Merlin" ? t("You see evil:") : me.role === "Percival" ? t("Merlin or Morgana:") : t("Your fellow evil:")}
+                </p>
+                <div className="space-y-2">
+                  {info.map(name => (
+                    <div key={name} className="flex items-center gap-2.5">
+                      <div className="w-2 h-2 rounded-full bg-zinc-600" />
+                      <span className="font-semibold text-zinc-200 text-sm">{name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowRoleModal(false)}
+              className="w-full mt-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-semibold transition-colors border border-zinc-700"
+            >
+              <Eye size={14} className="inline mr-2" />
+              {t("Got it")}
+            </button>
           </div>
         </div>
       )}

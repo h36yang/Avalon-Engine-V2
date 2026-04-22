@@ -19,16 +19,12 @@ export default function JoinScreen() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (activeTab === 'browse') {
-      handleRefresh();
-    }
+    if (activeTab === 'browse') handleRefresh();
   }, [activeTab]);
 
   const handleJoin = (e: React.SubmitEvent) => {
     e.preventDefault();
-    if (roomId && name) {
-      connect(roomId.toUpperCase(), name);
-    }
+    if (roomId && name) connect(roomId.toUpperCase(), name);
   };
 
   const handleJoinRoom = (id: string) => {
@@ -45,7 +41,7 @@ export default function JoinScreen() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-    } catch (err) {
+    } catch {
       console.log('Sign out from Supabase failed, proceeding with local logout');
     }
     logout();
@@ -53,70 +49,86 @@ export default function JoinScreen() {
 
   const winRate = profile?.total_games ? Math.round((profile.wins / profile.total_games) * 100) : 0;
 
+  const inputClass = "w-full bg-black/30 border border-white/8 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-600 focus:bg-black/50 transition-all text-sm";
+  const labelClass = "block text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-2";
+
   return (
     <div className="min-h-screen text-zinc-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: 'url(/join-bg.jpg)' }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/85 to-zinc-950/95" />
+      <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/88 to-zinc-950" />
 
+      {/* Sign Out */}
       <button
         onClick={handleLogout}
-        className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 bg-zinc-900/50 hover:bg-red-950/40 border border-zinc-800/50 hover:border-red-900/50 text-zinc-400 hover:text-red-400 rounded-xl backdrop-blur-md transition-all shadow-lg"
-        title={t("Sign Out")}
+        className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 bg-zinc-900/70 hover:bg-zinc-900 border border-zinc-800/60 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-xl backdrop-blur-md transition-all text-sm font-medium"
       >
-        <LogOut size={18} />
-        <span className="text-sm font-medium hidden sm:block">{t("Sign Out")}</span>
+        <LogOut size={15} />
+        <span className="hidden sm:block">{t("Sign Out")}</span>
       </button>
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-sm relative z-10 space-y-3">
 
-        {/* User Profile Card */}
+        {/* Profile Card */}
         {profile && (
-          <div className="mb-6 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-2xl p-4 flex items-center justify-between shadow-lg">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-950/50 border border-indigo-500/30 rounded-full flex items-center justify-center text-indigo-400 font-serif text-xl">
+          <div className="bg-zinc-900/70 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-zinc-800 border border-zinc-700 rounded-full flex items-center justify-center text-zinc-300 font-bold text-sm shrink-0">
                 {profile.username.charAt(0).toUpperCase()}
               </div>
               <div>
-                <h3 className="font-medium text-zinc-200">{profile.username}</h3>
-                <div className="flex items-center gap-3 text-xs text-zinc-500 mt-1">
-                  <span className="flex items-center gap-1"><Swords size={12} /> {profile.total_games} Games</span>
-                  <span className="flex items-center gap-1 text-emerald-500/70"><Trophy size={12} /> {winRate}% WR</span>
-                </div>
+                <p className="font-semibold text-zinc-100 text-sm">{profile.username}</p>
+                <p className="text-zinc-600 text-xs">Player Profile</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 border-t border-zinc-800/60 pt-3">
+              <div className="text-center">
+                <p className="text-lg font-bold text-zinc-100">{profile.total_games}</p>
+                <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider flex items-center justify-center gap-1 mt-0.5">
+                  <Swords size={10} /> Games
+                </p>
+              </div>
+              <div className="text-center border-l border-zinc-800/60">
+                <p className={cn("text-lg font-bold", winRate >= 50 ? "text-emerald-400" : "text-zinc-400")}>
+                  {winRate}%
+                </p>
+                <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider flex items-center justify-center gap-1 mt-0.5">
+                  <Trophy size={10} /> Win Rate
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="bg-zinc-950/60 backdrop-blur-2xl border border-amber-900/30 rounded-3xl p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-serif font-bold mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-amber-100 to-amber-500 drop-shadow-sm">
+        {/* Main Card */}
+        <div className="bg-zinc-900/70 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-5 shadow-2xl">
+          {/* Header */}
+          <div className="text-center mb-5">
+            <h1 className="text-3xl font-serif font-bold tracking-tight text-zinc-50">
               Avalon
             </h1>
-            <p className="text-amber-500/60 text-xs uppercase tracking-[0.3em] font-medium">
+            <p className="text-zinc-500 text-xs uppercase tracking-[0.25em] font-semibold mt-1">
               {t("A Game of Hidden Loyalty")}
             </p>
           </div>
 
-          {(error) && (
-            <div className="bg-red-950/40 border border-red-900/50 text-red-400 p-4 rounded-xl mb-6 text-sm text-center backdrop-blur-sm">
+          {error && (
+            <div className="bg-red-950/40 border border-red-800/50 text-red-400 p-3 rounded-xl mb-4 text-xs text-center">
               {error}
             </div>
           )}
 
-          {/* Tab Switcher */}
-          <div className="flex mb-6 bg-black/30 rounded-xl p-1 border border-white/5">
+          {/* Tabs */}
+          <div className="flex border-b border-zinc-800 mb-5">
             <button
               onClick={() => setActiveTab('join')}
               className={cn(
-                "flex-1 py-2.5 rounded-lg text-sm font-medium transition-all",
+                "flex-1 pb-3 text-sm font-semibold transition-colors",
                 activeTab === 'join'
-                  ? "bg-amber-600/20 text-amber-400 border border-amber-500/30"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "text-zinc-50 border-b-2 border-zinc-50 -mb-px"
+                  : "text-zinc-500 hover:text-zinc-400"
               )}
             >
               {t("Join Room")}
@@ -124,33 +136,28 @@ export default function JoinScreen() {
             <button
               onClick={() => setActiveTab('browse')}
               className={cn(
-                "flex-1 py-2.5 rounded-lg text-sm font-medium transition-all",
+                "flex-1 pb-3 text-sm font-semibold transition-colors",
                 activeTab === 'browse'
-                  ? "bg-amber-600/20 text-amber-400 border border-amber-500/30"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "text-zinc-50 border-b-2 border-zinc-50 -mb-px"
+                  : "text-zinc-500 hover:text-zinc-400"
               )}
             >
               {t("Browse Rooms")}
             </button>
           </div>
 
-          {/* Tab Content */}
           {activeTab === 'join' ? (
             <form onSubmit={handleJoin} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-medium text-amber-500/50 uppercase tracking-widest mb-2 ml-1">
-                  {t("Room Code")}
-                </label>
+                <label className={labelClass}>{t("Room Code")}</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-amber-700/50">
-                    <Users size={18} />
-                  </div>
+                  <Users size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
                   <input
                     type="text"
                     value={roomId}
                     onChange={(e) => setRoomId(e.target.value)}
-                    className="w-full bg-black/20 border border-white/5 rounded-xl pl-11 pr-4 py-3 text-lg font-mono uppercase text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-amber-500/50 focus:bg-black/40 transition-all"
-                    placeholder="e.g. ABCD"
+                    className={cn(inputClass, "pl-10 font-mono uppercase tracking-widest text-base")}
+                    placeholder="ABCD"
                     maxLength={6}
                     required
                   />
@@ -158,18 +165,14 @@ export default function JoinScreen() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-medium text-amber-500/50 uppercase tracking-widest mb-2 ml-1">
-                  {t("Your Identity")}
-                </label>
+                <label className={labelClass}>{t("Your Identity")}</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-amber-700/50">
-                    <User size={18} />
-                  </div>
+                  <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-black/20 border border-white/5 rounded-xl pl-11 pr-4 py-3 text-lg text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-amber-500/50 focus:bg-black/40 transition-all"
+                    className={cn(inputClass, "pl-10")}
                     placeholder={t("Enter your name")}
                     maxLength={15}
                     required
@@ -179,41 +182,37 @@ export default function JoinScreen() {
 
               <button
                 type="submit"
-                className="w-full relative group overflow-hidden rounded-xl mt-4"
+                className="w-full bg-zinc-50 hover:bg-white text-zinc-950 rounded-xl py-3 text-sm font-bold transition-all flex items-center justify-center gap-2 mt-1 shadow-lg"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-yellow-600 transition-transform duration-300 group-hover:scale-105" />
-                <div className="relative px-4 py-4 flex items-center justify-center gap-2 text-black font-bold tracking-wide">
-                  <KeyRound size={18} />
-                  <span>{t("Join Room")}</span>
-                </div>
+                <KeyRound size={16} />
+                {t("Join Room")}
               </button>
             </form>
           ) : (
             <div className="space-y-3">
-              {/* Refresh button */}
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-zinc-500 text-xs">{t("Available Rooms")}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest">{t("Available Rooms")}</p>
                 <button
                   onClick={handleRefresh}
                   disabled={loadingRooms}
-                  className="p-1.5 text-zinc-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-amber-950/30"
+                  className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-zinc-800"
                 >
-                  <RefreshCw size={14} className={loadingRooms ? 'animate-spin' : ''} />
+                  <RefreshCw size={13} className={loadingRooms ? 'animate-spin' : ''} />
                 </button>
               </div>
 
               {loadingRooms ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 size={24} className="animate-spin text-amber-500/50" />
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 size={22} className="animate-spin text-zinc-600" />
                 </div>
               ) : availableRooms.length === 0 ? (
-                <div className="text-center py-12 text-zinc-600">
-                  <Users size={32} className="mx-auto mb-3 opacity-40" />
-                  <p className="text-sm">{t("No rooms available")}</p>
-                  <p className="text-xs mt-1 text-zinc-700">{t("Create one from the Join tab")}</p>
+                <div className="text-center py-10 space-y-2">
+                  <Users size={28} className="mx-auto text-zinc-700" />
+                  <p className="text-sm text-zinc-500">{t("No rooms available")}</p>
+                  <p className="text-xs text-zinc-700">{t("Create one from the Join tab")}</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-0.5">
                   {availableRooms.map((room) => {
                     const isWaiting = room.status === 'waiting';
                     return (
@@ -222,30 +221,30 @@ export default function JoinScreen() {
                         onClick={() => isWaiting && handleJoinRoom(room.id)}
                         disabled={!isWaiting}
                         className={cn(
-                          "w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left",
+                          "w-full flex items-center justify-between p-3.5 rounded-xl border transition-all text-left",
                           isWaiting
-                            ? "bg-black/20 border-white/5 hover:border-amber-500/30 hover:bg-amber-950/20 cursor-pointer"
-                            : "bg-black/10 border-white/5 opacity-50 cursor-not-allowed"
+                            ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800/60 cursor-pointer"
+                            : "bg-zinc-900/40 border-zinc-800/40 opacity-40 cursor-not-allowed"
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-amber-950/40 border border-amber-500/20 rounded-lg flex items-center justify-center">
-                            <Crown size={16} className="text-amber-500/70" />
+                          <div className="w-8 h-8 bg-zinc-800 border border-zinc-700 rounded-lg flex items-center justify-center shrink-0">
+                            <Crown size={14} className="text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-zinc-200 font-mono">{room.id}</p>
+                            <p className="text-sm font-bold text-zinc-100 font-mono tracking-wider">{room.id}</p>
                             <p className="text-xs text-zinc-500 mt-0.5">{room.hostName}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5 shrink-0">
                           <span className="text-xs text-zinc-500 font-mono">
                             {room.playerCount}/{room.maxPlayers}
                           </span>
                           <span className={cn(
-                            "px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider",
+                            "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider",
                             isWaiting
-                              ? "bg-emerald-950/50 text-emerald-400 border border-emerald-500/20"
-                              : "bg-red-950/50 text-red-400 border border-red-500/20"
+                              ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
+                              : "bg-zinc-800 text-zinc-500"
                           )}>
                             {isWaiting ? t("Waiting") : t("In Game")}
                           </span>
@@ -259,7 +258,7 @@ export default function JoinScreen() {
           )}
         </div>
 
-        <p className="text-center text-zinc-600 text-xs mt-8 font-serif italic">
+        <p className="text-center text-zinc-700 text-xs font-serif italic">
           "The truth is hidden in the mist."
         </p>
       </div>

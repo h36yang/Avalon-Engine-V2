@@ -309,7 +309,7 @@ export default function GameScreen() {
                 {t("Propose Team")}
                 <span className={cn(
                   "text-xs font-semibold px-2 py-0.5 rounded-full",
-                  selectedTeam.length === currentQuest.teamSize ? "bg-zinc-900 text-zinc-700" : "bg-zinc-800 text-zinc-600"
+                  selectedTeam.length === currentQuest.teamSize ? "bg-green-600 text-white" : "bg-zinc-800 text-zinc-600"
                 )}>
                   {selectedTeam.length}/{currentQuest.teamSize}
                 </span>
@@ -326,13 +326,13 @@ export default function GameScreen() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => voteTeam(false)}
-                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-900 border border-red-800/50 text-red-400 hover:bg-red-950/20 transition-all flex items-center justify-center gap-2"
+                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-900 border border-red-500 text-red-400 hover:bg-red-950/30 transition-all flex items-center justify-center gap-2"
                 >
                   <X size={16} /> {t("Reject")}
                 </button>
                 <button
                   onClick={() => voteTeam(true)}
-                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-50 hover:bg-white text-zinc-950 transition-all flex items-center justify-center gap-2 shadow-lg"
+                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-900 border border-green-500 text-green-400 hover:bg-green-950/30 transition-all flex items-center justify-center gap-2"
                 >
                   <Check size={16} /> {t("Approve")}
                 </button>

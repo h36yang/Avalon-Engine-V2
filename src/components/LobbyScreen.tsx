@@ -1,7 +1,8 @@
 import { useGameStore, Role } from "../store";
-import { Users, Settings, Play, LogOut, Bot, UserMinus, Plus, ChevronDown, Sparkles, Brain } from "lucide-react";
+import { Users, Play, LogOut, Bot, Brain, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { useState } from "react";
+import { cn } from "../utils/cn";
 
 type Provider = 'gemini' | 'openrouter' | 'groq' | 'nvidia';
 
@@ -36,6 +37,8 @@ const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
   ],
 };
 
+const selectClass = "w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-zinc-600 transition-colors";
+
 export default function LobbyScreen() {
   const room = useGameStore((state) => state.room);
   const sessionId = useGameStore((state) => state.sessionId);
@@ -57,6 +60,7 @@ export default function LobbyScreen() {
     customModel: string;
   }>>({});
   const [testStatus, setTestStatus] = useState<Record<string, string>>({});
+  const [expandedBot, setExpandedBot] = useState<string | null>(null);
 
   if (!room) return null;
 
@@ -78,7 +82,6 @@ export default function LobbyScreen() {
     }
     setBotConfigs(prev => ({ ...prev, [sid]: next }));
     updateBotApiKey(sid, next.apiKey, next.provider, resolveModel(next) || undefined);
-    // Clear test result when config changes
     setTestStatus(prev => ({ ...prev, [sid]: '' }));
   };
 
@@ -93,7 +96,6 @@ export default function LobbyScreen() {
   const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
   const canStart = room.players.length >= 5 && room.players.length <= 10;
   const canAddBot = isHost && room.players.length < 10;
-  const botCount = room.players.filter(p => p.isBot).length;
 
   const toggleRole = (role: Role) => {
     if (!isHost) return;
@@ -104,218 +106,238 @@ export default function LobbyScreen() {
     updateSettings({ optionalRoles: updated });
   };
 
-  return (
-    <div className="min-h-screen text-zinc-50 relative overflow-hidden">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/lobby-bg.png)' }}
-      />
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/60 via-zinc-950/75 to-zinc-950/95" />
+  const ROLE_COMPOSITIONS: Record<number, string> = {
+    5: "Merlin · Percival · Loyal Servant · Morgana · Assassin",
+    6: "Merlin · Percival · Loyal Servant ×2 · Morgana · Assassin",
+    7: "Merlin · Percival · Loyal Servant ×2 · Morgana · Assassin · Oberon",
+    8: "Merlin · Percival · Loyal Servant ×3 · Morgana · Assassin · Minion",
+    9: "Merlin · Percival · Loyal Servant ×4 · Morgana · Assassin · Mordred",
+    10: "Merlin · Percival · Loyal Servant ×4 · Morgana · Assassin · Oberon · Mordred",
+  };
 
-      <div className="relative z-10 p-6 flex flex-col max-w-md mx-auto min-h-screen">
-        <header className="flex items-center justify-between mb-8">
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col max-w-md mx-auto">
+
+      {/* Header */}
+      <header className="px-5 pt-12 pb-5 border-b border-zinc-900">
+        <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-serif font-bold tracking-tight">
-              {t("Room")} {room.id}
-            </h1>
-            <p className="text-zinc-400 text-sm">{t("Waiting for players...")}</p>
+            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest mb-1">{t("Room")}</p>
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-50 font-mono">{room.id}</h1>
+            <p className="text-zinc-500 text-sm mt-1">{t("Waiting for players...")}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-zinc-900/70 backdrop-blur-sm px-3 py-1 rounded-full border border-zinc-700/50 flex items-center gap-2">
-              <Users size={16} className="text-zinc-400" />
-              <span className="font-mono text-sm">{room.players.length}/10</span>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full">
+              <Users size={13} className="text-zinc-500" />
+              <span className="font-mono text-sm font-semibold text-zinc-300">{room.players.length}/10</span>
             </div>
-            {isHost ? (
-              <button
-                onClick={endGame}
-                className="p-2 bg-zinc-900/70 backdrop-blur-sm hover:bg-red-900/40 border border-zinc-700/50 hover:border-red-500/50 rounded-full text-zinc-400 hover:text-red-400 transition-colors"
-                title={t("End Game")}
-              >
-                <LogOut size={16} />
-              </button>
-            ) : (
-              <button
-                onClick={leaveRoom}
-                className="p-2 bg-zinc-900/70 backdrop-blur-sm hover:bg-zinc-800 border border-zinc-700/50 rounded-full text-zinc-400 transition-colors"
-                title={t("Leave Room")}
-              >
-                <LogOut size={16} />
-              </button>
+            <button
+              onClick={isHost ? endGame : leaveRoom}
+              className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors"
+              title={isHost ? t("End Game") : t("Leave Room")}
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 pb-32">
+
+        {/* Players Section */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest">{t("Players")}</p>
+            {canAddBot && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => addBot('normal')}
+                  className="text-xs font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded-lg border border-zinc-700 transition-colors"
+                >
+                  + Normal
+                </button>
+                <button
+                  onClick={() => addBot('hard')}
+                  className="text-xs font-semibold text-amber-400 bg-amber-950/30 hover:bg-amber-950/50 px-2.5 py-1 rounded-lg border border-amber-800/40 transition-colors"
+                >
+                  + Hard
+                </button>
+                <button
+                  onClick={() => addBot('ai')}
+                  className="text-xs font-semibold text-indigo-400 bg-indigo-950/30 hover:bg-indigo-950/50 px-2.5 py-1 rounded-lg border border-indigo-800/40 transition-colors"
+                >
+                  + AI
+                </button>
+              </div>
             )}
           </div>
-        </header>
 
-        <div className="flex-1 space-y-8">
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                {t("Players")}
-              </h2>
-              {canAddBot && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => addBot('normal')}
-                    className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-zinc-700 to-zinc-600 px-1.5 py-0.5 rounded-lg border border-zinc-500/30 hover:from-zinc-600 hover:to-zinc-500 hover:shadow-lg hover:shadow-zinc-500/25 active:scale-95"
-                    title={t("Add Normal Bot")}
-                  >
-                    <span>{t('Add Normal Bot')}</span>
-                  </button>
-                  <button
-                    onClick={() => addBot('hard')}
-                    className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-amber-600 to-amber-500 px-1.5 py-0.5 rounded-lg border border-amber-400/30 hover:from-amber-500 hover:to-amber-400 hover:shadow-lg hover:shadow-amber-500/25 active:scale-95"
-                    title={t("Add Hard Bot")}
-                  >
-                    <span>{t('Add Hard Bot')}</span>
-                  </button>
-                  <button
-                    onClick={() => addBot('ai')}
-                    className="text-xs flex items-center gap-1 text-white font-medium transition-all duration-200 bg-gradient-to-r from-violet-600 to-indigo-500 px-1.5 py-0.5 rounded-lg border border-violet-400/30 hover:from-violet-500 hover:to-indigo-400 hover:shadow-lg hover:shadow-violet-500/25 active:scale-95"
-                    title={t("Add AI Bot")}
-                  >
-                    <span>{t('Add AI Bot')}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-            <ul className="space-y-2">
-              {room.players.map((p, i) => (
-                <li
-                  key={p.sessionId}
-                  className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-700/40 rounded-xl flex flex-col"
-                >
-                  <div className="p-4 flex items-center justify-between">
-                    <span className="font-medium flex items-center gap-2">
-                      {p.name} {p.sessionId === sessionId && "(You)"}
-                      {p.isBot && p.botClass === 'ai' && <Brain size={18} className="text-violet-400" />}
-                      {p.isBot && p.botClass !== 'ai' && <Bot size={18} className={p.botClass === "hard" ? "text-amber-400" : "text-zinc-400"} />}
-                      {p.isBot && p.botClass === 'ai' && p.hasApiKey && <Sparkles size={14} className="text-indigo-400" />}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {p.isHost && (
-                        <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-md">
-                          {t("Host")}
-                        </span>
-                      )}
-                      {!p.isConnected && !p.isBot && (
-                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-md">
-                          {t("Offline")}
-                        </span>
-                      )}
-                      {isHost && !p.isHost && (
-                        <button
-                          onClick={() => kickPlayer(p.sessionId)}
-                          className="p-0.5 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors flex items-center justify-center"
-                          title={t("Kick")}
-                        >
-                          <span className="text-sm leading-none font-bold">×</span>
-                        </button>
+          <ul className="space-y-2">
+            {room.players.map((p) => (
+              <li key={p.sessionId} className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center border shrink-0 text-xs font-bold",
+                      p.isBot && p.botClass === 'ai'
+                        ? "bg-indigo-950/50 border-indigo-800/50 text-indigo-400"
+                        : p.isBot && p.botClass === 'hard'
+                          ? "bg-amber-950/50 border-amber-800/50 text-amber-400"
+                          : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                    )}>
+                      {p.isBot && p.botClass === 'ai'
+                        ? <Brain size={14} />
+                        : p.isBot
+                          ? <Bot size={14} />
+                          : p.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-zinc-100 truncate">
+                        {p.name}
+                        {p.sessionId === sessionId && <span className="text-zinc-500 font-normal ml-1">(You)</span>}
+                      </p>
+                      {p.isBot && (
+                        <p className={cn(
+                          "text-xs font-medium",
+                          p.botClass === 'ai' ? "text-indigo-500" : p.botClass === 'hard' ? "text-amber-500" : "text-zinc-500"
+                        )}>
+                          {p.botClass === 'ai' ? 'AI Bot' : p.botClass === 'hard' ? 'Hard Bot' : 'Normal Bot'}
+                          {p.hasApiKey && <Sparkles size={10} className="inline ml-1" />}
+                        </p>
                       )}
                     </div>
                   </div>
-                  {p.isBot && p.botClass === 'ai' && isHost && (
-                    <div className="px-4 pb-4 pt-3 border-t border-zinc-800/50 flex flex-col gap-2">
-                      {/* Provider */}
-                      <select
-                        value={getBotConfig(p.sessionId).provider}
-                        onChange={(e) => updateLocalBotConfig(p.sessionId, { provider: e.target.value as Provider })}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
-                      >
-                        <option value="gemini">Google Gemini (aistudio.google.com)</option>
-                        <option value="openrouter">OpenRouter (openrouter.ai)</option>
-                        <option value="groq">Groq (console.groq.com)</option>
-                        <option value="nvidia">NVIDIA NIM (build.nvidia.com)</option>
-                      </select>
-                      {/* API Key */}
-                      <input
-                        type="password"
-                        placeholder={
-                          getBotConfig(p.sessionId).provider === 'gemini' ? 'Gemini API Key' :
-                          getBotConfig(p.sessionId).provider === 'openrouter' ? 'OpenRouter API Key' :
-                          getBotConfig(p.sessionId).provider === 'groq' ? 'Groq API Key' : 'NVIDIA NIM API Key'
-                        }
-                        value={getBotConfig(p.sessionId).apiKey}
-                        onChange={(e) => updateLocalBotConfig(p.sessionId, { apiKey: e.target.value })}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
-                      />
-                      {/* Test key button */}
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {p.isHost && (
+                      <span className="text-[10px] font-semibold text-zinc-400 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Host
+                      </span>
+                    )}
+                    {!p.isConnected && !p.isBot && (
+                      <span className="text-[10px] font-semibold text-red-400 bg-red-950/30 border border-red-800/30 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Offline
+                      </span>
+                    )}
+                    {p.isBot && p.botClass === 'ai' && isHost && (
                       <button
-                        onClick={() => handleTestApiKey(p.sessionId)}
-                        disabled={!getBotConfig(p.sessionId).apiKey || testStatus[p.sessionId] === 'testing'}
-                        className="w-full text-xs py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-indigo-500/50 transition-colors disabled:opacity-40"
+                        onClick={() => setExpandedBot(expandedBot === p.sessionId ? null : p.sessionId)}
+                        className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
                       >
-                        {testStatus[p.sessionId] === 'testing' ? 'Testing...' : 'Test Key'}
+                        <ChevronDown size={14} className={cn("transition-transform", expandedBot === p.sessionId && "rotate-180")} />
                       </button>
-                      {testStatus[p.sessionId] && testStatus[p.sessionId] !== 'testing' && (
-                        <div className={`text-xs px-2 py-1 rounded-lg ${String(testStatus[p.sessionId]).startsWith('✅') ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
-                          {testStatus[p.sessionId]}
-                        </div>
-                      )}
-                      {/* Model selector */}
+                    )}
+                    {isHost && !p.isHost && (
+                      <button
+                        onClick={() => kickPlayer(p.sessionId)}
+                        className="w-6 h-6 flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-950/30 rounded-md transition-colors text-base font-bold leading-none"
+                        title={t("Kick")}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI Bot Config Panel */}
+                {p.isBot && p.botClass === 'ai' && isHost && expandedBot === p.sessionId && (
+                  <div className="px-4 pb-4 pt-3 border-t border-zinc-800/50 space-y-2.5">
+                    <select
+                      value={getBotConfig(p.sessionId).provider}
+                      onChange={(e) => updateLocalBotConfig(p.sessionId, { provider: e.target.value as Provider })}
+                      className={selectClass}
+                    >
+                      <option value="gemini">Google Gemini</option>
+                      <option value="openrouter">OpenRouter</option>
+                      <option value="groq">Groq</option>
+                      <option value="nvidia">NVIDIA NIM</option>
+                    </select>
+                    <input
+                      type="password"
+                      placeholder="API Key"
+                      value={getBotConfig(p.sessionId).apiKey}
+                      onChange={(e) => updateLocalBotConfig(p.sessionId, { apiKey: e.target.value })}
+                      className={cn(selectClass, "placeholder:text-zinc-700")}
+                    />
+                    <div className="flex gap-2">
                       <select
                         value={getBotConfig(p.sessionId).model}
                         onChange={(e) => updateLocalBotConfig(p.sessionId, { model: e.target.value })}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/50"
+                        className={cn(selectClass, "flex-1")}
                       >
                         {PROVIDER_MODELS[getBotConfig(p.sessionId).provider].map(m => (
                           <option key={m.value} value={m.value}>{m.label}</option>
                         ))}
                         <option value="custom">Custom model...</option>
                       </select>
-                      {/* Custom model input */}
-                      {getBotConfig(p.sessionId).model === 'custom' && (
-                        <input
-                          type="text"
-                          placeholder="Enter model name"
-                          value={getBotConfig(p.sessionId).customModel}
-                          onChange={(e) => updateLocalBotConfig(p.sessionId, { customModel: e.target.value })}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-400 focus:outline-none focus:border-indigo-500/50"
-                        />
-                      )}
+                      <button
+                        onClick={() => handleTestApiKey(p.sessionId)}
+                        disabled={!getBotConfig(p.sessionId).apiKey || testStatus[p.sessionId] === 'testing'}
+                        className="px-3 py-2 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors text-xs font-medium disabled:opacity-40 whitespace-nowrap"
+                      >
+                        {testStatus[p.sessionId] === 'testing' ? '...' : 'Test'}
+                      </button>
                     </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
+                    {getBotConfig(p.sessionId).model === 'custom' && (
+                      <input
+                        type="text"
+                        placeholder="Custom model name"
+                        value={getBotConfig(p.sessionId).customModel}
+                        onChange={(e) => updateLocalBotConfig(p.sessionId, { customModel: e.target.value })}
+                        className={cn(selectClass, "placeholder:text-zinc-700")}
+                      />
+                    )}
+                    {testStatus[p.sessionId] && testStatus[p.sessionId] !== 'testing' && (
+                      <div className={cn(
+                        "text-xs px-3 py-2 rounded-lg",
+                        String(testStatus[p.sessionId]).startsWith('✅')
+                          ? 'text-emerald-400 bg-emerald-950/30 border border-emerald-800/30'
+                          : 'text-red-400 bg-red-950/30 border border-red-800/30'
+                      )}>
+                        {testStatus[p.sessionId]}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Settings size={16} className="text-zinc-400" />
-              <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                {t("Roles in play")} ({room.players.length} {t("Players")})
-              </h2>
-            </div>
-            <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-700/40 rounded-xl p-4 text-sm text-zinc-300">
-              {room.players.length < 5 && t("Need at least 5 players")}
-              {room.players.length === 5 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")}, ${t("Morgana")}, ${t("Assassin")}`}
-              {room.players.length === 6 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")} x2, ${t("Morgana")}, ${t("Assassin")}`}
-              {room.players.length === 7 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")} x2, ${t("Morgana")}, ${t("Assassin")}, ${t("Oberon")}`}
-              {room.players.length === 8 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")} x3, ${t("Morgana")}, ${t("Assassin")}, ${t("Minion")}`}
-              {room.players.length === 9 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")} x4, ${t("Morgana")}, ${t("Assassin")}, ${t("Mordred")}`}
-              {room.players.length === 10 && `${t("Merlin")}, ${t("Percival")}, ${t("Loyal Servant")} x4, ${t("Morgana")}, ${t("Assassin")}, ${t("Oberon")}, ${t("Mordred")}`}
-            </div>
-          </section>
-        </div>
-
-        {isHost && (
-          <div className="mt-8 pt-4 border-t border-zinc-700/30">
-            <button
-              onClick={() => startGame(devRequestedRole ? { [sessionId]: devRequestedRole } : undefined)}
-              disabled={!canStart}
-              className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-medium transition-colors ${canStart
-                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                : "bg-zinc-800/70 text-zinc-500 cursor-not-allowed"
-                }`}
-            >
-              <Play size={20} />
-              {canStart ? t("Start Game") : t("Need 5-10 players")}
-            </button>
+        {/* Roles Section */}
+        <section>
+          <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3">{t("Roles in Play")}</p>
+          <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-4">
+            {room.players.length < 5 ? (
+              <p className="text-sm text-zinc-500">{t("Need at least 5 players to start")}</p>
+            ) : (
+              <p className="text-sm text-zinc-300 leading-relaxed">
+                {ROLE_COMPOSITIONS[room.players.length] || ''}
+              </p>
+            )}
           </div>
-        )}
-        {!isHost && (
-          <div className="mt-8 pt-4 border-t border-zinc-700/30 text-center text-zinc-400 text-sm">
+        </section>
+      </div>
+
+      {/* Sticky Bottom Action */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-900">
+        {isHost ? (
+          <button
+            onClick={() => startGame(devRequestedRole ? { [sessionId]: devRequestedRole } : undefined)}
+            disabled={!canStart}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all",
+              canStart
+                ? "bg-zinc-50 hover:bg-white text-zinc-950 shadow-lg"
+                : "bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed"
+            )}
+          >
+            <Play size={16} />
+            {canStart ? t("Start Game") : t("Need 5–10 players")}
+          </button>
+        ) : (
+          <div className="text-center text-zinc-500 text-sm py-3.5 font-medium">
             {t("Waiting for host to start")}
           </div>
         )}

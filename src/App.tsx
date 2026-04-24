@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { useGameStore } from "./store";
 import { supabase, recreateSupabaseClient } from "./utils/supabase";
-import AuthScreen from "./components/AuthScreen";
+import AuthScreen from "./components/AuthScreenMockup";
 import JoinScreen from "./components/JoinScreen";
 import LobbyScreen from "./components/LobbyScreen";
 import RoleRevealScreen from "./components/RoleRevealScreen";

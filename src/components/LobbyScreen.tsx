@@ -1,8 +1,9 @@
-import { useGameStore, Role } from "../store";
+import { useGameStore } from "../store";
 import { Users, Play, LogOut, Bot, Brain, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { useState } from "react";
 import { cn } from "../utils/cn";
+import { Role } from "../utils/gameLogic";
 
 type Provider = 'gemini' | 'openrouter' | 'groq' | 'nvidia';
 

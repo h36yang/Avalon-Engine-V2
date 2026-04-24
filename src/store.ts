@@ -2,33 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
 import { User } from '@supabase/supabase-js';
-
-export type Role =
-  | "Merlin"
-  | "Assassin"
-  | "Percival"
-  | "Morgana"
-  | "Mordred"
-  | "Oberon"
-  | "Loyal Servant"
-  | "Minion";
-
-export interface Player {
-  id: string;
-  sessionId: string;
-  userId?: string;
-  name: string;
-  role: Role | null;
-  isConnected: boolean;
-  isHost: boolean;
-  isBot?: boolean;
-  botClass?: 'normal' | 'hard' | 'ai';
-  apiKey?: string;
-  hasApiKey?: boolean;
-  provider?: 'gemini' | 'openrouter' | 'groq' | 'nvidia';
-  model?: string;
-  difficulty?: 'normal' | 'hard';
-}
+import { Role, Player } from './utils/gameLogic';
 
 export interface Quest {
   teamSize: number;
@@ -45,6 +19,20 @@ export interface TeamVoteHistory {
   proposedTeam: string[];
   votes: Record<string, boolean>;
   approved: boolean;
+}
+
+export interface BotOpinion {
+  botId: string;
+  text: string;
+  isError?: boolean;
+}
+
+export interface MindLogEntry {
+  phase: string;
+  prompt: string;
+  response: string;
+  decision: string;
+  timestamp: number;
 }
 
 export interface Room {
@@ -73,8 +61,8 @@ export interface Room {
     winner: "good" | "evil" | null;
     assassinationTarget: string | null;
     voteHistory: TeamVoteHistory[];
-    botOpinions?: { botId: string; text: string; isError?: boolean }[];
-    botMindLogs?: Record<string, { phase: string; prompt: string; response: string; decision: string; timestamp: number }[]>;
+    botOpinions?: BotOpinion[];
+    botMindLogs?: Record<string, MindLogEntry[]>;
   };
 }
 

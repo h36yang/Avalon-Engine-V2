@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { encode } from '@toon-format/toon';
 import { Role, Player, getQuestConfig, assignRoles, EVIL_ROLES } from './src/utils/gameLogic';
+import { MindLogEntry, Room as ClientRoom } from './src/store';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -161,25 +162,6 @@ async function startServer() {
 
 // --- Game Logic ---
 
-
-
-interface Quest {
-  teamSize: number;
-  requiresTwoFails: boolean;
-  status: 'pending' | 'success' | 'fail';
-  team: string[]; // sessionIds
-  votes: Record<string, boolean>; // sessionId -> success(true)/fail(false)
-}
-
-interface TeamVoteHistory {
-  questIndex: number;
-  voteTrack: number;
-  leaderIndex: number;
-  proposedTeam: string[];
-  votes: Record<string, boolean>;
-  approved: boolean;
-}
-
 interface BotMemory {
   trustScores: Record<string, number>; // sessionId -> score (0-100)
   knownRoles: Record<string, Role | 'Good' | 'Evil'>; // sessionId -> known role/alignment
@@ -189,40 +171,10 @@ interface BotMemory {
   percivalCandidates?: { a: string; b: string; merlinLikelihood: Record<string, number> };
 }
 
-interface BotOpinion {
-  botId: string;
-  text: string;
-  isError?: boolean;
-}
-
-interface MindLogEntry {
-  phase: string;
-  prompt: string;
-  response: string;
-  decision: string;
-  timestamp: number;
-}
-
-interface Room {
-  id: string;
-  players: Player[];
-  status: 'lobby' | 'role_reveal' | 'team_building' | 'team_voting' | 'team_vote_reveal' | 'quest_voting' | 'quest_result' | 'assassin' | 'game_over';
-  settings: {
-    optionalRoles: Role[];
-  };
-  gameState: {
-    quests: Quest[];
-    currentQuestIndex: number;
-    voteTrack: number; // 0-5
-    leaderIndex: number;
-    proposedTeam: string[]; // sessionIds
-    teamVotes: Record<string, boolean>; // sessionId -> approve(true)/reject(false)
-    winner: 'good' | 'evil' | null;
-    assassinationTarget: string | null;
-    voteHistory: TeamVoteHistory[];
+interface Room extends Omit<ClientRoom, 'gameState'> {
+  gameState: ClientRoom['gameState'] & {
     botMemories: Record<string, BotMemory>; // bot sessionId -> memory
-    botOpinions?: BotOpinion[];
-    botMindLogs: Record<string, MindLogEntry[]>; // AI bot sessionId -> mind log
+    botMindLogs: Record<string, MindLogEntry[]>; // override to make required
   };
   lastActivityTime: number;
   idleWarningEmitted: boolean;

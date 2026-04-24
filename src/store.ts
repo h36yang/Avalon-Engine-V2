@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
 import { User } from '@supabase/supabase-js';
 import { Role, Player } from './utils/gameLogic';
@@ -98,6 +98,7 @@ interface GameState {
   idleWarning: boolean;
   idleCountdown: number;
   _idleTimer?: ReturnType<typeof setInterval>;
+  connecting: boolean;
   setLanguage: (lang: 'en' | 'zh') => void;
   setDevRequestedRole: (role?: Role) => void;
   connect: (roomId: string, name: string) => void;
@@ -131,6 +132,7 @@ export const useGameStore = create<GameState>()(
     (set, get) => ({
       user: null,
       profile: null,
+      connecting: false,
       setAuth: (user, profile) => set({ user, profile, name: profile?.username || get().name }),
       logout: () => set({ user: null, profile: null }),
       socket: null,
@@ -153,7 +155,7 @@ export const useGameStore = create<GameState>()(
         if (existingSocket) {
           existingSocket.disconnect();
         }
-        set({ error: null });
+        set({ error: null, connecting: true });
 
         const socketUrl =
           (import.meta as any).env.VITE_APP_URL || window.location.origin;
@@ -169,8 +171,26 @@ export const useGameStore = create<GameState>()(
           console.log('Skipping Supabase auth for socket connection (offline mode)');
         }
 
+        // Timeout safeguard: if socket doesn't connect in X ms, show error
+        let connectTimeout: ReturnType<typeof setTimeout> | undefined;
+        const TIMEOUT_MS = 8000;
+        connectTimeout = setTimeout(() => {
+          if (!socket.connected) {
+            set({ connecting: false, error: 'Connection timed out. Please try again.' });
+            try { socket.disconnect(); } catch {};
+          }
+        }, TIMEOUT_MS);
+
         socket.on("connect", () => {
+          if (connectTimeout) clearTimeout(connectTimeout);
+          set({ connecting: false });
           socket.emit("join_room", { roomId, sessionId, name, token });
+        });
+
+        socket.on("connect_error", (err: any) => {
+          if (connectTimeout) clearTimeout(connectTimeout);
+          set({ connecting: false, error: err?.message || 'Connection error' });
+          try { socket.disconnect(); } catch {};
         });
 
         socket.on("room_update", (room: Room) => {
@@ -258,7 +278,7 @@ export const useGameStore = create<GameState>()(
           socket.emit("leave_room", { roomId, sessionId });
           socket.disconnect();
         }
-        set({ socket: null, room: null, roomId: "", error: null });
+        set({ socket: null, room: null, roomId: "", error: null, connecting: false });
       },
 
       kickPlayer: (targetSessionId: string) => {

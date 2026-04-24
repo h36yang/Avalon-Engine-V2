@@ -69,7 +69,7 @@ export default function JoinScreen() {
     borderRadius: 9,
     padding: '11px 12px 11px 36px',
     color: 'rgba(255,255,255,0.88)',
-    fontSize: 13,
+    fontSize: 16,
     outline: 'none',
   };
 

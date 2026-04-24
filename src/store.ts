@@ -128,6 +128,8 @@ const generateSessionId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
+const TIMEOUT_MS = 5000; // 5 seconds
+
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
@@ -161,7 +163,7 @@ export const useGameStore = create<GameState>()(
         // Get current Supabase session token (wrapped in try-catch for retry)
         let token = undefined;
         const getSessionTimeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timed out getting auth token')), 5000)
+          setTimeout(() => reject(new Error('Timed out getting auth token')), TIMEOUT_MS)
         );
         try {
           const { data: { session } } = await Promise.race([
@@ -181,14 +183,14 @@ export const useGameStore = create<GameState>()(
           (import.meta as any).env.VITE_APP_URL || window.location.origin;
         const socket = io(socketUrl, { autoConnect: false });
 
-        // Timeout safeguard: if socket doesn't connect in X ms, show error
+        // Timeout safeguard: if socket doesn't connect in 5 seconds, show error
         let connectTimeout: ReturnType<typeof setTimeout> | undefined;
         connectTimeout = setTimeout(() => {
           if (!socket.connected) {
             set({ connecting: false, error: 'Connection timed out. Please try again.' });
             try { socket.disconnect(); } catch { };
           }
-        }, 8000);
+        }, TIMEOUT_MS);
 
         socket.on("connect", () => {
           if (connectTimeout) clearTimeout(connectTimeout);

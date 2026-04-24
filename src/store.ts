@@ -158,10 +158,10 @@ export const useGameStore = create<GameState>()(
         }
         set({ error: null, connecting: true });
 
-        // Get current Supabase session token (wrapped in try-catch for offline mode)
+        // Get current Supabase session token (wrapped in try-catch for retry)
         let token = undefined;
         const getSessionTimeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Supabase getSession timed out after 10 seconds')), 10000)
+          setTimeout(() => reject(new Error('Timed out getting auth token')), 5000)
         );
         try {
           const { data: { session } } = await Promise.race([
@@ -170,7 +170,11 @@ export const useGameStore = create<GameState>()(
           ]);
           token = session?.access_token;
         } catch (err) {
-          console.warn('Skipping Supabase auth for socket connection (offline mode):', err);
+          set({
+            connecting: false,
+            error: `${err}. Please refresh the page and try again.`
+          });
+          return;
         }
 
         const socketUrl =

@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
 import { User } from '@supabase/supabase-js';
 import { Role, Player } from './utils/gameLogic';
+import { supabase, recreateSupabaseClient } from './utils/supabase';
 
 export interface Quest {
   teamSize: number;
@@ -157,29 +158,33 @@ export const useGameStore = create<GameState>()(
         }
         set({ error: null, connecting: true });
 
-        const socketUrl =
-          (import.meta as any).env.VITE_APP_URL || window.location.origin;
-        const socket = io(socketUrl);
-
         // Get current Supabase session token (wrapped in try-catch for offline mode)
         let token = undefined;
+        const getSessionTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Supabase getSession timed out after 10 seconds')), 10000)
+        );
         try {
-          const { supabase } = await import('./utils/supabase');
-          const { data: { session } } = await supabase.auth.getSession();
+          const { data: { session } } = await Promise.race([
+            supabase.auth.getSession(),
+            getSessionTimeout
+          ]);
           token = session?.access_token;
         } catch (err) {
-          console.log('Skipping Supabase auth for socket connection (offline mode)');
+          console.warn('Skipping Supabase auth for socket connection (offline mode):', err);
         }
+
+        const socketUrl =
+          (import.meta as any).env.VITE_APP_URL || window.location.origin;
+        const socket = io(socketUrl, { autoConnect: false });
 
         // Timeout safeguard: if socket doesn't connect in X ms, show error
         let connectTimeout: ReturnType<typeof setTimeout> | undefined;
-        const TIMEOUT_MS = 8000;
         connectTimeout = setTimeout(() => {
           if (!socket.connected) {
             set({ connecting: false, error: 'Connection timed out. Please try again.' });
-            try { socket.disconnect(); } catch {};
+            try { socket.disconnect(); } catch { };
           }
-        }, TIMEOUT_MS);
+        }, 8000);
 
         socket.on("connect", () => {
           if (connectTimeout) clearTimeout(connectTimeout);
@@ -190,7 +195,13 @@ export const useGameStore = create<GameState>()(
         socket.on("connect_error", (err: any) => {
           if (connectTimeout) clearTimeout(connectTimeout);
           set({ connecting: false, error: err?.message || 'Connection error' });
-          try { socket.disconnect(); } catch {};
+          try { socket.disconnect(); } catch { };
+        });
+
+        socket.on("connect_timeout", () => {
+          if (connectTimeout) clearTimeout(connectTimeout);
+          set({ connecting: false, error: 'Connection attempt timed out' });
+          try { socket.disconnect(); } catch { };
         });
 
         socket.on("room_update", (room: Room) => {
@@ -234,7 +245,16 @@ export const useGameStore = create<GameState>()(
           set({ idleWarning: false, idleCountdown: 0, _idleTimer: undefined });
         });
 
-        set({ socket, roomId, name });
+        // Start the connection after handlers + auth are set
+        try {
+          socket.connect();
+          set({ socket, roomId, name });
+        } catch (err) {
+          set({
+            connecting: false,
+            error: err instanceof Error ? err.message : 'Connection error'
+          });
+        }
       },
 
       updateSettings: (settings) => {

@@ -46,3 +46,18 @@ body {
       box-shadow 0.15s ease;
   }
 }
+
+/* Prevent iOS Safari auto-zoom on input/select focus.
+   iOS zooms in when font-size < 16px; this unlayered rule overrides Tailwind utilities. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Prevent double-tap zoom on buttons and links */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}

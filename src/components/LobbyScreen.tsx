@@ -1,9 +1,12 @@
 import { useGameStore } from "../store";
+import { Role } from "../utils/gameLogic";
 import { Users, Play, LogOut, Bot, Brain, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { useState } from "react";
 import { cn } from "../utils/cn";
-import { Role } from "../utils/gameLogic";
+
+const GOLD = '#D4AF37';
+const GOLD_DIM = 'rgba(212,175,55,0.22)';
 
 type Provider = 'gemini' | 'openrouter' | 'groq' | 'nvidia';
 
@@ -38,7 +41,7 @@ const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
   ],
 };
 
-const selectClass = "w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-zinc-600 transition-colors";
+const selectClass = "w-full bg-black/40 border border-[rgba(212,175,55,0.15)] rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors";
 
 export default function LobbyScreen() {
   const room = useGameStore((state) => state.room);
@@ -117,56 +120,77 @@ export default function LobbyScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col max-w-md mx-auto">
+    <div className="min-h-screen text-zinc-50 flex flex-col max-w-md mx-auto" style={{ background: '#080604' }}>
 
-      {/* Header */}
-      <header className="px-5 pt-12 pb-5 border-b border-zinc-900">
+      {/* ── Header ── */}
+      <header className="px-5 pt-12 pb-5" style={{ borderBottom: `1px solid rgba(212,175,55,0.1)` }}>
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest mb-1">{t("Room")}</p>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-50 font-mono">{room.id}</h1>
-            <p className="text-zinc-500 text-sm mt-1">{t("Waiting for players...")}</p>
+            <p style={{ fontSize: 9, fontWeight: 600, color: 'rgba(212,175,55,0.45)', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: 4 }}>
+              {t("Room")}
+            </p>
+            <h1
+              className="font-mono font-bold tracking-widest"
+              style={{ fontSize: 30, color: GOLD, textShadow: `0 0 20px rgba(212,175,55,0.3)`, lineHeight: 1 }}
+            >
+              {room.id}
+            </h1>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>{t("Waiting for players...")}</p>
           </div>
+
           <div className="flex items-center gap-2 mt-1">
-            <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full">
-              <Users size={13} className="text-zinc-500" />
-              <span className="font-mono text-sm font-semibold text-zinc-300">{room.players.length}/10</span>
+            {/* Player count */}
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(212,175,55,0.06)', border: `1px solid ${GOLD_DIM}` }}
+            >
+              <Users size={12} style={{ color: 'rgba(212,175,55,0.5)' }} />
+              <span className="font-mono text-sm font-semibold" style={{ color: 'rgba(212,175,55,0.8)' }}>
+                {room.players.length}/10
+              </span>
             </div>
+            {/* Leave / End */}
             <button
               onClick={isHost ? endGame : leaveRoom}
-              className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="p-2 rounded-full transition-colors"
+              style={{ background: 'rgba(212,175,55,0.05)', border: `1px solid rgba(212,175,55,0.15)`, color: 'rgba(255,255,255,0.35)' }}
               title={isHost ? t("End Game") : t("Leave Room")}
             >
-              <LogOut size={15} />
+              <LogOut size={14} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Content */}
+      {/* ── Scrollable Content ── */}
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 pb-32">
 
-        {/* Players Section */}
+        {/* ── Players Section ── */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest">{t("Players")}</p>
+            <p style={{ fontSize: 9, fontWeight: 600, color: 'rgba(212,175,55,0.45)', textTransform: 'uppercase', letterSpacing: '0.22em' }}>
+              {t("Players")}
+            </p>
             {canAddBot && (
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => addBot('normal')}
-                  className="text-xs font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded-lg border border-zinc-700 transition-colors"
+                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
+                  style={{ color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
                   + Normal
                 </button>
                 <button
                   onClick={() => addBot('hard')}
-                  className="text-xs font-semibold text-amber-400 bg-amber-950/30 hover:bg-amber-950/50 px-2.5 py-1 rounded-lg border border-amber-800/40 transition-colors"
+                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
+                  style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}
                 >
                   + Hard
                 </button>
                 <button
                   onClick={() => addBot('ai')}
-                  className="text-xs font-semibold text-indigo-400 bg-indigo-950/30 hover:bg-indigo-950/50 px-2.5 py-1 rounded-lg border border-indigo-800/40 transition-colors"
+                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
+                  style={{ color: '#818cf8', background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.25)' }}
                 >
                   + AI
                 </button>
@@ -176,33 +200,50 @@ export default function LobbyScreen() {
 
           <ul className="space-y-2">
             {room.players.map((p) => (
-              <li key={p.sessionId} className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden">
+              <li
+                key={p.sessionId}
+                className="rounded-xl overflow-hidden"
+                style={{
+                  background: 'rgba(212,175,55,0.03)',
+                  border: `1px solid rgba(212,175,55,0.1)`,
+                }}
+              >
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
+                    {/* Avatar */}
                     <div className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center border shrink-0 text-xs font-bold",
+                    )} style={
                       p.isBot && p.botClass === 'ai'
-                        ? "bg-indigo-950/50 border-indigo-800/50 text-indigo-400"
+                        ? { background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.35)', color: '#818cf8' }
                         : p.isBot && p.botClass === 'hard'
-                          ? "bg-amber-950/50 border-amber-800/50 text-amber-400"
-                          : "bg-zinc-800 border-zinc-700 text-zinc-400"
-                    )}>
+                          ? { background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: '#f59e0b' }
+                          : p.isBot
+                            ? { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.4)' }
+                            : { background: 'rgba(212,175,55,0.08)', border: `1px solid rgba(212,175,55,0.3)`, color: GOLD }
+                    }>
                       {p.isBot && p.botClass === 'ai'
                         ? <Brain size={14} />
                         : p.isBot
                           ? <Bot size={14} />
                           : p.name.charAt(0).toUpperCase()}
                     </div>
+
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm text-zinc-100 truncate">
+                      <p className="font-semibold text-sm truncate" style={{ color: 'rgba(255,255,255,0.88)' }}>
                         {p.name}
-                        {p.sessionId === sessionId && <span className="text-zinc-500 font-normal ml-1">(You)</span>}
+                        {p.sessionId === sessionId && (
+                          <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400, marginLeft: 4 }}>(You)</span>
+                        )}
                       </p>
                       {p.isBot && (
-                        <p className={cn(
-                          "text-xs font-medium",
-                          p.botClass === 'ai' ? "text-indigo-500" : p.botClass === 'hard' ? "text-amber-500" : "text-zinc-500"
-                        )}>
+                        <p className="text-xs font-medium" style={
+                          p.botClass === 'ai'
+                            ? { color: '#6366f1' }
+                            : p.botClass === 'hard'
+                              ? { color: '#d97706' }
+                              : { color: 'rgba(255,255,255,0.3)' }
+                        }>
                           {p.botClass === 'ai' ? 'AI Bot' : p.botClass === 'hard' ? 'Hard Bot' : 'Normal Bot'}
                           {p.hasApiKey && <Sparkles size={10} className="inline ml-1" />}
                         </p>
@@ -212,7 +253,10 @@ export default function LobbyScreen() {
 
                   <div className="flex items-center gap-2 shrink-0">
                     {p.isHost && (
-                      <span className="text-[10px] font-semibold text-zinc-400 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                        style={{ background: 'rgba(212,175,55,0.1)', border: `1px solid rgba(212,175,55,0.3)`, color: GOLD }}
+                      >
                         Host
                       </span>
                     )}
@@ -224,7 +268,8 @@ export default function LobbyScreen() {
                     {p.isBot && p.botClass === 'ai' && isHost && (
                       <button
                         onClick={() => setExpandedBot(expandedBot === p.sessionId ? null : p.sessionId)}
-                        className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
+                        className="p-1.5 transition-colors"
+                        style={{ color: 'rgba(212,175,55,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}
                       >
                         <ChevronDown size={14} className={cn("transition-transform", expandedBot === p.sessionId && "rotate-180")} />
                       </button>
@@ -232,7 +277,8 @@ export default function LobbyScreen() {
                     {isHost && !p.isHost && (
                       <button
                         onClick={() => kickPlayer(p.sessionId)}
-                        className="w-6 h-6 flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-950/30 rounded-md transition-colors text-base font-bold leading-none"
+                        className="w-6 h-6 flex items-center justify-center rounded-md transition-colors text-base font-bold leading-none"
+                        style={{ color: 'rgba(255,255,255,0.2)', background: 'none', border: 'none', cursor: 'pointer' }}
                         title={t("Kick")}
                       >
                         ×
@@ -243,7 +289,10 @@ export default function LobbyScreen() {
 
                 {/* AI Bot Config Panel */}
                 {p.isBot && p.botClass === 'ai' && isHost && expandedBot === p.sessionId && (
-                  <div className="px-4 pb-4 pt-3 border-t border-zinc-800/50 space-y-2.5">
+                  <div
+                    className="px-4 pb-4 pt-3 space-y-2.5"
+                    style={{ borderTop: `1px solid rgba(212,175,55,0.08)`, background: 'rgba(0,0,0,0.25)' }}
+                  >
                     <select
                       value={getBotConfig(p.sessionId).provider}
                       onChange={(e) => updateLocalBotConfig(p.sessionId, { provider: e.target.value as Provider })}
@@ -275,7 +324,8 @@ export default function LobbyScreen() {
                       <button
                         onClick={() => handleTestApiKey(p.sessionId)}
                         disabled={!getBotConfig(p.sessionId).apiKey || testStatus[p.sessionId] === 'testing'}
-                        className="px-3 py-2 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors text-xs font-medium disabled:opacity-40 whitespace-nowrap"
+                        className="px-3 py-2 rounded-lg transition-colors text-xs font-medium disabled:opacity-40 whitespace-nowrap"
+                        style={{ border: `1px solid rgba(212,175,55,0.2)`, color: 'rgba(212,175,55,0.6)', background: 'none', cursor: 'pointer' }}
                       >
                         {testStatus[p.sessionId] === 'testing' ? '...' : 'Test'}
                       </button>
@@ -306,14 +356,19 @@ export default function LobbyScreen() {
           </ul>
         </section>
 
-        {/* Roles Section */}
+        {/* ── Roles Section ── */}
         <section>
-          <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3">{t("Roles in Play")}</p>
-          <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-4">
+          <p style={{ fontSize: 9, fontWeight: 600, color: 'rgba(212,175,55,0.45)', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: 12 }}>
+            {t("Roles in Play")}
+          </p>
+          <div
+            className="p-4 rounded-xl"
+            style={{ background: 'rgba(212,175,55,0.03)', border: `1px solid rgba(212,175,55,0.1)` }}
+          >
             {room.players.length < 5 ? (
-              <p className="text-sm text-zinc-500">{t("Need at least 5 players to start")}</p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{t("Need at least 5 players to start")}</p>
             ) : (
-              <p className="text-sm text-zinc-300 leading-relaxed">
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
                 {ROLE_COMPOSITIONS[room.players.length] || ''}
               </p>
             )}
@@ -321,24 +376,35 @@ export default function LobbyScreen() {
         </section>
       </div>
 
-      {/* Sticky Bottom Action */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-900">
+      {/* ── Sticky Bottom Action ── */}
+      <div
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3"
+        style={{ background: 'rgba(8,6,4,0.95)', backdropFilter: 'blur(20px)', borderTop: `1px solid rgba(212,175,55,0.08)` }}
+      >
         {isHost ? (
           <button
             onClick={() => startGame(devRequestedRole ? { [sessionId]: devRequestedRole } : undefined)}
             disabled={!canStart}
-            className={cn(
-              "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all",
-              canStart
-                ? "bg-zinc-50 hover:bg-white text-zinc-950 shadow-lg"
-                : "bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed"
-            )}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all"
+            style={canStart ? {
+              background: `linear-gradient(135deg, #b8922d 0%, ${GOLD} 45%, #c9a030 100%)`,
+              boxShadow: `0 4px 20px rgba(212,175,55,0.28)`,
+              color: '#1c1000',
+              border: 'none',
+              cursor: 'pointer',
+              letterSpacing: '0.1em',
+            } : {
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid rgba(255,255,255,0.08)`,
+              color: 'rgba(255,255,255,0.2)',
+              cursor: 'not-allowed',
+            }}
           >
-            <Play size={16} />
+            <Play size={15} />
             {canStart ? t("Start Game") : t("Need 5–10 players")}
           </button>
         ) : (
-          <div className="text-center text-zinc-500 text-sm py-3.5 font-medium">
+          <div className="text-center py-3.5 text-sm font-medium" style={{ color: 'rgba(212,175,55,0.45)', letterSpacing: '0.05em' }}>
             {t("Waiting for host to start")}
           </div>
         )}

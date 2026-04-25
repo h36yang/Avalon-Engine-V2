@@ -53,6 +53,7 @@ export interface Room {
     optionalRoles: Role[];
   };
   gameStartedAt?: number;
+  gameEndedAt?: number;
   gameState: {
     quests: Quest[];
     currentQuestIndex: number;

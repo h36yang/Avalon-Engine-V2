@@ -179,6 +179,7 @@ interface Room extends Omit<ClientRoom, 'gameState'> {
   lastActivityTime: number;
   idleWarningEmitted: boolean;
   gameStartedAt?: number;
+  gameEndedAt?: number;
 }
 
 const IDLE_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
@@ -645,7 +646,7 @@ function applyTeamVoteResult(room: Room, io: Server) {
     // Team rejected
     room.gameState.voteTrack++;
     if (room.gameState.voteTrack >= 5) {
-      room.status = 'game_over';
+      room.status = 'game_over'; room.gameEndedAt = Date.now();
       room.gameState.winner = 'evil';
       recordGameStats(room);
     } else {
@@ -848,7 +849,7 @@ function applyQuestResult(room: Room, io: Server) {
   if (successes >= 3) {
     room.status = 'assassin';
   } else if (totalFails >= 3) {
-    room.status = 'game_over';
+    room.status = 'game_over'; room.gameEndedAt = Date.now();
     room.gameState.winner = 'evil';
     recordGameStats(room);
   } else {
@@ -1507,7 +1508,7 @@ function handleBotActions(room: Room, io: Server) {
           const targetPlayer = room.players.find(p => p.sessionId === targetId);
           room.gameState.assassinationTarget = targetId;
           room.gameState.winner = targetPlayer?.role === 'Merlin' ? 'evil' : 'good';
-          room.status = 'game_over';
+          room.status = 'game_over'; room.gameEndedAt = Date.now();
           recordGameStats(room);
           broadcastRoom(room, io);
         }, 4000);
@@ -1564,7 +1565,7 @@ function handleBotActions(room: Room, io: Server) {
 
         room.gameState.assassinationTarget = target.sessionId;
         room.gameState.winner = target.role === 'Merlin' ? 'evil' : 'good';
-        room.status = 'game_over';
+        room.status = 'game_over'; room.gameEndedAt = Date.now();
         recordGameStats(room);
         broadcastRoom(room, io);
       }, 3000);
@@ -1936,7 +1937,7 @@ function setupSocket(io: Server) {
             } else {
               room.gameState.winner = 'good';
             }
-            room.status = 'game_over';
+            room.status = 'game_over'; room.gameEndedAt = Date.now();
             recordGameStats(room);
             broadcastRoom(room, io);
           }

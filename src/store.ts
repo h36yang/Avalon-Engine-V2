@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
 import { User } from '@supabase/supabase-js';
 import { Role, Player } from './utils/gameLogic';
+import { supabase } from './utils/supabase';
 
 export interface Quest {
   teamSize: number;
@@ -98,6 +99,7 @@ interface GameState {
   idleWarning: boolean;
   idleCountdown: number;
   _idleTimer?: ReturnType<typeof setInterval>;
+  connecting: boolean;
   setLanguage: (lang: 'en' | 'zh') => void;
   setDevRequestedRole: (role?: Role) => void;
   connect: (roomId: string, name: string) => void;
@@ -126,11 +128,14 @@ const generateSessionId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
+const TIMEOUT_MS = 5000; // 5 seconds
+
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       user: null,
       profile: null,
+      connecting: false,
       setAuth: (user, profile) => set({ user, profile, name: profile?.username || get().name }),
       logout: () => set({ user: null, profile: null }),
       socket: null,
@@ -153,24 +158,50 @@ export const useGameStore = create<GameState>()(
         if (existingSocket) {
           existingSocket.disconnect();
         }
-        set({ error: null });
+        set({ error: null, connecting: true });
+
+        // Get current Supabase session token (wrapped in try-catch for retry)
+        let token = undefined;
+        const getSessionTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timed out getting auth token')), TIMEOUT_MS)
+        );
+        try {
+          const { data: { session } } = await Promise.race([
+            supabase.auth.getSession(),
+            getSessionTimeout
+          ]);
+          token = session?.access_token;
+        } catch (err) {
+          set({
+            connecting: false,
+            error: `${(err as Error).message}. Please refresh the page and try again.`
+          });
+          return;
+        }
 
         const socketUrl =
           (import.meta as any).env.VITE_APP_URL || window.location.origin;
-        const socket = io(socketUrl);
+        const socket = io(socketUrl, { autoConnect: false });
 
-        // Get current Supabase session token (wrapped in try-catch for offline mode)
-        let token = undefined;
-        try {
-          const { supabase } = await import('./utils/supabase');
-          const { data: { session } } = await supabase.auth.getSession();
-          token = session?.access_token;
-        } catch (err) {
-          console.log('Skipping Supabase auth for socket connection (offline mode)');
-        }
+        // Timeout safeguard: if socket doesn't connect in 5 seconds, show error
+        let connectTimeout: ReturnType<typeof setTimeout> | undefined;
+        connectTimeout = setTimeout(() => {
+          if (!socket.connected) {
+            set({ connecting: false, error: 'Connection timed out. Please try again.' });
+            try { socket.disconnect(); } catch { };
+          }
+        }, TIMEOUT_MS);
 
         socket.on("connect", () => {
+          if (connectTimeout) clearTimeout(connectTimeout);
+          set({ connecting: false });
           socket.emit("join_room", { roomId, sessionId, name, token });
+        });
+
+        socket.on("connect_error", (err: any) => {
+          if (connectTimeout) clearTimeout(connectTimeout);
+          set({ connecting: false, error: err?.message || 'Connection error' });
+          try { socket.disconnect(); } catch { };
         });
 
         socket.on("room_update", (room: Room) => {
@@ -214,6 +245,8 @@ export const useGameStore = create<GameState>()(
           set({ idleWarning: false, idleCountdown: 0, _idleTimer: undefined });
         });
 
+        // Start the connection after handlers + auth are set
+        socket.connect();
         set({ socket, roomId, name });
       },
 
@@ -258,7 +291,7 @@ export const useGameStore = create<GameState>()(
           socket.emit("leave_room", { roomId, sessionId });
           socket.disconnect();
         }
-        set({ socket: null, room: null, roomId: "", error: null });
+        set({ socket: null, room: null, roomId: "", error: null, connecting: false });
       },
 
       kickPlayer: (targetSessionId: string) => {

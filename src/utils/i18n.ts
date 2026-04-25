@@ -22,6 +22,7 @@ export const translations = {
     'Create New Room': 'Create New Room',
     'A Game of Hidden Loyalty': 'A Game of Hidden Loyalty',
     'Sign Out': 'Sign Out',
+    'Connecting...': 'Connecting...',
 
     // Lobby Screen
     'Room': 'Room',
@@ -179,6 +180,7 @@ export const translations = {
     'Create New Room': '创建新房间',
     'A Game of Hidden Loyalty': '隐藏忠诚的游戏',
     'Sign Out': '退出登录',
+    'Connecting...': '连接中...',
 
     // Lobby Screen
     'Room': '房间',

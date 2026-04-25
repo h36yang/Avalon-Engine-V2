@@ -3,7 +3,6 @@ import { useGameStore } from "../store";
 import { KeyRound, User, Users, LogOut, Trophy, Swords, RefreshCw, Crown, Loader2 } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { supabase } from "../utils/supabase";
-import { cn } from "../utils/cn";
 
 const GOLD = '#D4AF37';
 const GOLD_DIM = 'rgba(212,175,55,0.25)';
@@ -20,15 +19,18 @@ export default function JoinScreen() {
   const logout = useGameStore((state) => state.logout);
   const availableRooms = useGameStore((state) => state.availableRooms);
   const fetchRooms = useGameStore((state) => state.fetchRooms);
+  const connecting = useGameStore((state) => state.connecting);
   const { t } = useTranslation();
 
   useEffect(() => {
     if (activeTab === 'browse') handleRefresh();
   }, [activeTab]);
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = (e: React.SubmitEvent) => {
     e.preventDefault();
-    if (roomId && name) connect(roomId.toUpperCase(), name);
+    if (roomId && name) {
+      connect(roomId.toUpperCase(), name);
+    }
   };
 
   const handleJoinRoom = (id: string) => {
@@ -219,6 +221,7 @@ export default function JoinScreen() {
                     type="text"
                     value={roomId}
                     onChange={(e) => setRoomId(e.target.value)}
+                    disabled={connecting}
                     style={{
                       ...inputStyle,
                       fontFamily: 'monospace',
@@ -249,6 +252,7 @@ export default function JoinScreen() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    disabled={connecting}
                     style={inputStyle}
                     placeholder={t("Enter your name")}
                     maxLength={15}
@@ -259,6 +263,7 @@ export default function JoinScreen() {
 
               <button
                 type="submit"
+                disabled={connecting}
                 className="w-full flex items-center justify-center gap-2 transition-all duration-200"
                 style={{
                   marginTop: 6,
@@ -272,11 +277,20 @@ export default function JoinScreen() {
                   letterSpacing: '0.2em',
                   textTransform: 'uppercase',
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: connecting ? 'wait' : 'pointer',
                 }}
               >
-                <KeyRound size={14} />
-                {t("Join Room")}
+                {connecting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    {t("Connecting...")}
+                  </>
+                ) : (
+                  <>
+                    <KeyRound size={14} />
+                    {t("Join Room")}
+                  </>
+                )}
               </button>
             </form>
 
@@ -314,15 +328,15 @@ export default function JoinScreen() {
                       <button
                         key={room.id}
                         onClick={() => isWaiting && handleJoinRoom(room.id)}
-                        disabled={!isWaiting}
+                        disabled={!isWaiting || connecting}
                         className="w-full flex items-center justify-between text-left transition-all duration-150"
                         style={{
                           padding: '12px 14px',
                           borderRadius: 10,
                           background: isWaiting ? 'rgba(212,175,55,0.04)' : 'rgba(0,0,0,0.2)',
                           border: isWaiting ? `1px solid rgba(212,175,55,0.2)` : `1px solid rgba(255,255,255,0.05)`,
-                          opacity: isWaiting ? 1 : 0.4,
-                          cursor: isWaiting ? 'pointer' : 'not-allowed',
+                          opacity: (isWaiting && !connecting) ? 1 : 0.4,
+                          cursor: isWaiting && !connecting ? 'pointer' : 'not-allowed',
                         }}
                       >
                         <div className="flex items-center gap-3">

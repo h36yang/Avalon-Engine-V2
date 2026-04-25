@@ -3,6 +3,7 @@ import { Eye, LogOut, AlertTriangle, X } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import { useGameStore } from "../store";
+import GameTimer from "./GameTimer";
 
 interface Props {
   title: React.ReactNode;
@@ -29,6 +30,7 @@ export default function VoteHistoryHeader({ title, viewingHistoryIndex, setViewi
         <div className="flex items-center justify-between px-5 pt-12 pb-3">
           <h1 className="text-lg font-bold tracking-tight text-zinc-100">{title}</h1>
           <div className="flex items-center gap-2">
+            {room.gameStartedAt && <GameTimer gameStartedAt={room.gameStartedAt} />}
             {onViewRole && (
               <button
                 onClick={onViewRole}

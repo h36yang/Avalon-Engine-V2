@@ -178,6 +178,7 @@ interface Room extends Omit<ClientRoom, 'gameState'> {
   };
   lastActivityTime: number;
   idleWarningEmitted: boolean;
+  gameStartedAt?: number;
 }
 
 const IDLE_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
@@ -1815,6 +1816,7 @@ function setupSocket(io: Server) {
             room.gameState.botMindLogs[bot.sessionId] = [];
           });
           room.status = 'role_reveal';
+          room.gameStartedAt = Date.now();
           initializeBotMemories(room);
           broadcastRoom(room, io);
           handleBotActions(room, io);

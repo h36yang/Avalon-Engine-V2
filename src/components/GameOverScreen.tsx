@@ -4,6 +4,7 @@ import { Crown, Skull, Shield, RefreshCw, Check, X, ChevronDown, ChevronUp, Shie
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import { EVIL_ROLES, Role } from "../utils/gameLogic";
+import GameTimer from "./GameTimer";
 
 export default function GameOverScreen() {
   const room = useGameStore((state) => state.room);
@@ -35,28 +36,31 @@ export default function GameOverScreen() {
         "relative overflow-hidden px-5 pt-14 pb-8",
         isEvilWin ? "bg-gradient-to-b from-red-950/20 to-zinc-950" : "bg-gradient-to-b from-blue-950/20 to-zinc-950"
       )}>
-        <div className="flex items-center gap-4">
-          <div className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center border shrink-0",
-            isEvilWin ? "bg-red-950/40 border-red-700/50" : "bg-blue-950/40 border-blue-700/50"
-          )}>
-            {isEvilWin
-              ? <Skull size={28} className="text-red-400" />
-              : <Shield size={28} className="text-blue-400" />}
-          </div>
-          <div>
-            <h1 className={cn(
-              "text-3xl font-bold tracking-tight",
-              isEvilWin ? "text-red-300" : "text-blue-300"
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={cn(
+              "w-14 h-14 rounded-2xl flex items-center justify-center border shrink-0",
+              isEvilWin ? "bg-red-950/40 border-red-700/50" : "bg-blue-950/40 border-blue-700/50"
             )}>
-              {isEvilWin ? t("Evil Wins!") : t("Good Wins!")}
-            </h1>
-            <p className="text-zinc-500 text-sm mt-0.5">
               {isEvilWin
-                ? gameState.assassinationTarget ? t("Merlin was assassinated!") : t("Evil sabotaged quests")
-                : t("Merlin survived!")}
-            </p>
+                ? <Skull size={28} className="text-red-400" />
+                : <Shield size={28} className="text-blue-400" />}
+            </div>
+            <div>
+              <h1 className={cn(
+                "text-3xl font-bold tracking-tight",
+                isEvilWin ? "text-red-300" : "text-blue-300"
+              )}>
+                {isEvilWin ? t("Evil Wins!") : t("Good Wins!")}
+              </h1>
+              <p className="text-zinc-500 text-sm mt-0.5">
+                {isEvilWin
+                  ? gameState.assassinationTarget ? t("Merlin was assassinated!") : t("Evil sabotaged quests")
+                  : t("Merlin survived!")}
+              </p>
+            </div>
           </div>
+          {room.gameStartedAt && <GameTimer gameStartedAt={room.gameStartedAt} />}
         </div>
       </div>
 

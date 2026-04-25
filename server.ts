@@ -282,7 +282,7 @@ async function callOpenAICompatible(
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-function triggerBotOpinions(room: Room, io: Server) {
+async function triggerBotOpinions(room: Room, io: Server) {
   const botsWithKeys = room.players.filter(p => p.isBot && p.botClass === 'ai' && p.apiKey);
   if (botsWithKeys.length === 0) return;
 
@@ -290,7 +290,7 @@ function triggerBotOpinions(room: Room, io: Server) {
   broadcastRoom(room, io);
 
   console.log('Triggering bot opinions...');
-  botsWithKeys.forEach(async (bot) => {
+  for (const bot of botsWithKeys) {
     try {
       const isEvil = EVIL_ROLES.has(bot.role as Role);
 
@@ -304,7 +304,7 @@ function triggerBotOpinions(room: Room, io: Server) {
         conditionalRoleInstructionClause = `You need to protect Merlin's identity. Only comment on your Merlin candidates when you have strong evidence based on the quests and team vote history. Otherwise, comment on other players.
 
 Your Merlin candidates:
-${encode(mapPercivalCandidatesToNames(room, memory.percivalCandidates!.merlinLikelihood))}`;
+${encode(mapPercivalCandidatesToNames(room, memory.percivalCandidates?.merlinLikelihood ?? {}))}`;
       } else if (isEvil) {
         conditionalRoleInstructionClause = `Form your opinion as if you are a good player. Rat out your evil teammate if necessary.`;
       }
@@ -371,7 +371,7 @@ ${conditionalRoleInstructionClause}` : '');
 
       console.log(`Opinion generated successfully for ${bot.name}.`);
       addMindLog(room, bot.sessionId, 'opinion', prompt, text, text.slice(0, 100));
-      room.gameState.botOpinions!.push({ botId: bot.sessionId, text });
+      room.gameState.botOpinions.push({ botId: bot.sessionId, text });
       broadcastRoom(room, io);
     } catch (err: any) {
       const raw = err?.message || String(err);
@@ -390,10 +390,10 @@ ${conditionalRoleInstructionClause}` : '');
       } else {
         userMsg = 'API error: ' + raw.slice(0, 120);
       }
-      room.gameState.botOpinions!.push({ botId: bot.sessionId, text: userMsg, isError: true });
+      room.gameState.botOpinions.push({ botId: bot.sessionId, text: userMsg, isError: true });
       broadcastRoom(room, io);
     }
-  });
+  }
 }
 
 function mapTrustScoresToNames(room: Room, trustScores: Record<string, number>): {

@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
 import { User } from '@supabase/supabase-js';
 import { Role, Player } from './utils/gameLogic';
-import { supabase, recreateSupabaseClient } from './utils/supabase';
+import { supabase } from './utils/supabase';
 
 export interface Quest {
   teamSize: number;
@@ -174,7 +174,7 @@ export const useGameStore = create<GameState>()(
         } catch (err) {
           set({
             connecting: false,
-            error: `${err}. Please refresh the page and try again.`
+            error: `${(err as Error).message}. Please refresh the page and try again.`
           });
           return;
         }
@@ -201,12 +201,6 @@ export const useGameStore = create<GameState>()(
         socket.on("connect_error", (err: any) => {
           if (connectTimeout) clearTimeout(connectTimeout);
           set({ connecting: false, error: err?.message || 'Connection error' });
-          try { socket.disconnect(); } catch { };
-        });
-
-        socket.on("connect_timeout", () => {
-          if (connectTimeout) clearTimeout(connectTimeout);
-          set({ connecting: false, error: 'Connection attempt timed out' });
           try { socket.disconnect(); } catch { };
         });
 
@@ -252,15 +246,8 @@ export const useGameStore = create<GameState>()(
         });
 
         // Start the connection after handlers + auth are set
-        try {
-          socket.connect();
-          set({ socket, roomId, name });
-        } catch (err) {
-          set({
-            connecting: false,
-            error: err instanceof Error ? err.message : 'Connection error'
-          });
-        }
+        socket.connect();
+        set({ socket, roomId, name });
       },
 
       updateSettings: (settings) => {

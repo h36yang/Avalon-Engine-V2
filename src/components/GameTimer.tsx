@@ -3,6 +3,7 @@ import { Timer } from "lucide-react";
 
 interface Props {
   gameStartedAt: number;
+  gameEndedAt?: number;
 }
 
 function formatElapsed(ms: number): string {
@@ -16,15 +17,25 @@ function formatElapsed(ms: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export default function GameTimer({ gameStartedAt }: Props) {
-  const [elapsed, setElapsed] = useState(() => Date.now() - gameStartedAt);
+export default function GameTimer({ gameStartedAt, gameEndedAt }: Props) {
+  const [elapsed, setElapsed] = useState(() =>
+    (gameEndedAt ?? Date.now()) - gameStartedAt
+  );
 
   useEffect(() => {
+    if (gameEndedAt) return;
     const interval = setInterval(() => {
       setElapsed(Date.now() - gameStartedAt);
     }, 1000);
     return () => clearInterval(interval);
-  }, [gameStartedAt]);
+  }, [gameStartedAt, gameEndedAt]);
+
+  // Freeze at final time when game ends
+  useEffect(() => {
+    if (gameEndedAt) {
+      setElapsed(gameEndedAt - gameStartedAt);
+    }
+  }, [gameEndedAt, gameStartedAt]);
 
   return (
     <div className="flex items-center gap-1 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-full">

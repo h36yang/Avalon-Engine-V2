@@ -22,6 +22,23 @@ describe('gameLogic', () => {
     });
 
     describe('assignRoles', () => {
+        it.each(
+            [5, 6, 7, 8, 9, 10]
+        )('assigns correct number of roles for %i players', (playerCount) => {
+            const players: Player[] = Array.from({ length: playerCount }, (_, i) => ({
+                id: `id_${i}`,
+                sessionId: `session_${i}`,
+                name: `Player ${i}`,
+                isConnected: true,
+                isHost: i === 0,
+            }));
+
+            assignRoles(players, []);
+
+            // Ensure all players have a role
+            expect(players.every(p => !!p.role)).toBe(true);
+        });
+
         it('assigns 5 players correctly with core roles', () => {
             const players: Player[] = Array.from({ length: 5 }, (_, i) => ({
                 id: `id_${i}`,
@@ -39,9 +56,6 @@ describe('gameLogic', () => {
             expect(assignedRoles).toContain('Percival');
             expect(assignedRoles).toContain('Morgana');
             expect(assignedRoles).toContain('Loyal Servant');
-
-            // Ensure all players have a role
-            expect(players.every(p => !!p.role)).toBe(true);
         });
 
         it('assigns 10 players correctly', () => {
@@ -59,8 +73,6 @@ describe('gameLogic', () => {
             expect(assignedRoles.filter(r => r === 'Loyal Servant').length).toBe(4);
             expect(assignedRoles).toContain('Oberon');
             expect(assignedRoles).toContain('Mordred');
-            // Ensure all players have a role
-            expect(players.every(p => !!p.role)).toBe(true);
         });
 
         it('respects developer forced roles and maintains balance when swapping', () => {

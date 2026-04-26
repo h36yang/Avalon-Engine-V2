@@ -209,21 +209,21 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
   }
 
   const viewer = room.players.find(p => p.sessionId === viewerSessionId);
-  const viewerRole = viewer?.role as string | null;
+  const viewerRole = viewer?.role;
   const isViewerEvil = viewerRole ? ['Assassin', 'Morgana', 'Mordred', 'Minion'].includes(viewerRole) : false;
 
   const sanitizedPlayers = room.players.map(p => {
     // Always strip apiKey before sending to any client
-    const { apiKey: _stripped, ...safeP } = p as any;
+    const { apiKey: _stripped, ...safeP } = p;
 
     if (safeP.sessionId === viewerSessionId) {
       return safeP; // Player always sees their own role
     }
 
-    const targetRole = safeP.role as string | null;
-    if (!targetRole) return { ...safeP, role: null };
+    const targetRole = safeP.role;
+    if (!targetRole) return { ...safeP, role: undefined };
 
-    const isTargetEvil = EVIL_ROLES.has(targetRole as Role);
+    const isTargetEvil = EVIL_ROLES.has(targetRole);
 
     // Merlin sees all evil EXCEPT Mordred
     if (viewerRole === 'Merlin' && isTargetEvil && targetRole !== 'Mordred') {
@@ -240,7 +240,7 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
       return safeP;
     }
 
-    return { ...safeP, role: null }; // Hide role from this viewer
+    return { ...safeP, role: undefined }; // Hide role from this viewer
   });
 
   const { botMemories, botMindLogs, ...safeGameState } = room.gameState as any;
@@ -1674,7 +1674,6 @@ function setupSocket(io: Server) {
             sessionId,
             userId,
             name,
-            role: null,
             isConnected: true,
             isHost: room.players.length === 0 // First player is host
           });
@@ -1713,7 +1712,6 @@ function setupSocket(io: Server) {
             id: botId,
             sessionId: botId,
             name: getNextBotName(room, isAI),
-            role: null,
             isConnected: true,
             isBot: true,
             isHost: false,
@@ -2024,7 +2022,7 @@ function setupSocket(io: Server) {
             // Remove bots, keep human players
             room.players = room.players.filter(p => !p.isBot);
             // Reset all player roles
-            room.players.forEach(p => { p.role = null; });
+            room.players.forEach(p => { p.role = undefined; });
             // Reset room to lobby
             room.status = 'lobby';
             room.gameState = {

@@ -407,7 +407,7 @@ function PremiumField({
         >
           {icon}
         </span>
-        {React.cloneElement(children as React.ReactElement, {
+        {React.cloneElement(children as React.ReactElement<any>, {
           style: {
             ...inputStyle,
             borderColor: focused ? 'rgba(212,175,55,0.55)' : 'rgba(212,175,55,0.18)',

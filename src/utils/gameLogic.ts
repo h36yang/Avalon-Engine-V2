@@ -7,7 +7,7 @@ export interface Player {
   sessionId: string; // persistent id
   userId?: string; // Supabase auth user id
   name: string;
-  role: Role | null;
+  role?: Role;
   isConnected: boolean;
   isHost: boolean;
   isBot?: boolean;
@@ -100,16 +100,24 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
     });
   }
 
-  // Shuffle both remaining roles and players
-  shuffle(roles);
+  // Shuffle players once (so that player seats are random)
   shuffle(players);
 
+  // Shuffle remaining roles x times, where x is a random number between 1 and # of players.
+  const x = Math.floor(Math.random() * players.length) + 1;
+  for (let i = 0; i < x; i++) {
+    shuffle(roles);
+  }
+
   // Assign remaining roles
-  players.forEach((p) => {
+  for (const p of players) {
+    if (p.role) continue;
+
+    p.role = roles.pop();
     if (!p.role) {
-      p.role = roles.pop()!;
+      throw new Error('Not enough roles to assign to all players');
     }
-  });
+  }
 }
 
 function shuffle<T>(array: T[]): void {

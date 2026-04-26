@@ -120,10 +120,22 @@ export default function LobbyScreen() {
   };
 
   return (
-    <div className="min-h-screen text-zinc-50 flex flex-col max-w-md mx-auto" style={{ background: '#080604' }}>
+    <div className="min-h-screen text-zinc-50 flex flex-col max-w-md mx-auto relative overflow-hidden" style={{ background: '#080604' }}>
+
+      {/* ── Background ── */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
+        style={{
+          backgroundImage: 'url(/lobby-bg.png)',
+          backgroundPosition: 'center top',
+          filter: 'brightness(0.78) contrast(1.04)',
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-[#080604]/58 to-[#080604]/92" />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 45% at 50% 18%, rgba(212,175,55,0.1) 0%, transparent 100%)' }} />
 
       {/* ── Header ── */}
-      <header className="px-5 pt-12 pb-5" style={{ borderBottom: `1px solid rgba(212,175,55,0.1)` }}>
+      <header className="px-5 pt-12 pb-5 relative z-10" style={{ borderBottom: `1px solid rgba(212,175,55,0.1)` }}>
         <div className="flex items-start justify-between">
           <div>
             <p style={{ fontSize: 9, fontWeight: 600, color: 'rgba(212,175,55,0.45)', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: 4 }}>
@@ -141,8 +153,7 @@ export default function LobbyScreen() {
           <div className="flex items-center gap-2 mt-1">
             {/* Player count */}
             <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(212,175,55,0.06)', border: `1px solid ${GOLD_DIM}` }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full avalon-glass-pill"
             >
               <Users size={12} style={{ color: 'rgba(212,175,55,0.5)' }} />
               <span className="font-mono text-sm font-semibold" style={{ color: 'rgba(212,175,55,0.8)' }}>
@@ -152,8 +163,8 @@ export default function LobbyScreen() {
             {/* Leave / End */}
             <button
               onClick={isHost ? endGame : leaveRoom}
-              className="p-2 rounded-full transition-colors"
-              style={{ background: 'rgba(212,175,55,0.05)', border: `1px solid rgba(212,175,55,0.15)`, color: 'rgba(255,255,255,0.35)' }}
+              className="p-2 rounded-full transition-colors avalon-glass-pill"
+              style={{ color: 'rgba(255,255,255,0.45)' }}
               title={isHost ? t("End Game") : t("Leave Room")}
             >
               <LogOut size={14} />
@@ -163,7 +174,7 @@ export default function LobbyScreen() {
       </header>
 
       {/* ── Scrollable Content ── */}
-      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 pb-32">
+      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 pb-32 relative z-10">
 
         {/* ── Players Section ── */}
         <section>
@@ -175,22 +186,19 @@ export default function LobbyScreen() {
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => addBot('normal')}
-                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
-                  style={{ color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors avalon-glass-control avalon-glass-control--normal"
                 >
                   + Normal
                 </button>
                 <button
                   onClick={() => addBot('hard')}
-                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
-                  style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors avalon-glass-control avalon-glass-control--hard"
                 >
                   + Hard
                 </button>
                 <button
                   onClick={() => addBot('ai')}
-                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
-                  style={{ color: '#818cf8', background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.25)' }}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors avalon-glass-control avalon-glass-control--ai"
                 >
                   + AI
                 </button>
@@ -202,11 +210,7 @@ export default function LobbyScreen() {
             {room.players.map((p) => (
               <li
                 key={p.sessionId}
-                className="rounded-xl overflow-hidden"
-                style={{
-                  background: 'rgba(212,175,55,0.03)',
-                  border: `1px solid rgba(212,175,55,0.1)`,
-                }}
+                className="rounded-xl overflow-hidden avalon-glass"
               >
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -362,8 +366,7 @@ export default function LobbyScreen() {
             {t("Roles in Play")}
           </p>
           <div
-            className="p-4 rounded-xl"
-            style={{ background: 'rgba(212,175,55,0.03)', border: `1px solid rgba(212,175,55,0.1)` }}
+            className="p-4 rounded-xl avalon-glass"
           >
             {room.players.length < 5 ? (
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{t("Need at least 5 players to start")}</p>
@@ -378,8 +381,8 @@ export default function LobbyScreen() {
 
       {/* ── Sticky Bottom Action ── */}
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3"
-        style={{ background: 'rgba(8,6,4,0.95)', backdropFilter: 'blur(20px)', borderTop: `1px solid rgba(212,175,55,0.08)` }}
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 z-20"
+        style={{ background: 'linear-gradient(to top, rgba(8,6,4,0.96) 0%, rgba(8,6,4,0.82) 72%, transparent 100%)' }}
       >
         {isHost ? (
           <button

@@ -86,7 +86,7 @@ export default function AuthScreenMockup() {
       {/* ── Background layers ── */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
-        style={{ backgroundImage: 'url(/avalon-bg.jpg)', filter: 'brightness(0.55)' }}
+        style={{ backgroundImage: 'url(/avalon-bg-mobile.png)', filter: 'brightness(0.83)' }}
       />
       {/* Vignette */}
       <div
@@ -153,13 +153,9 @@ export default function AuthScreenMockup() {
 
         {/* ── Card ── */}
         <div
+          className="avalon-glass-strong"
           style={{
-            background: 'rgba(6, 4, 2, 0.84)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: `1px solid ${GOLD_DIM}`,
             borderRadius: 16,
-            boxShadow: `0 0 0 1px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.75), inset 0 1px 0 rgba(212,175,55,0.12)`,
             padding: '22px 24px 26px',
           }}
         >
@@ -292,11 +288,8 @@ export default function AuthScreenMockup() {
         {/* Developer Mode (same as original) */}
         {import.meta.env.DEV && devClickCount >= 5 && (
           <div
-            className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-4 duration-300"
+            className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-4 duration-300 avalon-glass-strong"
             style={{
-              background: 'rgba(6,4,2,0.84)',
-              backdropFilter: 'blur(24px)',
-              border: `1px solid ${GOLD_DIM}`,
               borderRadius: 16,
               padding: '16px',
             }}
@@ -371,14 +364,17 @@ export default function AuthScreenMockup() {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: 'rgba(0,0,0,0.55)',
-  border: '1px solid rgba(212,175,55,0.18)',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(0,0,0,0.46)), rgba(0,0,0,0.46)',
+  backdropFilter: 'blur(14px) saturate(1.2)',
+  WebkitBackdropFilter: 'blur(14px) saturate(1.2)',
+  border: '1px solid rgba(212,175,55,0.24)',
   borderRadius: 9,
   padding: '11px 12px 11px 36px',
   color: 'rgba(255,255,255,0.88)',
   fontSize: 16,
   outline: 'none',
   transition: 'border-color 0.15s, box-shadow 0.15s',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.18)',
 };
 
 function PremiumField({

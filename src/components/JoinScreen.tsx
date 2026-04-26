@@ -56,23 +56,26 @@ export default function JoinScreen() {
   const winRate = profile?.total_games ? Math.round((profile.wins / profile.total_games) * 100) : 0;
 
   const cardStyle: React.CSSProperties = {
-    background: 'rgba(6, 4, 2, 0.84)',
-    backdropFilter: 'blur(24px)',
-    WebkitBackdropFilter: 'blur(24px)',
-    border: `1px solid ${GOLD_DIM}`,
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025) 34%, rgba(6,4,2,0.74) 100%), rgba(6,4,2,0.68)',
+    backdropFilter: 'blur(24px) saturate(1.25)',
+    WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
+    border: `1px solid rgba(212,175,55,0.26)`,
     borderRadius: 16,
-    boxShadow: `0 0 0 1px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.75), inset 0 1px 0 rgba(212,175,55,0.1)`,
+    boxShadow: `0 0 0 1px rgba(0,0,0,0.42), 0 24px 64px rgba(0,0,0,0.62), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.4)`,
   };
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    background: 'rgba(0,0,0,0.55)',
-    border: `1px solid rgba(212,175,55,0.18)`,
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(0,0,0,0.46)), rgba(0,0,0,0.46)',
+    backdropFilter: 'blur(14px) saturate(1.2)',
+    WebkitBackdropFilter: 'blur(14px) saturate(1.2)',
+    border: `1px solid rgba(212,175,55,0.24)`,
     borderRadius: 9,
     padding: '11px 12px 11px 36px',
     color: 'rgba(255,255,255,0.88)',
     fontSize: 16,
     outline: 'none',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.18)',
   };
 
   const labelStyle: React.CSSProperties = {
@@ -91,21 +94,19 @@ export default function JoinScreen() {
       {/* ── Background ── */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
-        style={{ backgroundImage: 'url(/join-bg.jpg)', filter: 'brightness(0.5)' }}
+        style={{ backgroundImage: 'url(/join-bg.png)', filter: 'brightness(0.85) contrast(1.05)' }}
       />
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 35%, transparent 20%, rgba(0,0,0,0.65) 70%, rgba(0,0,0,0.92) 100%)' }} />
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.7) 80%, rgba(0,0,0,0.97) 100%)' }} />
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 32%, transparent 22%, rgba(0,0,0,0.38) 72%, rgba(0,0,0,0.78) 100%)' }} />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 34%, rgba(0,0,0,0.52) 82%, rgba(0,0,0,0.88) 100%)' }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse 60% 40% at 50% 38%, ${GOLD_GLOW} 0%, transparent 100%)` }} />
 
       {/* ── Sign Out ── */}
       <button
         onClick={handleLogout}
-        className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 backdrop-blur-md transition-all text-sm font-medium"
+        className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 transition-all text-sm font-medium avalon-glass-pill"
         style={{
-          background: 'rgba(0,0,0,0.5)',
-          border: `1px solid rgba(212,175,55,0.18)`,
           borderRadius: 10,
-          color: 'rgba(255,255,255,0.4)',
+          color: 'rgba(255,255,255,0.52)',
         }}
       >
         <LogOut size={14} />
@@ -116,7 +117,7 @@ export default function JoinScreen() {
 
         {/* ── Profile Card ── */}
         {profile && (
-          <div style={{ ...cardStyle, padding: '16px' }}>
+          <div className="avalon-glass-strong" style={{ ...cardStyle, padding: '16px' }}>
             <div className="flex items-center gap-3 mb-3">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
@@ -149,7 +150,7 @@ export default function JoinScreen() {
         )}
 
         {/* ── Main Card ── */}
-        <div style={{ ...cardStyle, padding: '22px 24px 26px' }}>
+        <div className="avalon-glass-strong" style={{ ...cardStyle, padding: '22px 24px 26px' }}>
 
           {/* Title */}
           <div className="text-center mb-5">
@@ -329,20 +330,18 @@ export default function JoinScreen() {
                         key={room.id}
                         onClick={() => isWaiting && handleJoinRoom(room.id)}
                         disabled={!isWaiting || connecting}
-                        className="w-full flex items-center justify-between text-left transition-all duration-150"
+                        className="w-full flex items-center justify-between text-left transition-all duration-150 avalon-glass"
                         style={{
                           padding: '12px 14px',
                           borderRadius: 10,
-                          background: isWaiting ? 'rgba(212,175,55,0.04)' : 'rgba(0,0,0,0.2)',
-                          border: isWaiting ? `1px solid rgba(212,175,55,0.2)` : `1px solid rgba(255,255,255,0.05)`,
+                          border: isWaiting ? `1px solid rgba(212,175,55,0.24)` : `1px solid rgba(255,255,255,0.08)`,
                           opacity: (isWaiting && !connecting) ? 1 : 0.4,
                           cursor: isWaiting && !connecting ? 'pointer' : 'not-allowed',
                         }}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ background: 'rgba(212,175,55,0.08)', border: `1px solid rgba(212,175,55,0.2)` }}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 avalon-glass-pill"
                           >
                             <Crown size={13} style={{ color: GOLD }} />
                           </div>

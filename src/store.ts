@@ -183,7 +183,7 @@ export const useGameStore = create<GameState>()(
 
         const socketUrl =
           (import.meta as any).env.VITE_APP_URL || window.location.origin;
-        const socket = io(socketUrl, { autoConnect: false });
+        const socket = io(socketUrl);
 
         // Timeout safeguard: if socket doesn't connect in 5 seconds, show error
         let connectTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -247,8 +247,6 @@ export const useGameStore = create<GameState>()(
           set({ idleWarning: false, idleCountdown: 0, _idleTimer: undefined });
         });
 
-        // Start the connection after handlers + auth are set
-        socket.connect();
         set({ socket, roomId, name });
       },
 

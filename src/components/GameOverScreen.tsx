@@ -22,7 +22,7 @@ export default function GameOverScreen() {
   const isHost = players.find(p => p.isHost)?.sessionId === sessionId;
 
   const getPlayerName = (sid: string) => players.find(p => p.sessionId === sid)?.name || sid;
-  const getPlayerRole = (sid: string) => players.find(p => p.sessionId === sid)?.role as string | null;
+  const getPlayerRole = (sid: string) => players.find(p => p.sessionId === sid)?.role;
   const isPlayerEvil = (sid: string) => {
     const role = getPlayerRole(sid);
     return role ? EVIL_ROLES.has(role as Role) : false;

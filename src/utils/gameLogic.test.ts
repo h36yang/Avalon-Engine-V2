@@ -27,7 +27,6 @@ describe('gameLogic', () => {
                 id: `id_${i}`,
                 sessionId: `session_${i}`,
                 name: `Player ${i}`,
-                role: null,
                 isConnected: true,
                 isHost: i === 0,
             }));
@@ -42,7 +41,7 @@ describe('gameLogic', () => {
             expect(assignedRoles).toContain('Loyal Servant');
 
             // Ensure all players have a role
-            expect(players.every(p => p.role !== null)).toBe(true);
+            expect(players.every(p => !!p.role)).toBe(true);
         });
 
         it('assigns 10 players correctly', () => {
@@ -50,7 +49,6 @@ describe('gameLogic', () => {
                 id: `id_${i}`,
                 sessionId: `session_${i}`,
                 name: `Player ${i}`,
-                role: null,
                 isConnected: true,
                 isHost: i === 0,
             }));
@@ -68,7 +66,6 @@ describe('gameLogic', () => {
                 id: `id_${i}`,
                 sessionId: `session_${i}`,
                 name: `Player ${i}`,
-                role: null,
                 isConnected: true,
                 isHost: i === 0,
             }));

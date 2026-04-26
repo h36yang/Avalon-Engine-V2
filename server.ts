@@ -209,21 +209,21 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
   }
 
   const viewer = room.players.find(p => p.sessionId === viewerSessionId);
-  const viewerRole = viewer?.role as string | null;
+  const viewerRole = viewer?.role;
   const isViewerEvil = viewerRole ? ['Assassin', 'Morgana', 'Mordred', 'Minion'].includes(viewerRole) : false;
 
   const sanitizedPlayers = room.players.map(p => {
     // Always strip apiKey before sending to any client
-    const { apiKey: _stripped, ...safeP } = p as any;
+    const { apiKey: _stripped, ...safeP } = p;
 
     if (safeP.sessionId === viewerSessionId) {
       return safeP; // Player always sees their own role
     }
 
-    const targetRole = safeP.role as string | null;
-    if (!targetRole) return { ...safeP, role: null };
+    const targetRole = safeP.role;
+    if (!targetRole) return { ...safeP, role: undefined };
 
-    const isTargetEvil = EVIL_ROLES.has(targetRole as Role);
+    const isTargetEvil = EVIL_ROLES.has(targetRole);
 
     // Merlin sees all evil EXCEPT Mordred
     if (viewerRole === 'Merlin' && isTargetEvil && targetRole !== 'Mordred') {
@@ -240,7 +240,7 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
       return safeP;
     }
 
-    return { ...safeP, role: null }; // Hide role from this viewer
+    return { ...safeP, role: undefined }; // Hide role from this viewer
   });
 
   const { botMemories, botMindLogs, ...safeGameState } = room.gameState as any;

@@ -111,8 +111,11 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
 
   // Assign remaining roles
   for (const p of players) {
+    if (p.role) continue;
+
+    p.role = roles.pop();
     if (!p.role) {
-      p.role = roles.pop();
+      throw new Error('Not enough roles to assign to all players');
     }
   }
 }

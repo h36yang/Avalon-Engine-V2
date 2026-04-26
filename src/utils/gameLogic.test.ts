@@ -59,6 +59,8 @@ describe('gameLogic', () => {
             expect(assignedRoles.filter(r => r === 'Loyal Servant').length).toBe(4);
             expect(assignedRoles).toContain('Oberon');
             expect(assignedRoles).toContain('Mordred');
+            // Ensure all players have a role
+            expect(players.every(p => !!p.role)).toBe(true);
         });
 
         it('respects developer forced roles and maintains balance when swapping', () => {

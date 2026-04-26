@@ -7,7 +7,7 @@ export interface Player {
   sessionId: string; // persistent id
   userId?: string; // Supabase auth user id
   name: string;
-  role: Role | null;
+  role?: Role;
   isConnected: boolean;
   isHost: boolean;
   isBot?: boolean;
@@ -112,7 +112,7 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
   // Assign remaining roles
   for (const p of players) {
     if (!p.role) {
-      p.role = roles.pop()!;
+      p.role = roles.pop();
     }
   }
 }

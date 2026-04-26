@@ -1674,7 +1674,6 @@ function setupSocket(io: Server) {
             sessionId,
             userId,
             name,
-            role: null,
             isConnected: true,
             isHost: room.players.length === 0 // First player is host
           });
@@ -1713,7 +1712,6 @@ function setupSocket(io: Server) {
             id: botId,
             sessionId: botId,
             name: getNextBotName(room, isAI),
-            role: null,
             isConnected: true,
             isBot: true,
             isHost: false,
@@ -2024,7 +2022,7 @@ function setupSocket(io: Server) {
             // Remove bots, keep human players
             room.players = room.players.filter(p => !p.isBot);
             // Reset all player roles
-            room.players.forEach(p => { p.role = null; });
+            room.players.forEach(p => { p.role = undefined; });
             // Reset room to lobby
             room.status = 'lobby';
             room.gameState = {

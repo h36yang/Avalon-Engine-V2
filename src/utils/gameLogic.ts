@@ -100,20 +100,21 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
     });
   }
 
-  // Shuffle both remaining roles and players x times,
-  // where x is a random number between 1 and # of players.
-  const x = Math.ceil(Math.random() * players.length) + 1;
+  // Shuffle players once (so that player seats are random)
+  shuffle(players);
+
+  // Shuffle remaining roles x times, where x is a random number between 0 and # of players.
+  const x = Math.ceil(Math.random() * players.length);
   for (let i = 0; i < x; i++) {
     shuffle(roles);
-    shuffle(players);
   }
 
   // Assign remaining roles
-  players.forEach((p) => {
+  for (const p of players) {
     if (!p.role) {
       p.role = roles.pop()!;
     }
-  });
+  }
 }
 
 function shuffle<T>(array: T[]): void {

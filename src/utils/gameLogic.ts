@@ -103,8 +103,8 @@ export function assignRoles(players: Player[], optionalRoles: Role[], requestedR
   // Shuffle players once (so that player seats are random)
   shuffle(players);
 
-  // Shuffle remaining roles x times, where x is a random number between 0 and # of players.
-  const x = Math.ceil(Math.random() * players.length);
+  // Shuffle remaining roles x times, where x is a random number between 1 and # of players.
+  const x = Math.floor(Math.random() * players.length) + 1;
   for (let i = 0; i < x; i++) {
     shuffle(roles);
   }

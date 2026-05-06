@@ -33,7 +33,7 @@ describe('gameLogic', () => {
                 isHost: i === 0,
             }));
 
-            assignRoles(players, []);
+            assignRoles(players);
 
             // Ensure all players have a role
             expect(players.every(p => !!p.role)).toBe(true);
@@ -48,7 +48,7 @@ describe('gameLogic', () => {
                 isHost: i === 0,
             }));
 
-            assignRoles(players, []);
+            assignRoles(players);
 
             const assignedRoles = players.map(p => p.role);
             expect(assignedRoles).toContain('Merlin');
@@ -67,7 +67,7 @@ describe('gameLogic', () => {
                 isHost: i === 0,
             }));
 
-            assignRoles(players, []);
+            assignRoles(players);
 
             const assignedRoles = players.map(p => p.role);
             expect(assignedRoles.filter(r => r === 'Loyal Servant').length).toBe(4);
@@ -91,7 +91,7 @@ describe('gameLogic', () => {
                 'session_1': 'Assassin'
             } as any;
 
-            assignRoles(players, [], requestedRoles);
+            assignRoles(players, requestedRoles);
 
             expect(players.find(p => p.sessionId === 'session_0')?.role).toBe('Mordred');
             expect(players.find(p => p.sessionId === 'session_1')?.role).toBe('Assassin');

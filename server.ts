@@ -1796,7 +1796,7 @@ function setupSocket(io: Server) {
         const room = rooms[roomId];
         if (room && room.status === 'lobby' && room.players.length >= 5 && room.players.length <= 10) {
           touchRoom(room);
-          assignRoles(room.players, room.settings.optionalRoles, requestedRoles);
+          assignRoles(room.players, requestedRoles);
 
           const config = getQuestConfig(room.players.length);
           room.gameState.quests = config.sizes.map((size, i) => ({

@@ -31,7 +31,7 @@ export function getQuestConfig(playerCount: number) {
   return configs[playerCount] || configs[5];
 }
 
-export function assignRoles(players: Player[], optionalRoles: Role[], requestedRoles?: Record<string, Role>) {
+export function assignRoles(players: Player[], requestedRoles?: Record<string, Role>) {
   const count = players.length;
   let roles: Role[] = [];
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useGameStore } from '../store';
 import { Globe } from 'lucide-react';
 

@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { useGameStore } from "./store";
 import { supabase, recreateSupabaseClient } from "./utils/supabase";
-import AuthScreen from "./components/AuthScreenMockup";
+import AuthScreen from "./components/AuthScreen";
 import JoinScreen from "./components/JoinScreen";
 import LobbyScreen from "./components/LobbyScreen";
 import RoleRevealScreen from "./components/RoleRevealScreen";
@@ -16,6 +16,7 @@ import GameOverScreen from "./components/GameOverScreen";
 import IdleWarningModal from "./components/IdleWarningModal";
 import { LanguageToggle } from "./components/LanguageToggle";
 import { Loader2 } from "lucide-react";
+import { User } from '@supabase/supabase-js';
 
 export default function App() {
   const room = useGameStore((state) => state.room);
@@ -82,7 +83,7 @@ export default function App() {
 
       await initAuth();
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: unknown, session: { user: User | null; }) => {
         try {
           if (session?.user) {
             let { data: profile } = await supabase

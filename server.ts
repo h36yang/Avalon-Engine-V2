@@ -51,7 +51,7 @@ function getBotSystemPrompt(role: string): string {
   return COMMON_STRATEGY_PROMPT || rolePrompt;
 }
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 const DEFAULT_MODELS: Record<string, string> = {
   gemini: 'gemini-2.0-flash-lite',

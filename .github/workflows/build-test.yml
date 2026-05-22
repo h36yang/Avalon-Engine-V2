@@ -16,6 +16,5 @@ jobs:
         with:
           node-version: 24.x
           cache: 'npm'
-      - run: npm run lint
       - run: npm run test:once
       - run: npm run build

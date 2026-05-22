@@ -3,3 +3,6 @@ instance_class: F1
 
 env_variables:
   PORT: 8080
+  VITE_SUPABASE_URL: "https://lundeddnrfocejcdtamf.supabase.co"
+  VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_PS_rzY6rg4_NtZOabYc2CA_3etnZX6O"
+  VITE_SUPABASE_SECRET_KEY: "sb_secret_kn4spSoxFnFCGoenyHjOTQ_T9omz9ry"

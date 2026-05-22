@@ -2,20 +2,20 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabasePublishableKey) {
   console.warn('Missing Supabase environment variables - using development mock auth');
 }
 
 export let supabase: any;
-export let isAuthBypassEnabled = !supabaseUrl || !supabaseAnonKey;
+export let isAuthBypassEnabled = !supabaseUrl || !supabasePublishableKey;
 
 export const recreateSupabaseClient = () => {
   let client: any = null;
   try {
-    if (supabaseUrl && supabaseAnonKey) {
-      client = createClient(supabaseUrl, supabaseAnonKey);
+    if (supabaseUrl && supabasePublishableKey) {
+      client = createClient(supabaseUrl, supabasePublishableKey);
     }
   } catch (err) {
     console.warn('Failed to initialize Supabase client:', err);

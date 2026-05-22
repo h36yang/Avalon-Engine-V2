@@ -62,12 +62,12 @@ const DEFAULT_MODELS: Record<string, string> = {
 
 // Initialize Supabase Admin Client
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseSecretKey = process.env.VITE_SUPABASE_SECRET_KEY || '';
 
 let supabase: any = null;
 try {
-  if (supabaseUrl && supabaseServiceKey) {
-    supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  if (supabaseUrl && supabaseSecretKey) {
+    supabase = createClient(supabaseUrl, supabaseSecretKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
@@ -79,9 +79,14 @@ try {
 }
 
 async function updatePlayerStats(userId: string, isWinner: boolean) {
-  if (!userId || !supabase) return;
+  console.log(`Updating stats for user ${userId} as a ${isWinner ? 'winner' : 'loser'}...`);
+  if (!userId || !supabase) {
+    console.warn('Invalid user ID or Supabase client not initialized');
+    return;
+  }
 
   try {
+    console.log(`Fetching existing profile for user ${userId}...`);
     // We use an RPC call if we had one, but for simplicity we'll do a select then update
     // In a production app with high concurrency, an RPC function in Postgres is safer
     const { data: profile, error: fetchError } = await supabase
@@ -102,6 +107,7 @@ async function updatePlayerStats(userId: string, isWinner: boolean) {
         losses: !isWinner ? (profile.losses || 0) + 1 : profile.losses,
       };
 
+      console.log(`Updating profiles stats in DB for user ${userId} with:`, updates);
       const { error: updateError } = await supabase
         .from('profiles')
         .update(updates)
@@ -1703,7 +1709,6 @@ function setupSocket(io: Server) {
     socket.on('add_bot', ({ roomId, botClass, difficulty }) => {
       try {
         const resolvedBotClass = botClass || (difficulty ? difficulty : 'normal');
-        console.log('add_bot called with:', { roomId, botClass: resolvedBotClass });
         const room = rooms[roomId];
         if (room && room.status === 'lobby' && room.players.length < 10) {
           const botId = 'bot_' + Math.random().toString(36).substring(2, 9);
@@ -1718,7 +1723,6 @@ function setupSocket(io: Server) {
             botClass: resolvedBotClass,
             difficulty: isAI ? 'hard' : (resolvedBotClass as 'normal' | 'hard'),
           };
-          console.log('Created bot:', newBot);
           room.players.push(newBot);
 
           touchRoom(room);

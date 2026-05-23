@@ -49,6 +49,22 @@
     npm run dev
     ```
 
+### Deployment
+
+No CD is set up at the moment. To deploy this app to GCP App Engine, install the [Google Cloud CLI](https://docs.cloud.google.com/sdk/docs/install-sdk), and run the following commands:
+
+```sh
+# One-time initialization
+gcloud init
+
+# Deploy the app to GCP App Engine
+gcloud app deploy
+
+# Open the deployed app in the browser
+gcloud app browse
+```
+
+
 ## 🎮 How to Play
 
 1.  Create an account or log in via the web interface.

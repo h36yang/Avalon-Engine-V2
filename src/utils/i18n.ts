@@ -136,7 +136,20 @@ export const translations = {
     // LobbyScreen extras
     'Offline': 'Offline',
     'Need at least 5 players': 'Need at least 5 players to see roles.',
+    'Need at least 5 players to start': 'Need at least 5 players to start',
     'Need 5-10 players': 'Need 5-10 players',
+    '+ Normal': '+ Normal',
+    '+ Hard': '+ Hard',
+    '+ AI': '+ AI',
+    '(You)': '(You)',
+    'API Key': 'API Key',
+    'Custom model...': 'Custom model...',
+    'Custom model name': 'Custom model name',
+    'Test': 'Test',
+    'Google Gemini': 'Google Gemini',
+    'OpenRouter': 'OpenRouter',
+    'Groq': 'Groq',
+    'NVIDIA NIM': 'NVIDIA NIM',
 
     // Quest Result
     'Quest Result': 'Quest Result',
@@ -294,7 +307,20 @@ export const translations = {
     // LobbyScreen extras
     'Offline': '离线',
     'Need at least 5 players': '需要至少5名玩家才能查看角色。',
+    'Need at least 5 players to start': '需要至少5名玩家才能开始游戏',
     'Need 5-10 players': '需要5-10名玩家',
+    '+ Normal': '+ 普通',
+    '+ Hard': '+ 困难',
+    '+ AI': '+ 智能体',
+    '(You)': '(你)',
+    'API Key': 'API 密钥',
+    'Custom model...': '自定义模型...',
+    'Custom model name': '自定义模型名称',
+    'Test': '测试',
+    'Google Gemini': '谷歌 Gemini',
+    'OpenRouter': 'OpenRouter',
+    'Groq': 'Groq',
+    'NVIDIA NIM': 'NVIDIA NIM',
 
     // Quest Result
     'Quest Result': '任务结果',

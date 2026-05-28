@@ -119,6 +119,22 @@ export default function LobbyScreen() {
     10: "Merlin · Percival · Loyal Servant ×4 · Morgana · Assassin · Oberon · Mordred",
   };
 
+  const translateComposition = (composition: string) => {
+    return composition
+      .split(' · ')
+      .map(part => {
+        const match = part.match(/^(.+?)( ×\d+)?$/);
+        if (match) {
+          const roleName = match[1];
+          const multiplier = match[2] || '';
+          return `${t(roleName)}${multiplier}`;
+        }
+        return t(part);
+      })
+      .join(' · ');
+  };
+
+
   return (
     <div className="min-h-screen text-zinc-50 flex flex-col max-w-md mx-auto relative overflow-hidden" style={{ background: '#080604' }}>
 
@@ -188,19 +204,19 @@ export default function LobbyScreen() {
                   onClick={() => addBot('normal')}
                   className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors avalon-glass-control avalon-glass-control--normal"
                 >
-                  + Normal
+                  {t("+ Normal")}
                 </button>
                 <button
                   onClick={() => addBot('hard')}
                   className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors avalon-glass-control avalon-glass-control--hard"
                 >
-                  + Hard
+                  {t("+ Hard")}
                 </button>
                 <button
                   onClick={() => addBot('ai')}
                   className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors avalon-glass-control avalon-glass-control--ai"
                 >
-                  + AI
+                  {t("+ AI")}
                 </button>
               </div>
             )}
@@ -237,7 +253,7 @@ export default function LobbyScreen() {
                       <p className="font-semibold text-sm truncate" style={{ color: 'rgba(255,255,255,0.88)' }}>
                         {p.name}
                         {p.sessionId === sessionId && (
-                          <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400, marginLeft: 4 }}>(You)</span>
+                          <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400, marginLeft: 4 }}>{t("(You)")}</span>
                         )}
                       </p>
                       {p.isBot && (
@@ -248,7 +264,7 @@ export default function LobbyScreen() {
                               ? { color: '#d97706' }
                               : { color: 'rgba(255,255,255,0.3)' }
                         }>
-                          {p.botClass === 'ai' ? 'AI Bot' : p.botClass === 'hard' ? 'Hard Bot' : 'Normal Bot'}
+                          {p.botClass === 'ai' ? t('AI Bot') : p.botClass === 'hard' ? t('Hard Bot') : t('Normal Bot')}
                           {p.hasApiKey && <Sparkles size={10} className="inline ml-1" />}
                         </p>
                       )}
@@ -261,12 +277,12 @@ export default function LobbyScreen() {
                         className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider"
                         style={{ background: 'rgba(212,175,55,0.1)', border: `1px solid rgba(212,175,55,0.3)`, color: GOLD }}
                       >
-                        Host
+                        {t("Host")}
                       </span>
                     )}
                     {!p.isConnected && !p.isBot && (
                       <span className="text-[10px] font-semibold text-red-400 bg-red-950/30 border border-red-800/30 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        Offline
+                        {t("Offline")}
                       </span>
                     )}
                     {p.isBot && p.botClass === 'ai' && isHost && (
@@ -302,14 +318,14 @@ export default function LobbyScreen() {
                       onChange={(e) => updateLocalBotConfig(p.sessionId, { provider: e.target.value as Provider })}
                       className={selectClass}
                     >
-                      <option value="gemini">Google Gemini</option>
-                      <option value="openrouter">OpenRouter</option>
-                      <option value="groq">Groq</option>
-                      <option value="nvidia">NVIDIA NIM</option>
+                      <option value="gemini">{t("Google Gemini")}</option>
+                      <option value="openrouter">{t("OpenRouter")}</option>
+                      <option value="groq">{t("Groq")}</option>
+                      <option value="nvidia">{t("NVIDIA NIM")}</option>
                     </select>
                     <input
                       type="password"
-                      placeholder="API Key"
+                      placeholder={t("API Key")}
                       value={getBotConfig(p.sessionId).apiKey}
                       onChange={(e) => updateLocalBotConfig(p.sessionId, { apiKey: e.target.value })}
                       className={cn(selectClass, "placeholder:text-zinc-700")}
@@ -321,9 +337,9 @@ export default function LobbyScreen() {
                         className={cn(selectClass, "flex-1")}
                       >
                         {PROVIDER_MODELS[getBotConfig(p.sessionId).provider].map(m => (
-                          <option key={m.value} value={m.value}>{m.label}</option>
+                          <option key={m.value} value={m.value}>{t(m.label)}</option>
                         ))}
-                        <option value="custom">Custom model...</option>
+                        <option value="custom">{t("Custom model...")}</option>
                       </select>
                       <button
                         onClick={() => handleTestApiKey(p.sessionId)}
@@ -331,13 +347,13 @@ export default function LobbyScreen() {
                         className="px-3 py-2 rounded-lg transition-colors text-xs font-medium disabled:opacity-40 whitespace-nowrap"
                         style={{ border: `1px solid rgba(212,175,55,0.2)`, color: 'rgba(212,175,55,0.6)', background: 'none', cursor: 'pointer' }}
                       >
-                        {testStatus[p.sessionId] === 'testing' ? '...' : 'Test'}
+                        {testStatus[p.sessionId] === 'testing' ? '...' : t('Test')}
                       </button>
                     </div>
                     {getBotConfig(p.sessionId).model === 'custom' && (
                       <input
                         type="text"
-                        placeholder="Custom model name"
+                        placeholder={t("Custom model name")}
                         value={getBotConfig(p.sessionId).customModel}
                         onChange={(e) => updateLocalBotConfig(p.sessionId, { customModel: e.target.value })}
                         className={cn(selectClass, "placeholder:text-zinc-700")}
@@ -350,7 +366,7 @@ export default function LobbyScreen() {
                           ? 'text-emerald-400 bg-emerald-950/30 border border-emerald-800/30'
                           : 'text-red-400 bg-red-950/30 border border-red-800/30'
                       )}>
-                        {testStatus[p.sessionId]}
+                        {t(testStatus[p.sessionId])}
                       </div>
                     )}
                   </div>
@@ -372,7 +388,7 @@ export default function LobbyScreen() {
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{t("Need at least 5 players to start")}</p>
             ) : (
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
-                {ROLE_COMPOSITIONS[room.players.length] || ''}
+                {ROLE_COMPOSITIONS[room.players.length] ? translateComposition(ROLE_COMPOSITIONS[room.players.length]) : ''}
               </p>
             )}
           </div>
@@ -404,7 +420,7 @@ export default function LobbyScreen() {
             }}
           >
             <Play size={15} />
-            {canStart ? t("Start Game") : t("Need 5–10 players")}
+            {canStart ? t("Start Game") : t("Need 5-10 players")}
           </button>
         ) : (
           <div className="text-center py-3.5 text-sm font-medium" style={{ color: 'rgba(212,175,55,0.45)', letterSpacing: '0.05em' }}>

@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build_test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
     - run: npm run test:once
   
   deploy:
-    needs: build
+    needs: build_test
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -32,7 +32,7 @@ jobs:
       uses: 'google-github-actions/auth@v3'
       with:
         service_account: 'avalon-engine-v2@appspot.gserviceaccount.com'
-        token_format: 'access_token'
+        credentials_json: ${{ secrets.SA_KEY_JSON }}
 
     - id: 'deploy'
       uses: 'google-github-actions/deploy-appengine@v3'

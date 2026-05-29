@@ -36,7 +36,7 @@ export default function VoteHistoryHeader({ title, viewingHistoryIndex, setViewi
                 onClick={onViewRole}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors text-xs font-semibold"
               >
-                <Eye size={12} /> Role
+                <Eye size={12} /> {t('Role')}
               </button>
             )}
             {isHost && (

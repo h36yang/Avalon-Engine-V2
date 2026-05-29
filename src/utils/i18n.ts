@@ -41,9 +41,10 @@ export const translations = {
     'Kick': 'Kick',
     'Host': 'Host',
     'Bot': 'Bot',
-    'Roles in play': 'Roles in play',
+    'Roles in Play': 'Roles in Play',
 
     // Role Reveal
+    'Role': 'Role',
     'Your Role': 'Your Role',
     'Keep this secret from others': 'Keep this secret from others',
     'Tap to Reveal': 'Tap to Reveal',
@@ -69,9 +70,12 @@ export const translations = {
     'Waiting for others to vote...': 'Waiting for others to vote...',
     'Team Approved': 'Team Approved',
     'Team Rejected': 'Team Rejected',
+    'Approved': 'Approved',
+    'Rejected': 'Rejected',
     'Continue': 'Continue',
     'Vote History': 'Vote History',
     'Attempt': 'Attempt',
+    'attempt': 'attempt',
     'Back to Current Game': 'Back to Current Game',
     'Back to Assassination': 'Back to Assassination',
 
@@ -79,6 +83,7 @@ export const translations = {
     'Quest Phase': 'Quest Phase',
     'Success': 'Success',
     'Fail': 'Fail',
+    'Failed': 'Failed',
     'Waiting for team to complete quest...': 'Waiting for team to complete quest...',
 
     // Assassination
@@ -123,6 +128,9 @@ export const translations = {
     'You are the Leader': 'You are the Leader',
     'Leader is selecting': 'Leader has selected',
     'Bot Opinions': 'Bot chats',
+    'Select': 'Select',
+    'team members': 'team members',
+    'Got it': 'Got it',
 
     // AssassinScreen extras
     'Good completed 3 quests': 'Good has completed 3 quests, but Evil has one last chance. The Assassin must find Merlin.',
@@ -212,9 +220,10 @@ export const translations = {
     'Kick': '踢出',
     'Host': '房主',
     'Bot': '机器人',
-    'Roles in play': '本局角色',
+    'Roles in Play': '本局角色',
 
     // Role Reveal
+    'Role': '角色',
     'Your Role': '你的角色',
     'Keep this secret from others': '请向其他人保密',
     'Tap to Reveal': '点击翻开',
@@ -240,9 +249,12 @@ export const translations = {
     'Waiting for others to vote...': '等待其他人投票...',
     'Team Approved': '队伍已通过',
     'Team Rejected': '队伍被否决',
+    'Approved': '通过',
+    'Rejected': '否决',
     'Continue': '继续',
     'Vote History': '投票历史',
     'Attempt': '尝试',
+    'attempt': '次尝试',
     'Back to Current Game': '返回当前游戏',
     'Back to Assassination': '返回刺杀',
 
@@ -250,6 +262,7 @@ export const translations = {
     'Quest Phase': '任务阶段',
     'Success': '任务成功',
     'Fail': '任务失败',
+    'Failed': '任务失败',
     'Waiting for team to complete quest...': '等待队伍完成任务...',
 
     // Assassination
@@ -294,6 +307,9 @@ export const translations = {
     'You are the Leader': '你是队长',
     'Leader is selecting': '队长已选择',
     'Bot Opinions': '机器人发言',
+    'Select': '选择',
+    'team members': '名队员',
+    'Got it': '知道了',
 
     // AssassinScreen extras
     'Good completed 3 quests': '正义阵营已完成3个任务，但邪恶阵营还有最后一次机会。刺客必须找出梅林。',

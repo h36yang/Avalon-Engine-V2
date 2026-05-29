@@ -202,7 +202,7 @@ export default function GameScreen() {
                         <div>
                           <span className={cn("font-semibold text-sm", isSelected ? "text-indigo-100" : "text-zinc-200")}>
                             {p.name}
-                            {p.sessionId === sessionId && <span className="font-normal text-zinc-500 ml-1">(You)</span>}
+                            {p.sessionId === sessionId && <span className="font-normal text-zinc-500 ml-1">{t("(You)")}</span>}
                           </span>
                         </div>
                       </div>
@@ -265,7 +265,7 @@ export default function GameScreen() {
                           <Bot size={13} className="text-zinc-500" />
                         </div>
                         <div className="flex-1 bg-zinc-900 rounded-xl px-3.5 py-3 border border-zinc-800/80">
-                          <p className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider mb-1.5">{botPlayer?.name || "Bot"}</p>
+                          <p className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider mb-1.5">{botPlayer?.name || t("Bot")}</p>
                           <p className={cn("text-sm leading-relaxed", opinion.isError ? "text-red-400" : "text-zinc-300")}>
                             {opinion.text}
                           </p>

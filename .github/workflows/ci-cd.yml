@@ -20,6 +20,7 @@ jobs:
     - run: npm run test:once
   
   deploy:
+    environment: Production
     needs: build_test
     runs-on: ubuntu-latest
     permissions:

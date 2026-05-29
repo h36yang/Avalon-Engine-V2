@@ -40,4 +40,7 @@ jobs:
       with:
         project_id: 'avalon-engine-v2'
         env_vars: |-
-          VITE_SUPABASE_SECRET_KEY="${{ secrets.VITE_SUPABASE_SECRET_KEY }}"
+          PORT=8080
+          VITE_SUPABASE_URL=${{ env.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY=${{ env.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_SECRET_KEY=${{ secrets.VITE_SUPABASE_SECRET_KEY }}

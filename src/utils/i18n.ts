@@ -78,6 +78,9 @@ export const translations = {
     'attempt': 'attempt',
     'Back to Current Game': 'Back to Current Game',
     'Back to Assassination': 'Back to Assassination',
+    'Revealed Evil Roles': 'Revealed Evil Roles',
+    'Strike': 'Assassin Strike',
+    'Confirm Strike': 'Are you sure you want to trigger Assassin Strike and directly enter the assassinate phase?',
 
     // Quest
     'Quest Phase': 'Quest Phase',
@@ -262,6 +265,9 @@ export const translations = {
     'attempt': '次尝试',
     'Back to Current Game': '返回当前游戏',
     'Back to Assassination': '返回刺杀',
+    'Revealed Evil Roles': '已暴露的邪恶阵营角色',
+    'Strike': '拍刀',
+    'Confirm Strike': '确定要“拍刀”并直接进入刺杀梅林阶段吗？',
 
     // Quest
     'Quest Phase': '任务阶段',

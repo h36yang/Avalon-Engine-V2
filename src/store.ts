@@ -64,6 +64,7 @@ export interface Room {
     teamVotes: Record<string, boolean>;
     winner: "good" | "evil" | null;
     assassinationTarget: string | null;
+    strikeHolderSessionId?: string;
     voteHistory: TeamVoteHistory[];
     botOpinions?: BotOpinion[];
     botMindLogs?: Record<string, MindLogEntry[]>;
@@ -122,6 +123,7 @@ interface GameState {
   voteTeam: (approve: boolean) => void;
   voteQuest: (success: boolean) => void;
   assassinate: (targetSessionId: string) => void;
+  triggerStrike: () => void;
   continueVoteReveal: () => void;
   continueQuestResult: () => void;
   pingActivity: () => void;
@@ -340,6 +342,11 @@ export const useGameStore = create<GameState>()(
       assassinate: (targetSessionId) => {
         const { socket, roomId, sessionId } = get();
         socket?.emit("assassinate", { roomId, sessionId, targetSessionId });
+      },
+
+      triggerStrike: () => {
+        const { socket, roomId } = get();
+        socket?.emit("trigger_strike", { roomId });
       },
 
       continueVoteReveal: () => {

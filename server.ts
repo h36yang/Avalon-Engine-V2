@@ -231,6 +231,11 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
 
     const isTargetEvil = EVIL_ROLES.has(targetRole);
 
+    // In assassin phase, all players (including good players) can see the evil players' roles
+    if (room.status === 'assassin' && isTargetEvil) {
+      return safeP;
+    }
+
     // Merlin sees all evil EXCEPT Mordred
     if (viewerRole === 'Merlin' && isTargetEvil && targetRole !== 'Mordred') {
       return safeP;
@@ -1813,6 +1818,22 @@ function setupSocket(io: Server) {
           touchRoom(room);
           assignRoles(room.players, requestedRoles);
 
+          // Find the assassin player to initialize strikeHolderSessionId
+          const assassin = room.players.find(p => p.role === 'Assassin');
+          let strikeHolderSessionId: string | undefined = undefined;
+          if (assassin) {
+            if (!assassin.isBot) {
+              strikeHolderSessionId = assassin.sessionId;
+            } else {
+              const humanEvils = room.players.filter(p => !p.isBot && EVIL_ROLES.has(p.role as Role));
+              if (humanEvils.length > 0) {
+                const randomEvil = humanEvils[Math.floor(Math.random() * humanEvils.length)];
+                strikeHolderSessionId = randomEvil.sessionId;
+              }
+            }
+          }
+          room.gameState.strikeHolderSessionId = strikeHolderSessionId;
+
           const config = getQuestConfig(room.players.length);
           room.gameState.quests = config.sizes.map((size, i) => ({
             teamSize: size,
@@ -1990,6 +2011,27 @@ function setupSocket(io: Server) {
       }
     });
 
+    socket.on('trigger_strike', ({ roomId }) => {
+      try {
+        const sessionId = socketToSession[socket.id];
+        if (!sessionId) return;
+        const room = rooms[roomId];
+        if (
+          room &&
+          room.gameState.strikeHolderSessionId === sessionId &&
+          room.gameState.currentQuestIndex >= 1 &&
+          !['lobby', 'role_reveal', 'assassin', 'game_over'].includes(room.status)
+        ) {
+          touchRoom(room);
+          room.status = 'assassin';
+          broadcastRoom(room, io);
+          handleBotActions(room, io);
+        }
+      } catch (err) {
+        console.error('Error in trigger_strike:', err);
+      }
+    });
+
     socket.on('leave_room', ({ roomId }) => {
       try {
         // SECURITY: Use server-side identity
@@ -2079,6 +2121,7 @@ function setupSocket(io: Server) {
               teamVotes: {},
               winner: null,
               assassinationTarget: null,
+              strikeHolderSessionId: undefined,
               voteHistory: [],
               botMemories: {},
               botMindLogs: {}

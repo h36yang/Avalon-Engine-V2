@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "../store";
-import { Skull, Target } from "lucide-react";
+import { Skull, Target, ShieldAlert } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
@@ -57,6 +57,25 @@ export default function AssassinScreen() {
             <p className="text-zinc-400 text-sm max-w-xs mx-auto">
               {t("Good completed 3 quests")}
             </p>
+          </div>
+
+          {/* Revealed Evil Players Panel */}
+          <div className="w-full bg-red-950/10 border border-red-900/30 rounded-2xl p-4 text-left max-w-sm mx-auto">
+            <p className="text-[11px] font-semibold text-red-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 justify-center">
+              <ShieldAlert size={12} className="text-red-500 animate-pulse" /> {t("Revealed Evil Roles")}
+            </p>
+            <div className="space-y-2">
+              {room.players
+                .filter((p) => p.role && EVIL_ROLES.has(p.role))
+                .map((p) => (
+                  <div key={p.sessionId} className="flex items-center justify-between bg-zinc-900/60 border border-zinc-800/80 px-3.5 py-2.5 rounded-xl">
+                    <span className="font-semibold text-sm text-zinc-200">{p.name}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-950/50 border border-red-900/40 px-2.5 py-1 rounded-full">
+                      {t(p.role as string)}
+                    </span>
+                  </div>
+                ))}
+            </div>
           </div>
 
           {canAssassinate ? (

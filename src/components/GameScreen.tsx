@@ -23,6 +23,7 @@ export default function GameScreen() {
   const voteQuest = useGameStore((state) => state.voteQuest);
   const continueVoteReveal = useGameStore((state) => state.continueVoteReveal);
   const continueQuestResult = useGameStore((state) => state.continueQuestResult);
+  const triggerStrike = useGameStore((state) => state.triggerStrike);
   const { t } = useTranslation();
 
   const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
@@ -44,6 +45,9 @@ export default function GameScreen() {
   const isLeader = players[gameState.leaderIndex].sessionId === sessionId;
   const me = players.find((p) => p.sessionId === sessionId);
   const isEvil = me ? EVIL_ROLES.has(me.role as Role) : false;
+  const canStrike = room.gameState.strikeHolderSessionId === sessionId &&
+    room.gameState.currentQuestIndex >= 1 &&
+    !['lobby', 'role_reveal', 'assassin', 'game_over'].includes(room.status);
 
   let info: string[] = [];
   if (me?.role === "Merlin") {
@@ -290,6 +294,21 @@ export default function GameScreen() {
 
           {/* Action Bar */}
           <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-900 z-10">
+
+            {/* Assassin Strike Button */}
+            {canStrike && (
+              <button
+                onClick={() => {
+                  if (window.confirm(t("Confirm Strike"))) {
+                    triggerStrike();
+                  }
+                }}
+                className="w-full mb-3 py-3 rounded-xl font-bold text-sm bg-red-950/40 border border-red-700/50 hover:bg-red-900/40 text-red-400 hover:text-red-300 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse cursor-pointer"
+              >
+                <Skull size={16} className="text-red-500 animate-bounce" />
+                {t("Strike")}
+              </button>
+            )}
 
             {/* Continue buttons */}
             {(status === "team_vote_reveal" || status === "quest_result") && isLeader && (

@@ -60,6 +60,7 @@ export const translations = {
     'Select team members': 'Select team members',
     'Publish Team': 'Publish Team',
     'Waiting for leader': 'Waiting for leader to propose a team...',
+    'has proposed the team': 'has proposed the team',
     'Leader': 'Leader',
     'Vote Track': 'Vote Track',
 
@@ -247,6 +248,7 @@ export const translations = {
     'Select team members': '选择队伍成员',
     'Publish Team': '发布队伍',
     'Waiting for leader': '等待队长提议队伍...',
+    'has proposed the team': '发布了队伍',
     'Leader': '队长',
     'Vote Track': '发车失败次数',
 

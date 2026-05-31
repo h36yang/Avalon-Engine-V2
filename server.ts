@@ -1164,7 +1164,7 @@ function handleBotActions(room: Room, io: Server) {
           const team = await aiTeamBuilding(room, leader, currentQuest.teamSize, io);
           if (room.status !== 'team_building') return;
           room.gameState.proposedTeam = team;
-          room.status = 'team_voting';
+          room.status = 'team_proposed';
           room.gameState.teamVotes = {};
           broadcastRoom(room, io);
           handleBotActions(room, io);
@@ -1273,6 +1273,17 @@ function handleBotActions(room: Room, io: Server) {
         }
 
         room.gameState.proposedTeam = team;
+        room.status = 'team_proposed';
+        room.gameState.teamVotes = {};
+        broadcastRoom(room, io);
+        handleBotActions(room, io);
+      }, 2000);
+    }
+  } else if (room.status === 'team_proposed') {
+    const leader = room.players[room.gameState.leaderIndex];
+    if (leader.isBot) {
+      setTimeout(() => {
+        if (room.status !== 'team_proposed') return;
         room.status = 'team_voting';
         room.gameState.teamVotes = {};
         broadcastRoom(room, io);
@@ -1849,13 +1860,43 @@ function setupSocket(io: Server) {
         if (room && room.status === 'team_building') {
           touchRoom(room);
           room.gameState.proposedTeam = team;
-          room.status = 'team_voting';
+          room.status = 'team_proposed';
           room.gameState.teamVotes = {};
           broadcastRoom(room, io);
           handleBotActions(room, io);
         }
       } catch (err) {
         console.error('Error in propose_team:', err);
+      }
+    });
+
+    socket.on('start_voting', ({ roomId }) => {
+      try {
+        const room = rooms[roomId];
+        if (room && room.status === 'team_proposed') {
+          touchRoom(room);
+          room.status = 'team_voting';
+          room.gameState.teamVotes = {};
+          broadcastRoom(room, io);
+          handleBotActions(room, io);
+        }
+      } catch (err) {
+        console.error('Error in start_voting:', err);
+      }
+    });
+
+    socket.on('change_team', ({ roomId }) => {
+      try {
+        const room = rooms[roomId];
+        if (room && room.status === 'team_proposed') {
+          touchRoom(room);
+          room.status = 'team_building';
+          room.gameState.proposedTeam = [];
+          broadcastRoom(room, io);
+          handleBotActions(room, io);
+        }
+      } catch (err) {
+        console.error('Error in change_team:', err);
       }
     });
 

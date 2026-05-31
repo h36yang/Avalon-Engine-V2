@@ -43,6 +43,7 @@ export interface Room {
   | "lobby"
   | "role_reveal"
   | "team_building"
+  | "team_proposed"
   | "team_voting"
   | "team_vote_reveal"
   | "quest_voting"
@@ -116,6 +117,8 @@ interface GameState {
   restartGame: () => void;
   readyTeamBuilding: () => void;
   proposeTeam: (team: string[]) => void;
+  startVoting: () => void;
+  changeTeam: () => void;
   voteTeam: (approve: boolean) => void;
   voteQuest: (success: boolean) => void;
   assassinate: (targetSessionId: string) => void;
@@ -312,6 +315,16 @@ export const useGameStore = create<GameState>()(
       proposeTeam: (team) => {
         const { socket, roomId } = get();
         socket?.emit("propose_team", { roomId, team });
+      },
+
+      startVoting: () => {
+        const { socket, roomId } = get();
+        socket?.emit("start_voting", { roomId });
+      },
+
+      changeTeam: () => {
+        const { socket, roomId } = get();
+        socket?.emit("change_team", { roomId });
       },
 
       voteTeam: (approve) => {

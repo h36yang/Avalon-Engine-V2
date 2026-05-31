@@ -58,7 +58,7 @@ export const translations = {
     'Mission': 'Mission',
     'Fails': 'Fails',
     'Select team members': 'Select team members',
-    'Propose Team': 'Propose Team',
+    'Publish Team': 'Publish Team',
     'Waiting for leader': 'Waiting for leader to propose a team...',
     'Leader': 'Leader',
     'Vote Track': 'Vote Track',
@@ -131,6 +131,11 @@ export const translations = {
     'Select': 'Select',
     'team members': 'team members',
     'Got it': 'Got it',
+    'Team Published': 'Team Published',
+    'You can start voting or change the team': 'You can start voting or change the team.',
+    'Waiting for leader to start voting...': 'Waiting for leader to start voting...',
+    'Change Team': 'Change Team',
+    'Start Voting': 'Start Voting',
 
     // AssassinScreen extras
     'Good completed 3 quests': 'Good has completed 3 quests, but Evil has one last chance. The Assassin must find Merlin.',
@@ -237,7 +242,7 @@ export const translations = {
     'Mission': '任务',
     'Fails': '次失败',
     'Select team members': '选择队伍成员',
-    'Propose Team': '提议队伍',
+    'Publish Team': '发布队伍',
     'Waiting for leader': '等待队长提议队伍...',
     'Leader': '队长',
     'Vote Track': '发车失败次数',
@@ -310,6 +315,11 @@ export const translations = {
     'Select': '选择',
     'team members': '名队员',
     'Got it': '知道了',
+    'Team Published': '队伍已发布',
+    'You can start voting or change the team': '你可以发起投票或更改队伍。',
+    'Waiting for leader to start voting...': '等待队长发起投票...',
+    'Change Team': '更改队伍',
+    'Start Voting': '发起投票',
 
     // AssassinScreen extras
     'Good completed 3 quests': '正义阵营已完成3个任务，但邪恶阵营还有最后一次机会。刺客必须找出梅林。',

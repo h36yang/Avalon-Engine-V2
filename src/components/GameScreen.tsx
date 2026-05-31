@@ -17,6 +17,8 @@ export default function GameScreen() {
   const room = useGameStore((state) => state.room);
   const sessionId = useGameStore((state) => state.sessionId);
   const proposeTeam = useGameStore((state) => state.proposeTeam);
+  const startVoting = useGameStore((state) => state.startVoting);
+  const changeTeam = useGameStore((state) => state.changeTeam);
   const voteTeam = useGameStore((state) => state.voteTeam);
   const voteQuest = useGameStore((state) => state.voteQuest);
   const continueVoteReveal = useGameStore((state) => state.continueVoteReveal);
@@ -80,6 +82,14 @@ export default function GameScreen() {
         icon: <Crown size={20} className="text-amber-400" />,
         label: isLeader ? t("You are the Leader") : `${players[gameState.leaderIndex].name} ${t("is choosing the team")}`,
         sub: isLeader ? `${t("Select")} ${currentQuest.teamSize} ${t("team members")}` : t("Waiting for leader"),
+        accent: "border-l-amber-500/60",
+      };
+    }
+    if (status === "team_proposed") {
+      return {
+        icon: <Crown size={20} className="text-amber-400" />,
+        label: isLeader ? t("Team Published") : `${players[gameState.leaderIndex].name} ${t("has proposed the team")}`,
+        sub: isLeader ? t("You can start voting or change the team") : t("Waiting for leader to start voting..."),
         accent: "border-l-amber-500/60",
       };
     }
@@ -306,7 +316,7 @@ export default function GameScreen() {
                     : "bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed"
                 )}
               >
-                {t("Propose Team")}
+                {t("Publish Team")}
                 <span className={cn(
                   "text-xs font-semibold px-2 py-0.5 rounded-full",
                   selectedTeam.length === currentQuest.teamSize ? "bg-green-600 text-white" : "bg-zinc-800 text-zinc-600"
@@ -318,6 +328,32 @@ export default function GameScreen() {
             {status === "team_building" && !isLeader && (
               <p className="text-center text-zinc-600 text-sm py-3.5">
                 {`${t("Leader is selecting")} ${gameState.proposedTeam.length}/${currentQuest.teamSize}`}
+              </p>
+            )}
+
+            {/* Team proposed */}
+            {status === "team_proposed" && isLeader && (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedTeam(gameState.proposedTeam);
+                    changeTeam();
+                  }}
+                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800/50 transition-all flex items-center justify-center gap-2"
+                >
+                  {t("Change Team")}
+                </button>
+                <button
+                  onClick={startVoting}
+                  className="py-3.5 rounded-xl font-bold text-sm bg-zinc-50 hover:bg-white text-zinc-950 transition-all flex items-center justify-center gap-2 shadow-lg animate-pulse"
+                >
+                  {t("Start Voting")}
+                </button>
+              </div>
+            )}
+            {status === "team_proposed" && !isLeader && (
+              <p className="text-center text-zinc-600 text-sm py-3.5">
+                {t("Waiting for leader to start voting...")}
               </p>
             )}
 

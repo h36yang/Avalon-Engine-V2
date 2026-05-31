@@ -151,7 +151,7 @@ export default function VoteHistoryHeader({ title, viewingHistoryIndex, setViewi
               </div>
               <div>
                 <h2 className="font-bold text-zinc-100">{t("End Game")}?</h2>
-                <p className="text-zinc-500 text-sm mt-0.5">This will end the game for all players.</p>
+                <p className="text-zinc-500 text-sm mt-0.5">{t("This will end the game for all players.")}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

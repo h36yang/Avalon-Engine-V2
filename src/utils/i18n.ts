@@ -140,6 +140,7 @@ export const translations = {
     'Waiting for leader to start voting...': 'Waiting for leader to start voting...',
     'Change Team': 'Change Team',
     'Start Voting': 'Start Voting',
+    'This will end the game for all players.': 'This will end the game for all players.',
 
     // AssassinScreen extras
     'Good completed 3 quests': 'Good has completed 3 quests, but Evil has one last chance. The Assassin must find Merlin.',
@@ -328,6 +329,7 @@ export const translations = {
     'Waiting for leader to start voting...': '等待队长发起投票...',
     'Change Team': '更改队伍',
     'Start Voting': '发起投票',
+    'This will end the game for all players.': '这将结束所有玩家的游戏。',
 
     // AssassinScreen extras
     'Good completed 3 quests': '正义阵营已完成3个任务，但邪恶阵营还有最后一次机会。刺客必须找出梅林。',

@@ -325,18 +325,19 @@ export default function JoinScreen() {
                 <div className="space-y-2 max-h-[280px] overflow-y-auto pr-0.5">
                   {availableRooms.map((room) => {
                     const isWaiting = room.status === 'waiting';
+                    const canJoin = isWaiting || room.isRejoinable;
                     return (
                       <button
                         key={room.id}
-                        onClick={() => isWaiting && handleJoinRoom(room.id)}
-                        disabled={!isWaiting || connecting}
+                        onClick={() => canJoin && handleJoinRoom(room.id)}
+                        disabled={!canJoin || connecting}
                         className="w-full flex items-center justify-between text-left transition-all duration-150 avalon-glass"
                         style={{
                           padding: '12px 14px',
                           borderRadius: 10,
-                          border: isWaiting ? `1px solid rgba(212,175,55,0.24)` : `1px solid rgba(255,255,255,0.08)`,
-                          opacity: (isWaiting && !connecting) ? 1 : 0.4,
-                          cursor: isWaiting && !connecting ? 'pointer' : 'not-allowed',
+                          border: canJoin ? `1px solid rgba(212,175,55,0.24)` : `1px solid rgba(255,255,255,0.08)`,
+                          opacity: (canJoin && !connecting) ? 1 : 0.4,
+                          cursor: canJoin && !connecting ? 'pointer' : 'not-allowed',
                         }}
                       >
                         <div className="flex items-center gap-3">
@@ -346,7 +347,7 @@ export default function JoinScreen() {
                             <Crown size={13} style={{ color: GOLD }} />
                           </div>
                           <div>
-                            <p className="font-mono font-bold" style={{ fontSize: 14, color: isWaiting ? GOLD : 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
+                            <p className="font-mono font-bold" style={{ fontSize: 14, color: canJoin ? GOLD : 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
                               {room.id}
                             </p>
                             <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{room.hostName}</p>
@@ -363,11 +364,11 @@ export default function JoinScreen() {
                             fontWeight: 600,
                             textTransform: 'uppercase',
                             letterSpacing: '0.1em',
-                            background: isWaiting ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.05)',
-                            border: isWaiting ? `1px solid rgba(212,175,55,0.3)` : '1px solid rgba(255,255,255,0.08)',
-                            color: isWaiting ? GOLD : 'rgba(255,255,255,0.3)',
+                            background: canJoin ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.05)',
+                            border: canJoin ? `1px solid rgba(212,175,55,0.3)` : '1px solid rgba(255,255,255,0.08)',
+                            color: canJoin ? GOLD : 'rgba(255,255,255,0.3)',
                           }}>
-                            {isWaiting ? t("Waiting") : t("In Game")}
+                            {room.isRejoinable ? t("Continue") : (isWaiting ? t("Waiting") : t("In Game"))}
                           </span>
                         </div>
                       </button>

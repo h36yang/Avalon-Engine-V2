@@ -85,6 +85,7 @@ export interface AvailableRoom {
   playerCount: number;
   maxPlayers: number;
   status: 'waiting' | 'in_game';
+  isRejoinable: boolean;
 }
 
 interface GameState {
@@ -373,8 +374,9 @@ export const useGameStore = create<GameState>()(
 
       fetchRooms: async () => {
         try {
+          const { sessionId } = get();
           const baseUrl = (import.meta as any).env.VITE_APP_URL || window.location.origin;
-          const res = await fetch(`${baseUrl}/api/rooms`);
+          const res = await fetch(`${baseUrl}/api/rooms?sessionId=${sessionId}`);
           const data = await res.json();
           set({ availableRooms: data });
         } catch (err) {

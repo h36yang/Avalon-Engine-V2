@@ -137,12 +137,14 @@ async function startServer() {
   });
 
   app.get('/api/rooms', (req, res) => {
+    const userSessionId = req.query.sessionId as string;
     const roomList = Object.values(rooms).map(room => ({
       id: room.id,
       hostName: room.players.find(p => p.isHost)?.name || 'Unknown',
       playerCount: room.players.length,
       maxPlayers: 10,
       status: room.status === 'lobby' ? 'waiting' : 'in_game',
+      isRejoinable: userSessionId ? room.players.some(p => p.sessionId === userSessionId) : false,
     }));
     res.json(roomList);
   });

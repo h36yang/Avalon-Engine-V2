@@ -38,7 +38,7 @@
     npm install
     ```
 3.  **Environment Variables**
-    Create a `.env` file in the root directory and add your Supabase credentials:
+    Create a `.env` file in the `/src` directory and add your Supabase credentials:
     ```env
     VITE_SUPABASE_URL=<your_supabase_project_url>
     VITE_SUPABASE_PUBLISHABLE_KEY=<your_supabase_publishable_key>

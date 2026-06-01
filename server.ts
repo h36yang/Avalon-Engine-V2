@@ -13,7 +13,9 @@ import { fileURLToPath } from 'url';
 
 // Resolve project root directory (works with both ESM and CJS)
 // @ts-ignore - __dirname exists at runtime in tsx/CJS
-const __projectDir = typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url));
+const projectRootUrl = fileURLToPath(import.meta.url);
+console.log(`Project root resolved to: ${projectRootUrl}`);
+const __projectDir = typeof __dirname !== 'undefined' ? __dirname : dirname(projectRootUrl);
 
 // Load role prompt files for AI bots
 const ROLE_PROMPTS: Record<string, string> = {};

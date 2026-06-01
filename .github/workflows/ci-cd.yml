@@ -1,0 +1,62 @@
+name: Continuous Integration and Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v6.4.0
+      with:
+        node-version: 24.x
+        cache: 'npm'
+    - name: Install npm dependencies
+      run: npm ci
+    - name: Run build
+      run: npm run build
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v6.4.0
+      with:
+        node-version: 24.x
+        cache: 'npm'
+    - name: Install npm dependencies
+      run: npm ci
+    - name: Run lint
+      run: npm run lint
+    - name: Run tests
+      run: npm run test:once
+
+  deploy:
+    environment: Production
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v3'
+      with:
+        workload_identity_provider: 'projects/323269013642/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+        service_account: 'avalon-engine-v2@appspot.gserviceaccount.com'
+    - name: Deploy to App Engine
+      uses: 'google-github-actions/deploy-appengine@v3'
+      with:
+        project_id: 'avalon-engine-v2'
+        env_vars: |-
+          VITE_SUPABASE_SECRET_KEY=${{ secrets.VITE_SUPABASE_SECRET_KEY }}

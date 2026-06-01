@@ -4,7 +4,6 @@ instance_class: F1
 env_variables:
   PORT: 8080
   VITE_SUPABASE_URL: "https://lundeddnrfocejcdtamf.supabase.co"
-  VITE_SUPABASE_SECRET_KEY: "sb_secret_kn4spSoxFnFCGoenyHjOTQ_T9omz9ry"
 
 build_env_variables:
   VITE_SUPABASE_URL: "https://lundeddnrfocejcdtamf.supabase.co"

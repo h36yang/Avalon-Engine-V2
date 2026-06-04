@@ -393,6 +393,38 @@ export default function LobbyScreen() {
             )}
           </div>
         </section>
+
+        {/* ── Settings Section ── */}
+        {room.players.length >= 9 && (
+          <section>
+            <p style={{ fontSize: 9, fontWeight: 600, color: 'rgba(212,175,55,0.45)', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: 12 }}>
+              {t("Game Settings")}
+            </p>
+            <div className="p-4 rounded-xl avalon-glass flex items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-zinc-100">{t("Lady of the Lake")}</h3>
+                <p className="text-xs text-zinc-400 mt-1">
+                  {room.players.some(p => p.isBot)
+                    ? <span className="text-amber-500/80 font-medium">{t("Lady of the Lake is not supported in games with bots")}</span>
+                    : t("Enable the Lady of the Lake mechanic (for 9+ players)")
+                  }
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={room.settings.ladyOfTheLake || false}
+                disabled={!isHost || room.players.some(p => p.isBot)}
+                onChange={(e) => {
+                  updateSettings({
+                    ...room.settings,
+                    ladyOfTheLake: e.target.checked
+                  });
+                }}
+                className="w-4 h-4 rounded border-zinc-700 bg-black/40 text-amber-500 focus:ring-amber-500 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+          </section>
+        )}
       </div>
 
       {/* ── Sticky Bottom Action ── */}

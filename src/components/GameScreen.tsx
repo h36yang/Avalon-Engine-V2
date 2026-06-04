@@ -30,6 +30,11 @@ export default function GameScreen() {
   const [viewingHistoryIndex, setViewingHistoryIndex] = useState<number | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [loadingWordIndex, setLoadingWordIndex] = useState(0);
+  const [selectedLadyTarget, setSelectedLadyTarget] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    setSelectedLadyTarget(undefined);
+  }, [room?.status]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,6 +50,7 @@ export default function GameScreen() {
   const isLeader = players[gameState.leaderIndex].sessionId === sessionId;
   const me = players.find((p) => p.sessionId === sessionId);
   const isEvil = me ? EVIL_ROLES.has(me.role as Role) : false;
+  const isLadyHolder = gameState.ladyOfTheLakeHolder === sessionId;
   const canStrike = room.gameState.strikeHolderSessionId === sessionId &&
     room.gameState.currentQuestIndex >= 1 &&
     !['lobby', 'role_reveal', 'assassin', 'game_over'].includes(room.status);
@@ -71,6 +77,20 @@ export default function GameScreen() {
     if (selectedTeam.length === currentQuest.teamSize) {
       proposeTeam(selectedTeam);
       setSelectedTeam([]);
+    }
+  };
+
+  const handlePlayerClick = (pSessionId: string) => {
+    if (status === "team_building" && isLeader) {
+      if (selectedTeam.includes(pSessionId)) {
+        setSelectedTeam(selectedTeam.filter(p => p !== pSessionId));
+      } else if (selectedTeam.length < currentQuest.teamSize) {
+        setSelectedTeam([...selectedTeam, pSessionId]);
+      }
+    } else if (status === "lady_of_the_lake" && isLadyHolder) {
+      if (pSessionId !== sessionId && !gameState.ladyOfTheLakeHistory.includes(pSessionId)) {
+        setSelectedLadyTarget(selectedLadyTarget === pSessionId ? undefined : pSessionId);
+      }
     }
   };
 
@@ -138,6 +158,39 @@ export default function GameScreen() {
         accent: failed ? "border-l-red-500/60" : "border-l-blue-500/60",
       };
     }
+    if (status === "lady_of_the_lake") {
+      const holder = players.find(p => p.sessionId === gameState.ladyOfTheLakeHolder);
+      const isHolder = gameState.ladyOfTheLakeHolder === sessionId;
+      return {
+        icon: <Sparkles size={20} className="text-amber-400 animate-pulse" />,
+        label: t("Lady of the Lake Phase"),
+        sub: isHolder
+          ? t("You hold the Lady of the Lake. Select a player to check.")
+          : `${holder?.name} ${t("is verifying another player's alignment")}`,
+        accent: "border-l-amber-500/60 animate-pulse",
+      };
+    }
+    if (status === "lady_of_the_lake_reveal") {
+      const lastCheck = gameState.ladyOfTheLakeChecks?.[gameState.ladyOfTheLakeChecks.length - 1];
+      const checker = players.find(p => p.sessionId === lastCheck?.checker);
+      const target = players.find(p => p.sessionId === lastCheck?.target);
+      const isChecker = lastCheck?.checker === sessionId;
+
+      let subMessage = "";
+      if (isChecker) {
+        const alignmentStr = lastCheck?.result === 'good' ? t("Good Alignment") : t("Evil Alignment");
+        subMessage = `${t("Verify")} ${target?.name}: ${alignmentStr}`;
+      } else {
+        subMessage = `${checker?.name} ${t("checked")} ${target?.name}`;
+      }
+
+      return {
+        icon: <Eye size={20} className="text-indigo-400" />,
+        label: t("Lady of the Lake Reveal"),
+        sub: subMessage,
+        accent: "border-l-indigo-500/60",
+      };
+    }
     return null;
   };
 
@@ -186,14 +239,17 @@ export default function GameScreen() {
                 {players.map((p, i) => {
                   const isSelected = status === "team_building"
                     ? selectedTeam.includes(p.sessionId)
-                    : gameState.proposedTeam.includes(p.sessionId);
+                    : status === "lady_of_the_lake"
+                      ? selectedLadyTarget === p.sessionId
+                      : gameState.proposedTeam.includes(p.sessionId);
                   const isCurrentLeader = i === gameState.leaderIndex;
-                  const canToggle = status === "team_building" && isLeader;
+                  const canToggle = (status === "team_building" && isLeader) ||
+                    (status === "lady_of_the_lake" && isLadyHolder && p.sessionId !== sessionId && !gameState.ladyOfTheLakeHistory?.includes(p.sessionId));
 
                   return (
                     <button
                       key={p.sessionId}
-                      onClick={() => togglePlayer(p.sessionId)}
+                      onClick={() => handlePlayerClick(p.sessionId)}
                       disabled={!canToggle}
                       className={cn(
                         "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left",
@@ -224,6 +280,34 @@ export default function GameScreen() {
                       <div className="flex items-center gap-2 shrink-0">
                         {p.isBot && p.hasApiKey && <Sparkles size={12} className="text-indigo-400" />}
                         {isCurrentLeader && <Crown size={14} className="text-amber-400" />}
+
+                        {gameState.ladyOfTheLakeHolder === p.sessionId && (
+                          <span
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm"
+                            style={{ background: 'rgba(212,175,55,0.12)', border: `1px solid rgba(212,175,55,0.4)`, color: '#D4AF37' }}
+                          >
+                            <Sparkles size={10} className="animate-spin-slow" />
+                            {t("Lady of the Lake")}
+                          </span>
+                        )}
+                        {gameState.ladyOfTheLakeHolder !== p.sessionId && gameState.ladyOfTheLakeHistory?.includes(p.sessionId) && (
+                          <span
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider text-zinc-500 bg-zinc-900 border border-zinc-800"
+                            title={t("Players who have held Lady of the Lake cannot be checked again")}
+                          >
+                            {t("Used")}
+                          </span>
+                        )}
+                        {gameState.ladyOfTheLakeChecks?.find(c => c.checker === sessionId && c.target === p.sessionId) && (
+                          <span className={cn(
+                            "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider border flex items-center gap-1",
+                            gameState.ladyOfTheLakeChecks.find(c => c.checker === sessionId && c.target === p.sessionId)?.result === 'good'
+                              ? "bg-blue-950/40 text-blue-400 border-blue-800/40"
+                              : "bg-red-950/40 text-red-400 border-red-800/40"
+                          )}>
+                            {gameState.ladyOfTheLakeChecks.find(c => c.checker === sessionId && c.target === p.sessionId)?.result === 'good' ? t("Good Alignment") : t("Evil Alignment")}
+                          </span>
+                        )}
 
                         {/* Voting states */}
                         {status === "team_voting" && p.isBot && p.hasApiKey && !(p.sessionId in gameState.teamVotes) && (
@@ -422,6 +506,43 @@ export default function GameScreen() {
             )}
             {status === "quest_voting" && (!isOnTeam || hasVotedQuest) && (
               <p className="text-center text-zinc-600 text-sm py-3.5">{t("Waiting for team to complete quest...")}</p>
+            )}
+
+            {/* Lady of the Lake check action */}
+            {status === "lady_of_the_lake" && isLadyHolder && (
+              <button
+                onClick={() => {
+                  if (selectedLadyTarget) {
+                    useGameStore.getState().useLadyOfTheLake(selectedLadyTarget);
+                  }
+                }}
+                disabled={!selectedLadyTarget}
+                className={cn(
+                  "w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer",
+                  selectedLadyTarget
+                    ? "bg-zinc-50 hover:bg-white text-zinc-950 shadow-lg"
+                    : "bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed"
+                )}
+              >
+                {t("Verify")}
+              </button>
+            )}
+            {status === "lady_of_the_lake" && !isLadyHolder && (
+              <p className="text-center text-zinc-600 text-sm py-3.5">
+                {t("Waiting for Lady of the Lake check...")}
+              </p>
+            )}
+
+            {/* Lady of the Lake reveal continue action */}
+            {status === "lady_of_the_lake_reveal" && (
+              <button
+                onClick={() => {
+                  useGameStore.getState().continueLadyOfTheLake();
+                }}
+                className="w-full py-3.5 rounded-xl font-bold text-sm transition-all bg-zinc-50 hover:bg-white text-zinc-950 shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {t("Continue")}
+              </button>
             )}
           </div>
         </>

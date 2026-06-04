@@ -49,9 +49,12 @@ export interface Room {
   | "quest_voting"
   | "quest_result"
   | "assassin"
-  | "game_over";
+  | "game_over"
+  | "lady_of_the_lake"
+  | "lady_of_the_lake_reveal";
   settings: {
     optionalRoles: Role[];
+    ladyOfTheLake?: boolean;
   };
   gameStartedAt?: number;
   gameEndedAt?: number;
@@ -68,7 +71,16 @@ export interface Room {
     voteHistory: TeamVoteHistory[];
     botOpinions?: BotOpinion[];
     botMindLogs?: Record<string, MindLogEntry[]>;
+    ladyOfTheLakeHolder?: string;
+    ladyOfTheLakeHistory: string[];
+    ladyOfTheLakeChecks: LadeOfTheLakeCheck[];
   };
+}
+
+export interface LadeOfTheLakeCheck {
+  checker: string;
+  target: string;
+  result?: 'good' | 'evil';
 }
 
 export interface UserProfile {
@@ -127,6 +139,8 @@ interface GameState {
   triggerStrike: () => void;
   continueVoteReveal: () => void;
   continueQuestResult: () => void;
+  useLadyOfTheLake: (targetSessionId: string) => void;
+  continueLadyOfTheLake: () => void;
   pingActivity: () => void;
   availableRooms: AvailableRoom[];
   fetchRooms: () => Promise<void>;
@@ -358,6 +372,16 @@ export const useGameStore = create<GameState>()(
       continueQuestResult: () => {
         const { socket, roomId } = get();
         socket?.emit("continue_quest_result", { roomId });
+      },
+
+      useLadyOfTheLake: (targetSessionId) => {
+        const { socket, roomId } = get();
+        socket?.emit("use_lady_of_the_lake", { roomId, targetSessionId });
+      },
+
+      continueLadyOfTheLake: () => {
+        const { socket, roomId } = get();
+        socket?.emit("continue_lady_of_the_lake", { roomId });
       },
 
       restartGame: () => {

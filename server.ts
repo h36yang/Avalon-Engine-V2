@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { encode } from '@toon-format/toon';
 import { Role, Player, getQuestConfig, assignRoles, EVIL_ROLES } from './src/utils/gameLogic';
-import { MindLogEntry, Room as ClientRoom } from './src/store';
+import { MindLogEntry, Room as ClientRoom, LadeOfTheLakeCheck } from './src/store';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -259,6 +259,17 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
   });
 
   const { botMemories, botMindLogs, ...safeGameState } = room.gameState as any;
+  if (room.gameState.ladyOfTheLakeChecks) {
+    safeGameState.ladyOfTheLakeChecks = room.gameState.ladyOfTheLakeChecks.map((check: LadeOfTheLakeCheck) => {
+      if (check.checker === viewerSessionId) {
+        return check;
+      }
+      return {
+        ...check,
+        result: undefined, // Sanitize the result
+      };
+    });
+  }
   return {
     ...room,
     players: sanitizedPlayers,
@@ -868,13 +879,50 @@ function applyQuestResult(room: Room, io: Server) {
     room.gameState.winner = 'evil';
     recordGameStats(room);
   } else {
+    const prevQuestIndex = room.gameState.currentQuestIndex;
     room.gameState.currentQuestIndex++;
-    room.status = 'team_building';
-    room.gameState.leaderIndex = (room.gameState.leaderIndex + 1) % room.players.length;
     room.gameState.proposedTeam = [];
     room.gameState.teamVotes = {};
-    triggerBotOpinions(room, io);
+
+    if (room.settings.ladyOfTheLake && prevQuestIndex >= 1 && prevQuestIndex <= 3) {
+      room.status = 'lady_of_the_lake';
+    } else {
+      room.status = 'team_building';
+      room.gameState.leaderIndex = (room.gameState.leaderIndex + 1) % room.players.length;
+      triggerBotOpinions(room, io);
+    }
   }
+  broadcastRoom(room, io);
+  handleBotActions(room, io);
+}
+
+function executeLadyOfTheLakeCheck(room: Room, targetSessionId: string, io: Server) {
+  const targetPlayer = room.players.find(p => p.sessionId === targetSessionId);
+  if (!targetPlayer) return;
+
+  const isEvil = EVIL_ROLES.has(targetPlayer.role as Role);
+  const result = isEvil ? 'evil' : 'good';
+
+  room.gameState.ladyOfTheLakeChecks.push({
+    checker: room.gameState.ladyOfTheLakeHolder!,
+    target: targetSessionId,
+    result
+  });
+
+  room.gameState.ladyOfTheLakeHolder = targetSessionId;
+  room.gameState.ladyOfTheLakeHistory.push(targetSessionId);
+  room.status = 'lady_of_the_lake_reveal';
+
+  touchRoom(room);
+  broadcastRoom(room, io);
+  handleBotActions(room, io);
+}
+
+function applyLadyOfTheLakeContinuation(room: Room, io: Server) {
+  room.status = 'team_building';
+  room.gameState.leaderIndex = (room.gameState.leaderIndex + 1) % room.players.length;
+  room.gameState.proposedTeam = [];
+  triggerBotOpinions(room, io);
   broadcastRoom(room, io);
   handleBotActions(room, io);
 }
@@ -1663,7 +1711,7 @@ function setupSocket(io: Server) {
             id: roomId,
             players: [],
             status: 'lobby',
-            settings: { optionalRoles: [] },
+            settings: { optionalRoles: [], ladyOfTheLake: false },
             gameState: {
               quests: [],
               currentQuestIndex: 0,
@@ -1675,7 +1723,9 @@ function setupSocket(io: Server) {
               assassinationTarget: null,
               voteHistory: [],
               botMemories: {},
-              botMindLogs: {}
+              botMindLogs: {},
+              ladyOfTheLakeHistory: [],
+              ladyOfTheLakeChecks: []
             },
             lastActivityTime: Date.now(),
             idleWarningEmitted: false
@@ -1847,8 +1897,20 @@ function setupSocket(io: Server) {
             votes: {}
           }));
           room.gameState.voteHistory = [];
+          room.gameState.ladyOfTheLakeHolder = undefined;
+          room.gameState.ladyOfTheLakeHistory = [];
+          room.gameState.ladyOfTheLakeChecks = [];
 
           room.gameState.leaderIndex = Math.floor(Math.random() * room.players.length);
+
+          if (room.settings.ladyOfTheLake) {
+            const firstLeaderIndex = room.gameState.leaderIndex;
+            const initialHolderIndex = (firstLeaderIndex - 1 + room.players.length) % room.players.length;
+            const initialHolder = room.players[initialHolderIndex];
+            room.gameState.ladyOfTheLakeHolder = initialHolder.sessionId;
+            room.gameState.ladyOfTheLakeHistory.push(initialHolder.sessionId);
+          }
+
           room.gameState.botMindLogs = {};
           // Initialize mind logs for AI bots
           room.players.filter(p => p.isBot && p.botClass === 'ai').forEach(bot => {
@@ -1962,6 +2024,37 @@ function setupSocket(io: Server) {
         }
       } catch (err) {
         console.error('Error in continue_quest_result:', err);
+      }
+    });
+
+    socket.on('use_lady_of_the_lake', ({ roomId, targetSessionId }) => {
+      try {
+        const sessionId = socketToSession[socket.id];
+        if (!sessionId) return;
+        const room = rooms[roomId];
+        if (room && room.status === 'lady_of_the_lake') {
+          // Verify that sender is the current holder
+          if (room.gameState.ladyOfTheLakeHolder === sessionId) {
+            // Verify target is valid and not already held/checked
+            if (targetSessionId !== sessionId && !room.gameState.ladyOfTheLakeHistory?.includes(targetSessionId)) {
+              executeLadyOfTheLakeCheck(room, targetSessionId, io);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error in use_lady_of_the_lake:', err);
+      }
+    });
+
+    socket.on('continue_lady_of_the_lake', ({ roomId }) => {
+      try {
+        const room = rooms[roomId];
+        if (room && room.status === 'lady_of_the_lake_reveal') {
+          touchRoom(room);
+          applyLadyOfTheLakeContinuation(room, io);
+        }
+      } catch (err) {
+        console.error('Error in continue_lady_of_the_lake:', err);
       }
     });
 
@@ -2125,10 +2218,11 @@ function setupSocket(io: Server) {
               teamVotes: {},
               winner: null,
               assassinationTarget: null,
-              strikeHolderSessionId: undefined,
               voteHistory: [],
               botMemories: {},
-              botMindLogs: {}
+              botMindLogs: {},
+              ladyOfTheLakeHistory: [],
+              ladyOfTheLakeChecks: []
             };
             broadcastRoom(room, io);
           }

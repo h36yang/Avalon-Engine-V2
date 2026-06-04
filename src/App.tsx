@@ -147,6 +147,8 @@ export default function App() {
       case "team_vote_reveal":
       case "quest_voting":
       case "quest_result":
+      case "lady_of_the_lake":
+      case "lady_of_the_lake_reveal":
         return <GameScreen />;
       case "assassin":
         return <AssassinScreen />;

@@ -477,7 +477,11 @@ function mapPercivalCandidatesToNames(room: Room, merlinLikelihood: Record<strin
 }
 
 function initializeBotMemories(room: Room) {
-  room.players.filter(p => p.isBot).forEach(bot => {
+  const gameHasMordred = room.players.some(p => p.role === 'Mordred');
+
+  for (const bot of room.players) {
+    if (!bot.isBot) continue;
+
     const difficulty = bot.difficulty || 'normal';
     const memory: BotMemory = {
       trustScores: {},
@@ -487,11 +491,13 @@ function initializeBotMemories(room: Room) {
       votePatterns: {}
     };
 
-    const isBotEvil = EVIL_ROLES.has(bot.role as Role);
-    let merlinCandidateA: string | null = null;
-    let merlinCandidateB: string | null = null;
+    const isBotEvil = EVIL_ROLES.has(bot.role!);
+    let merlinCandidateA: string | undefined;
+    let merlinCandidateB: string | undefined;
 
-    room.players.forEach(p => {
+    for (const p of room.players) {
+      // Default trust is 50. In hard mode, good bots start a bit more neutral, evil bots distrust good more.
+      memory.trustScores[p.sessionId] = difficulty === 'hard' ? 40 : 50;
       memory.failAssociation[p.sessionId] = 0;
       memory.votePatterns[p.sessionId] = { approvedEvil: 0, rejectedEvil: 0, totalVotes: 0 };
 
@@ -501,16 +507,13 @@ function initializeBotMemories(room: Room) {
 
       if (p.sessionId === bot.sessionId) {
         memory.trustScores[p.sessionId] = 100; // Trust self completely
-        memory.knownRoles[p.sessionId] = bot.role as Role;
-        return;
+        memory.knownRoles[p.sessionId] = bot.role!;
+        continue;
       }
 
-      // Default trust is 50. In hard mode, good bots start a bit more neutral, evil bots distrust good more.
-      memory.trustScores[p.sessionId] = difficulty === 'hard' ? 40 : 50;
-
-      const botRole = bot.role as Role;
-      const targetRole = p.role as Role;
-      const isTargetEvil = EVIL_ROLES.has(targetRole as Role);
+      const botRole = bot.role!;
+      const targetRole = p.role!;
+      const isTargetEvil = EVIL_ROLES.has(targetRole);
 
       if (botRole === 'Merlin') {
         // Merlin knows all evil except Mordred
@@ -518,15 +521,23 @@ function initializeBotMemories(room: Room) {
           memory.trustScores[p.sessionId] = 0;
           memory.knownRoles[p.sessionId] = 'Evil';
         } else {
-          memory.trustScores[p.sessionId] = difficulty === 'hard' ? 60 : 70; // Lean towards trusting others
+          if (gameHasMordred) {
+            memory.trustScores[p.sessionId] = difficulty === 'hard' ? 60 : 70;
+          } else {
+            memory.trustScores[p.sessionId] = 100;
+            memory.knownRoles[p.sessionId] = 'Good';
+          }
         }
       } else if (botRole === 'Percival') {
         // Percival knows Merlin and Morgana but not which is which
         if (targetRole === 'Merlin' || targetRole === 'Morgana') {
           memory.trustScores[p.sessionId] = difficulty === 'hard' ? 50 : 60;
 
-          if (!merlinCandidateA) merlinCandidateA = p.sessionId;
-          else if (!merlinCandidateB) merlinCandidateB = p.sessionId;
+          if (!merlinCandidateA) {
+            merlinCandidateA = p.sessionId;
+          } else if (!merlinCandidateB) {
+            merlinCandidateB = p.sessionId;
+          }
         }
       } else if (isBotEvil && botRole !== 'Oberon') {
         // Evil knows other evil (except Oberon)
@@ -538,7 +549,7 @@ function initializeBotMemories(room: Room) {
           memory.knownRoles[p.sessionId] = 'Good';
         }
       }
-    });
+    }
 
     if (bot.role === 'Percival' && merlinCandidateA && merlinCandidateB) {
       memory.percivalCandidates = {
@@ -546,13 +557,13 @@ function initializeBotMemories(room: Room) {
         b: merlinCandidateB,
         merlinLikelihood: {
           [merlinCandidateA]: 50,
-          [merlinCandidateB]: 50
+          [merlinCandidateB]: 50,
         }
       };
     }
 
     room.gameState.botMemories[bot.sessionId] = memory;
-  });
+  }
 }
 
 function checkTeamVotes(room: Room, io: Server) {
@@ -570,7 +581,11 @@ function checkTeamVotes(room: Room, io: Server) {
       approved
     });
 
-    room.players.filter(p => p.isBot).forEach(bot => {
+    const goodPlayersCount = room.players.filter(p => !EVIL_ROLES.has(p.role!)).length;
+
+    for (const bot of room.players) {
+      if (!bot.isBot) continue;
+
       // --- Improvement A: Vote History Analysis ---
       // Good bots learn who approves/rejects teams with evil. Evil bots learn who acts like Merlin.
       const difficulty = bot.difficulty || 'normal';
@@ -578,19 +593,35 @@ function checkTeamVotes(room: Room, io: Server) {
       const suspicionDelta = difficulty === 'hard' ? 15 : 5;
 
       const memory = room.gameState.botMemories[bot.sessionId];
-      const isBotEvil = EVIL_ROLES.has(bot.role as Role);
+      const isBotEvil = EVIL_ROLES.has(bot.role!);
 
-      const teamHadKnownEvil = room.gameState.proposedTeam.some(id => memory.knownRoles[id] === 'Evil' || (isBotEvil && id === bot.sessionId));
+      let teamHadKnownEvil = room.gameState.proposedTeam.some(id =>
+        memory.knownRoles[id] === 'Evil' || (isBotEvil && id === bot.sessionId),
+      );
+      // Special case 1: bot is Percival and proposed team includes both Merlin and Morgana candidates.
+      if (bot.role === 'Percival' && memory.percivalCandidates) {
+        const { a, b } = memory.percivalCandidates;
+        if (room.gameState.proposedTeam.includes(a) && room.gameState.proposedTeam.includes(b)) {
+          teamHadKnownEvil = true;
+        }
+      }
+      // Special case 2: bot is Good, proposed team needs all Good players but does not include Good bot itself.
+      if (!isBotEvil && room.gameState.proposedTeam.length === goodPlayersCount && !room.gameState.proposedTeam.includes(bot.sessionId)) {
+        teamHadKnownEvil = true;
+      }
 
-      room.players.forEach(p => {
-        if (p.sessionId === bot.sessionId) return;
+      for (const p of room.players) {
+        if (p.sessionId === bot.sessionId) continue;
 
         const votedApprove = room.gameState.teamVotes[p.sessionId];
 
         // Update general vote patterns
         if (teamHadKnownEvil) {
-          if (votedApprove) memory.votePatterns[p.sessionId].approvedEvil++;
-          else memory.votePatterns[p.sessionId].rejectedEvil++;
+          if (votedApprove) {
+            memory.votePatterns[p.sessionId].approvedEvil++;
+          } else {
+            memory.votePatterns[p.sessionId].rejectedEvil++;
+          }
         }
         memory.votePatterns[p.sessionId].totalVotes++;
 
@@ -598,9 +629,14 @@ function checkTeamVotes(room: Room, io: Server) {
           // Good Bot Logic: Adjust trust based on voting for evil-tainted teams
           if (teamHadKnownEvil) {
             if (votedApprove) {
-              memory.trustScores[p.sessionId] = Math.max(0, (memory.trustScores[p.sessionId] || 50) - trustDelta);
+              memory.trustScores[p.sessionId] = Math.max(0, memory.trustScores[p.sessionId] - trustDelta);
             } else {
-              memory.trustScores[p.sessionId] = Math.min(100, (memory.trustScores[p.sessionId] || 50) + trustDelta);
+              memory.trustScores[p.sessionId] = Math.min(100, memory.trustScores[p.sessionId] + trustDelta);
+            }
+          } else {
+            // If team has no known evil, players rejecting while in the team tend to be more trustworthy.
+            if (!votedApprove && room.gameState.proposedTeam.includes(p.sessionId)) {
+              memory.trustScores[p.sessionId] = Math.min(100, memory.trustScores[p.sessionId] + trustDelta);
             }
           }
           // Note: We used to penalize players for rejecting teams with no known evil. 
@@ -628,18 +664,17 @@ function checkTeamVotes(room: Room, io: Server) {
             // Percival expects Merlin to reject teams with evil
             if (teamHadKnownEvil && !votedApprove) {
               merlinLikelihood[p.sessionId] = Math.min(100, merlinLikelihood[p.sessionId] + suspicionDelta);
-              memory.trustScores[p.sessionId] = Math.min(100, (memory.trustScores[p.sessionId] || 50) + trustDelta);
+              memory.trustScores[p.sessionId] = Math.min(100, memory.trustScores[p.sessionId] + trustDelta);
 
               // The other candidate is less likely Merlin
               const other = p.sessionId === a ? b : a;
               merlinLikelihood[other] = Math.max(0, merlinLikelihood[other] - suspicionDelta);
-              memory.trustScores[other] = Math.max(0, (memory.trustScores[other] || 50) - trustDelta);
+              memory.trustScores[other] = Math.max(0, memory.trustScores[other] - trustDelta);
             }
           }
         }
-
-      });
-    });
+      }
+    }
 
     room.status = 'team_vote_reveal';
     broadcastRoom(room, io);
@@ -698,64 +733,67 @@ function checkQuestVotes(room: Room, io: Server) {
 
     // Track fail association for everyone on the team
     if (failed) {
-      quest.team.forEach(memberId => {
-        room.players.filter(p => p.isBot).forEach(bot => {
+      for (const memberId of quest.team) {
+        for (const bot of room.players) {
+          if (!bot.isBot) continue;
           const memory = room.gameState.botMemories[bot.sessionId];
           memory.failAssociation[memberId]++;
-        });
-      });
+        }
+      }
     }
 
     // Update bot memories based on quest result
-    room.players.filter(p => p.isBot).forEach(bot => {
+    for (const bot of room.players) {
+      if (!bot.isBot) continue;
+
       const difficulty = bot.difficulty || 'normal';
       const memory = room.gameState.botMemories[bot.sessionId];
-      const isBotEvil = EVIL_ROLES.has(bot.role as Role);
+      const isBotEvil = EVIL_ROLES.has(bot.role!);
 
       if (!isBotEvil) {
         // Good bots learn from quest results
-        quest.team.forEach(memberId => {
-          if (memberId !== bot.sessionId) {
-            if (failed) {
-              // If quest failed, trust in team members drops significantly
-              // If it's a 2-person team and I'm on it, the other person MUST be evil
-              if (quest.teamSize === 2 && quest.team.includes(bot.sessionId)) {
-                memory.trustScores[memberId] = 0;
-                memory.knownRoles[memberId] = 'Evil';
-              } else {
-                const drop = difficulty === 'hard' ? 40 : 30;
-                memory.trustScores[memberId] = Math.max(0, (memory.trustScores[memberId] || 50) - drop);
-              }
+        for (const memberId of quest.team) {
+          if (memberId === bot.sessionId) continue;
+
+          if (failed) {
+            // If quest failed, trust in team members drops significantly
+            // If it's a 2-person team and I'm on it, the other person MUST be evil
+            if (quest.teamSize === 2 && quest.team.includes(bot.sessionId)) {
+              memory.trustScores[memberId] = 0;
+              memory.knownRoles[memberId] = 'Evil';
             } else {
-              // If quest succeeded, trust in team members increases slightly
-              const boost = difficulty === 'hard' ? 20 : 15;
-              memory.trustScores[memberId] = Math.min(100, (memory.trustScores[memberId] || 50) + boost);
+              const drop = difficulty === 'hard' ? 40 : 30;
+              memory.trustScores[memberId] = Math.max(0, memory.trustScores[memberId] - drop);
             }
+          } else {
+            // If quest succeeded, trust in team members increases slightly
+            const boost = difficulty === 'hard' ? 20 : 15;
+            memory.trustScores[memberId] = Math.min(100, memory.trustScores[memberId] + boost);
           }
-        });
+        }
 
         // Good bots ALSO learn from who approved a doomed team vs who rejected it
         const lastVote = room.gameState.voteHistory[room.gameState.voteHistory.length - 1];
         if (lastVote) {
-          room.players.forEach(p => {
-            if (p.sessionId !== bot.sessionId && !quest.team.includes(p.sessionId)) {
-              // Focus on people NOT on the team (we already handled team members above)
-              const votedApprove = lastVote.votes[p.sessionId];
-              if (failed) {
-                // Quest failed. Approvers are suspicious, Rejecters look good (like Merlin).
-                if (votedApprove) {
-                  memory.trustScores[p.sessionId] = Math.max(0, (memory.trustScores[p.sessionId] || 50) - 15);
-                } else {
-                  memory.trustScores[p.sessionId] = Math.min(100, (memory.trustScores[p.sessionId] || 50) + 15);
-                }
+          for (const p of room.players) {
+            if (p.sessionId === bot.sessionId || quest.team.includes(p.sessionId)) continue;
+
+            // Focus on people NOT on the team (we already handled team members above)
+            const votedApprove = lastVote.votes[p.sessionId];
+            if (failed) {
+              // Quest failed. Approvers are suspicious, Rejecters look good (like Merlin).
+              if (votedApprove) {
+                memory.trustScores[p.sessionId] = Math.max(0, memory.trustScores[p.sessionId] - 15);
               } else {
-                // Quest succeeded. Approvers look good. 
-                if (votedApprove) {
-                  memory.trustScores[p.sessionId] = Math.min(100, (memory.trustScores[p.sessionId] || 50) + 10);
-                }
+                memory.trustScores[p.sessionId] = Math.min(100, memory.trustScores[p.sessionId] + 15);
+              }
+            } else {
+              // Quest succeeded. Approvers look good. 
+              if (votedApprove) {
+                memory.trustScores[p.sessionId] = Math.min(100, memory.trustScores[p.sessionId] + 10);
               }
             }
-          });
+          }
         }
 
         // Percival deduction on quest ends
@@ -845,7 +883,7 @@ function checkQuestVotes(room: Room, io: Server) {
           }
         }
       }
-    });
+    }
 
     // Enter quest_result phase to show result before advancing
     room.status = 'quest_result';
@@ -1188,15 +1226,16 @@ function handleBotActions(room: Room, io: Server) {
         const difficulty = leader.difficulty || 'normal';
 
         // Sort players by trust score descending, but also penalize for failAssociation
+        const penaltyFactor = difficulty === 'hard' ? 25 : 15;
         const sortedPlayers = [...room.players].sort((a, b) => {
-          const penaltyA = (memory.failAssociation[a.sessionId] || 0) * (difficulty === 'hard' ? 25 : 15);
-          const penaltyB = (memory.failAssociation[b.sessionId] || 0) * (difficulty === 'hard' ? 25 : 15);
-          const trustA = (memory.trustScores[a.sessionId] || 50) - penaltyA;
-          const trustB = (memory.trustScores[b.sessionId] || 50) - penaltyB;
+          const penaltyA = (memory.failAssociation[a.sessionId] || 0) * penaltyFactor;
+          const penaltyB = (memory.failAssociation[b.sessionId] || 0) * penaltyFactor;
+          const trustA = memory.trustScores[a.sessionId] - penaltyA;
+          const trustB = memory.trustScores[b.sessionId] - penaltyB;
           return trustB - trustA;
         });
 
-        const isEvil = EVIL_ROLES.has(leader.role as Role);
+        const isEvil = EVIL_ROLES.has(leader.role!);
         let team: string[] = [];
 
         if (isEvil) {

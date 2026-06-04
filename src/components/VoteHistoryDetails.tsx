@@ -68,7 +68,7 @@ export default function VoteHistoryDetails({ viewingHistoryIndex, onBack, backTe
                       {isSelected ? (
                         <Check size={16} />
                       ) : (
-                        <span className="text-xs">{p.name.charAt(0)}</span>
+                        <span className="text-xs">{i + 1}</span>
                       )}
                     </div>
                     <span className="font-medium">

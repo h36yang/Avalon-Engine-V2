@@ -211,7 +211,7 @@ export default function GameScreen() {
                             ? "bg-indigo-600 border-indigo-500 text-white"
                             : "bg-zinc-800 border-zinc-700 text-zinc-500"
                         )}>
-                          {isSelected ? <Check size={14} /> : p.name.charAt(0)}
+                          {isSelected ? <Check size={14} /> : i + 1}
                         </div>
                         <div>
                           <span className={cn("font-semibold text-sm", isSelected ? "text-indigo-100" : "text-zinc-200")}>

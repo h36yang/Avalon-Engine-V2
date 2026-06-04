@@ -71,7 +71,7 @@ export default function GameOverScreen() {
         <section>
           <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3">{t("Roles in Play")}</p>
           <div className="space-y-1.5">
-            {players.map((p) => {
+            {players.map((p, i) => {
               const isEvil = EVIL_ROLES.has(p.role as Role);
               const isTarget = gameState.assassinationTarget === p.sessionId;
               return (
@@ -87,7 +87,7 @@ export default function GameOverScreen() {
                       "w-8 h-8 rounded-full flex items-center justify-center border text-xs font-bold shrink-0",
                       isEvil ? "bg-red-950/30 border-red-800/40 text-red-400" : "bg-blue-950/30 border-blue-800/40 text-blue-400"
                     )}>
-                      {p.name.charAt(0)}
+                      {i + 1}
                     </div>
                     <div>
                       <p className={cn("font-semibold text-sm", p.sessionId === sessionId ? "text-zinc-50" : "text-zinc-200")}>

@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { createServer } from 'http';
+import { createServer, ServerResponse } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
@@ -12,9 +12,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 // Resolve project root directory (works with both ESM and CJS)
-// @ts-ignore - __dirname exists at runtime in tsx/CJS
 const projectRootUrl = fileURLToPath(import.meta.url);
-console.log(`Project root resolved to: ${projectRootUrl}`);
+// @ts-ignore - __dirname exists at runtime in tsx/CJS
 const __projectDir = typeof __dirname !== 'undefined' ? __dirname : dirname(projectRootUrl);
 
 // Load role prompt files for AI bots
@@ -162,7 +161,16 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static('dist'));
+    const staticOptions = {
+      setHeaders: (res: ServerResponse, path: string) => {
+        if (path.endsWith('index.html')) {
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        }
+      }
+    };
+    app.use(express.static('dist', staticOptions));
   }
 
   httpServer.listen(PORT, '0.0.0.0', () => {

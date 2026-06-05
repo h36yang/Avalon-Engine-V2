@@ -59,6 +59,7 @@ jobs:
       with:
         project_id: 'avalon-engine-v2'
         env_vars: |-
+          NODE_ENV=${{ vars.NODE_ENV }}
           VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_SECRET_KEY=${{ secrets.VITE_SUPABASE_SECRET_KEY }}
         build_env_vars: |-

@@ -95,17 +95,6 @@ export interface GameHistoryRecord {
   room_snapshot: any;
 }
 
-export interface GameHistoryRecord {
-  id: string;
-  user_id: string;
-  played_at: string;
-  my_role: string;
-  did_win: boolean;
-  player_count: number;
-  duration_ms?: number;
-  room_snapshot: any;
-}
-
 export interface UserProfile {
   id: string;
   username: string;

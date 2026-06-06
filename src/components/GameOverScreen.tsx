@@ -1,25 +1,32 @@
 import { useState } from "react";
-import { useGameStore } from "../store";
-import { Crown, Skull, Shield, RefreshCw, Check, X, ChevronDown, ChevronUp, ShieldAlert, Users, Target, Brain, Copy, CheckCheck } from "lucide-react";
+import { useGameStore, Room } from "../store";
+import { Crown, Skull, Shield, RefreshCw, Check, X, ChevronDown, ChevronUp, ShieldAlert, Users, Target, Brain, Copy, CheckCheck, ArrowLeft } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import { EVIL_ROLES, Role } from "../utils/gameLogic";
 import GameTimer from "./GameTimer";
 
 export default function GameOverScreen() {
-  const room = useGameStore((state) => state.room);
-  const sessionId = useGameStore((state) => state.sessionId);
+  const liveRoom = useGameStore((state) => state.room);
+  const liveSessionId = useGameStore((state) => state.sessionId);
   const restartGame = useGameStore((state) => state.restartGame);
+  const historyRecord = useGameStore((state) => state.viewingHistoryRecord);
+  const closeHistoryView = useGameStore((state) => state.closeHistoryView);
   const { t } = useTranslation();
   const [expandedQuest, setExpandedQuest] = useState<number | null>(null);
   const [expandedMindLog, setExpandedMindLog] = useState<string | null>(null);
   const [copiedLog, setCopiedLog] = useState<string | null>(null);
 
+  // Determine data source: history snapshot or live game
+  const isReplay = !!historyRecord;
+  const room = isReplay ? historyRecord.room_snapshot as Room : liveRoom;
+  const sessionId = isReplay ? historyRecord.room_snapshot?.viewerSessionId : liveSessionId;
+
   if (!room) return null;
 
   const { gameState, players } = room;
   const isEvilWin = gameState.winner === "evil";
-  const isHost = players.find(p => p.isHost)?.sessionId === sessionId;
+  const isHost = !isReplay && players.find(p => p.isHost)?.sessionId === liveSessionId;
 
   const getPlayerName = (sid: string) => players.find(p => p.sessionId === sid)?.name || sid;
   const getPlayerRole = (sid: string) => players.find(p => p.sessionId === sid)?.role;
@@ -362,7 +369,14 @@ export default function GameOverScreen() {
 
       {/* Sticky Bottom Action */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-5 pb-6 pt-3 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-900">
-        {isHost ? (
+        {isReplay ? (
+          <button
+            onClick={closeHistoryView}
+            className="w-full py-3.5 rounded-xl font-bold text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-all flex items-center justify-center gap-2"
+          >
+            <ArrowLeft size={16} /> {t("Back to History")}
+          </button>
+        ) : isHost ? (
           <button
             onClick={restartGame}
             className="w-full py-3.5 rounded-xl font-bold text-sm bg-zinc-50 hover:bg-white text-zinc-950 transition-all flex items-center justify-center gap-2 shadow-lg"

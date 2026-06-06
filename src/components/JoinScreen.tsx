@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "../store";
-import { KeyRound, User, Users, LogOut, Trophy, Swords, RefreshCw, Crown, Loader2 } from "lucide-react";
+import { KeyRound, User, Users, LogOut, Trophy, Swords, RefreshCw, Crown, Loader2, ScrollText } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { supabase } from "../utils/supabase";
+import GameHistoryScreen from "./GameHistoryScreen";
 
 const GOLD = '#D4AF37';
 const GOLD_DIM = 'rgba(212,175,55,0.25)';
@@ -11,7 +12,7 @@ const GOLD_GLOW = 'rgba(212,175,55,0.12)';
 export default function JoinScreen() {
   const [roomId, setRoomId] = useState("");
   const [name, setName] = useState(useGameStore(state => state.name) || "");
-  const [activeTab, setActiveTab] = useState<'join' | 'browse'>('join');
+  const [activeTab, setActiveTab] = useState<'join' | 'browse' | 'history'>('join');
   const [loadingRooms, setLoadingRooms] = useState(false);
   const connect = useGameStore((state) => state.connect);
   const error = useGameStore((state) => state.error);
@@ -179,7 +180,7 @@ export default function JoinScreen() {
 
           {/* Tabs */}
           <div className="flex mb-5" style={{ borderBottom: `1px solid rgba(212,175,55,0.12)` }}>
-            {([['join', t("Join Room")], ['browse', t("Browse Rooms")]] as const).map(([tab, label]) => {
+            {([['join', t("Join Room")], ['browse', t("Browse Rooms")], ['history', t("Game History")]] as const).map(([tab, label]) => {
               const active = activeTab === tab;
               return (
                 <button
@@ -295,7 +296,7 @@ export default function JoinScreen() {
               </button>
             </form>
 
-          ) : (
+          ) : activeTab === 'browse' ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p style={{ fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.5)', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
@@ -377,6 +378,8 @@ export default function JoinScreen() {
                 </div>
               )}
             </div>
+          ) : (
+            <GameHistoryScreen />
           )}
         </div>
 

@@ -189,6 +189,15 @@ export const translations = {
     'AI Mind Log': 'AI Mind Log',
     'Copy Log': 'Copy Log',
     'Copied!': 'Copied!',
+
+    // Game History
+    'Game History': 'Game History',
+    'No games yet': 'No games yet',
+    'Play some games to see your history here': 'Play some games to see your history here',
+    'Win': 'Win',
+    'Loss': 'Loss',
+    'Back to History': 'Back to History',
+    'players': 'players',
   },
   zh: {
     // Roles
@@ -378,6 +387,15 @@ export const translations = {
     'AI Mind Log': 'AI 思维日志',
     'Copy Log': '复制日志',
     'Copied!': '已复制！',
+
+    // Game History
+    'Game History': '历史战绩',
+    'No games yet': '暂无对局记录',
+    'Play some games to see your history here': '完成一些对局后，记录将显示在这里',
+    'Win': '胜利',
+    'Loss': '失败',
+    'Back to History': '返回历史',
+    'players': '人',
   }
 };
 

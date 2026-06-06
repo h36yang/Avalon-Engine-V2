@@ -49,21 +49,11 @@
     npm run dev
     ```
 
-### Deployment
+### CI/CD
 
-No CD is set up at the moment. To deploy this app to GCP App Engine, install the [Google Cloud CLI](https://docs.cloud.google.com/sdk/docs/install-sdk), and run the following commands:
+App is automatically built, tested, and deployed to App Engine via GitHub Actions on push to `main` branch.
 
-```sh
-# One-time initialization
-gcloud init
-
-# Deploy the app to GCP App Engine
-gcloud app deploy
-
-# Open the deployed app in the browser
-gcloud app browse
-```
-
+More details can be found in `.github/workflows/ci-cd.yml`.
 
 ## 🎮 How to Play
 

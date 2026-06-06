@@ -58,6 +58,7 @@ export interface Room {
   };
   gameStartedAt?: number;
   gameEndedAt?: number;
+  assassinationStartedAt?: number;
   gameState: {
     quests: Quest[];
     currentQuestIndex: number;
@@ -81,6 +82,28 @@ export interface LadeOfTheLakeCheck {
   checker: string;
   target: string;
   result?: 'good' | 'evil';
+}
+
+export interface GameHistoryRecord {
+  id: string;
+  user_id: string;
+  played_at: string;
+  my_role: string;
+  did_win: boolean;
+  player_count: number;
+  duration_ms?: number;
+  room_snapshot: any;
+}
+
+export interface GameHistoryRecord {
+  id: string;
+  user_id: string;
+  played_at: string;
+  my_role: string;
+  did_win: boolean;
+  player_count: number;
+  duration_ms?: number;
+  room_snapshot: any;
 }
 
 export interface UserProfile {
@@ -144,6 +167,12 @@ interface GameState {
   pingActivity: () => void;
   availableRooms: AvailableRoom[];
   fetchRooms: () => Promise<void>;
+  gameHistory: GameHistoryRecord[];
+  gameHistoryLoading: boolean;
+  viewingHistoryRecord?: GameHistoryRecord;
+  fetchGameHistory: () => Promise<void>;
+  viewHistoryRecord: (record: GameHistoryRecord) => void;
+  closeHistoryView: () => void;
 }
 
 const generateSessionId = () => {
@@ -171,6 +200,8 @@ export const useGameStore = create<GameState>()(
       idleWarning: false,
       idleCountdown: 0,
       availableRooms: [],
+      gameHistory: [],
+      gameHistoryLoading: false,
 
       setLanguage: (lang) => set({ language: lang }),
       setDevRequestedRole: (role) => set({ devRequestedRole: role }),
@@ -407,6 +438,29 @@ export const useGameStore = create<GameState>()(
           console.error('Failed to fetch rooms:', err);
         }
       },
+
+      fetchGameHistory: async () => {
+        set({ gameHistoryLoading: true });
+        try {
+          const { data, error } = await supabase
+            .from('game_history')
+            .select('*')
+            .order('played_at', { ascending: false })
+            .limit(50);
+          if (error) {
+            console.error('Failed to fetch game history:', error);
+          } else {
+            set({ gameHistory: data || [] });
+          }
+        } catch (err) {
+          console.error('Failed to fetch game history:', err);
+        } finally {
+          set({ gameHistoryLoading: false });
+        }
+      },
+
+      viewHistoryRecord: (record) => set({ viewingHistoryRecord: record }),
+      closeHistoryView: () => set({ viewingHistoryRecord: undefined }),
     }),
     {
       name: 'avalon-storage',

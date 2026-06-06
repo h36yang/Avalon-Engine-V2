@@ -52,12 +52,12 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: 'google-github-actions/auth@v3'
       with:
-        workload_identity_provider: 'projects/323269013642/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
-        service_account: 'avalon-engine-v2@appspot.gserviceaccount.com'
+        workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ vars.GCP_APP_ENGINE_SERVICE_ACCOUNT }}
     - name: Deploy to App Engine
       uses: 'google-github-actions/deploy-appengine@v3'
       with:
-        project_id: 'avalon-engine-v2'
+        project_id: ${{ vars.GCP_APP_ENGINE_PROJECT_ID }}
         env_vars: |-
           NODE_ENV=${{ vars.NODE_ENV }}
           VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}

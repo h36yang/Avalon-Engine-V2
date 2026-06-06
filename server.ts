@@ -10,6 +10,7 @@ import { MindLogEntry, Room as ClientRoom, LadeOfTheLakeCheck } from './src/stor
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { p } from 'motion/react-client';
 
 // Resolve project root directory (works with both ESM and CJS)
 const projectRootUrl = fileURLToPath(import.meta.url);
@@ -80,14 +81,12 @@ try {
 }
 
 async function updatePlayerStats(userId: string, isWinner: boolean) {
-  console.log(`Updating stats for user ${userId} as a ${isWinner ? 'winner' : 'loser'}...`);
   if (!userId || !supabase) {
     console.warn('Invalid user ID or Supabase client not initialized');
     return;
   }
 
   try {
-    console.log(`Fetching existing profile for user ${userId}...`);
     // We use an RPC call if we had one, but for simplicity we'll do a select then update
     // In a production app with high concurrency, an RPC function in Postgres is safer
     const { data: profile, error: fetchError } = await supabase
@@ -108,7 +107,6 @@ async function updatePlayerStats(userId: string, isWinner: boolean) {
         losses: !isWinner ? (profile.losses || 0) + 1 : profile.losses,
       };
 
-      console.log(`Updating profiles stats in DB for user ${userId} with:`, updates);
       const { error: updateError } = await supabase
         .from('profiles')
         .update(updates)
@@ -120,6 +118,60 @@ async function updatePlayerStats(userId: string, isWinner: boolean) {
     }
   } catch (err) {
     console.error('Failed to update player stats:', err);
+  }
+}
+
+// Build the sanitized room snapshot for a specific player's game history record.
+// Re-uses the game_over sanitization path from sanitizeRoomForPlayer: all roles
+// revealed, botMindLogs included, botMemories stripped. We also strip apiKeys.
+function buildGameOverSnapshot(room: Room, viewerSessionId: string): object {
+  const { botMemories, ...safeGameState } = room.gameState as any;
+  const sanitizedPlayers = room.players.map(p => {
+    const { apiKey: _stripped, ...safeP } = p as any;
+    return safeP;
+  });
+  return {
+    ...room,
+    players: sanitizedPlayers,
+    gameState: { ...safeGameState, botMindLogs: room.gameState.botMindLogs },
+    // Embed the viewer's sessionId so the client can highlight "You" in the replay
+    viewerSessionId,
+  };
+}
+
+async function saveGameHistory(room: Room) {
+  if (!supabase || !room.gameState.winner) return;
+
+  const humanPlayers = room.players.filter(p => !p.isBot && p.userId);
+  if (humanPlayers.length === 0) return;
+
+  const durationMs = (room.gameStartedAt && room.gameEndedAt)
+    ? room.gameEndedAt - room.gameStartedAt
+    : undefined;
+
+  const rows = humanPlayers.map(p => {
+    const isEvil = EVIL_ROLES.has(p.role!);
+    const didWin = (room.gameState.winner === 'evil' && isEvil) ||
+                   (room.gameState.winner === 'good' && !isEvil);
+    return {
+      user_id:       p.userId,
+      my_role:       p.role as string,
+      did_win:       didWin,
+      player_count:  room.players.length,
+      duration_ms:   durationMs,
+      room_snapshot: buildGameOverSnapshot(room, p.sessionId),
+    };
+  });
+
+  try {
+    const { error } = await supabase.from('game_history').insert(rows);
+    if (error) {
+      console.error('Error saving game history:', error);
+    } else {
+      console.log(`Saved game history for ${rows.length} player(s).`);
+    }
+  } catch (err) {
+    console.error('Failed to save game history:', err);
   }
 }
 
@@ -196,8 +248,6 @@ interface Room extends Omit<ClientRoom, 'gameState'> {
   };
   lastActivityTime: number;
   idleWarningEmitted: boolean;
-  gameStartedAt?: number;
-  gameEndedAt?: number;
 }
 
 const IDLE_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
@@ -740,6 +790,9 @@ function recordGameStats(room: Room) {
 
     updatePlayerStats(player.userId, isWinner);
   });
+
+  // Fire-and-forget: save the full game record for history replay
+  saveGameHistory(room);
 }
 
 function checkQuestVotes(room: Room, io: Server) {
@@ -920,6 +973,7 @@ function applyQuestResult(room: Room, io: Server) {
 
   if (successes >= 3) {
     room.status = 'assassin';
+    room.assassinationStartedAt = Date.now();
   } else if (totalFails >= 3) {
     room.status = 'game_over'; room.gameEndedAt = Date.now();
     room.gameState.winner = 'evil';
@@ -1708,7 +1762,7 @@ function getNextBotName(room: Room, isAI: boolean): string {
 }
 
 function setupSocket(io: Server) {
-  // Periodic idle room checker (runs every 60 seconds)
+  // Periodic idle room checker (runs every 10 seconds)
   setInterval(() => {
     const now = Date.now();
     for (const roomId in rooms) {
@@ -1727,7 +1781,7 @@ function setupSocket(io: Server) {
         console.log(`Room ${roomId}: idle warning emitted.`);
       }
     }
-  }, 10_000); // Check every 10 seconds for responsiveness
+  }, 10_000);
 
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
@@ -2168,6 +2222,7 @@ function setupSocket(io: Server) {
         ) {
           touchRoom(room);
           room.status = 'assassin';
+          room.assassinationStartedAt = Date.now();
           broadcastRoom(room, io);
           handleBotActions(room, io);
         }

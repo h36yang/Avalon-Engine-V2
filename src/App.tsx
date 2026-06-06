@@ -22,6 +22,7 @@ export default function App() {
   const room = useGameStore((state) => state.room);
   const user = useGameStore((state) => state.user);
   const setAuth = useGameStore((state) => state.setAuth);
+  const viewingHistoryRecord = useGameStore((state) => state.viewingHistoryRecord);
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
@@ -132,6 +133,10 @@ export default function App() {
   }
 
   const renderScreen = () => {
+    if (viewingHistoryRecord) {
+      return <GameOverScreen />;
+    }
+
     if (!room) {
       return <JoinScreen />;
     }

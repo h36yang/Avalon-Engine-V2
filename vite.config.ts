@@ -26,5 +26,12 @@ export default defineConfig(({ mode }) => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
+    test: {
+      // Use jsdom so React components can render in Node
+      environment: 'jsdom',
+      include: ['./**/*.test.{ts,tsx}'],
+      globals: true,
+      setupFiles: [],
+    },
   };
 });

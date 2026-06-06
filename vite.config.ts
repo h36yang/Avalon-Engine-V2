@@ -29,7 +29,6 @@ export default defineConfig(({ mode }) => {
     test: {
       // Use jsdom so React components can render in Node
       environment: 'jsdom',
-      // Include files from src regardless of root setting
       include: ['./**/*.test.{ts,tsx}'],
       globals: true,
       setupFiles: [],

@@ -55,6 +55,7 @@ export interface Room {
   };
   gameStartedAt?: number;
   gameEndedAt?: number;
+  assassinationStartedAt?: number;
   gameState: {
     quests: Quest[];
     currentQuestIndex: number;

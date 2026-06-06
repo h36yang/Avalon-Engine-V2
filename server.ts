@@ -196,8 +196,6 @@ interface Room extends Omit<ClientRoom, 'gameState'> {
   };
   lastActivityTime: number;
   idleWarningEmitted: boolean;
-  gameStartedAt?: number;
-  gameEndedAt?: number;
 }
 
 const IDLE_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
@@ -909,6 +907,7 @@ function applyQuestResult(room: Room, io: Server) {
 
   if (successes >= 3) {
     room.status = 'assassin';
+    room.assassinationStartedAt = Date.now();
   } else if (totalFails >= 3) {
     room.status = 'game_over'; room.gameEndedAt = Date.now();
     room.gameState.winner = 'evil';
@@ -2075,6 +2074,7 @@ function setupSocket(io: Server) {
         ) {
           touchRoom(room);
           room.status = 'assassin';
+          room.assassinationStartedAt = Date.now();
           broadcastRoom(room, io);
           handleBotActions(room, io);
         }

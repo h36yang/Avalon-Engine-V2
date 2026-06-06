@@ -6,6 +6,7 @@ import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
 import VoteHistoryDetails from "./VoteHistoryDetails";
 import { EVIL_ROLES, Role } from "../utils/gameLogic";
+import GameTimer from "./GameTimer";
 
 export default function AssassinScreen() {
   const room = useGameStore((state) => state.room);
@@ -38,6 +39,16 @@ export default function AssassinScreen() {
         viewingHistoryIndex={viewingHistoryIndex}
         setViewingHistoryIndex={setViewingHistoryIndex}
       />
+
+      {/* Timer row — shows game time and live assassination countdown */}
+      {room.gameStartedAt && (
+        <div className="flex justify-end px-4 py-2 border-b border-zinc-900">
+          <GameTimer
+            gameStartedAt={room.gameStartedAt}
+            assassinationStartedAt={room.assassinationStartedAt}
+          />
+        </div>
+      )}
 
       {isViewingHistory ? (
         <VoteHistoryDetails

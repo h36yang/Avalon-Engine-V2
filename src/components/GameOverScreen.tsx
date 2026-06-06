@@ -60,7 +60,10 @@ export default function GameOverScreen() {
               </p>
             </div>
           </div>
-          {room.gameStartedAt && <GameTimer gameStartedAt={room.gameStartedAt} gameEndedAt={room.gameEndedAt} />}
+          {room.gameStartedAt && <GameTimer
+            gameStartedAt={room.gameStartedAt}
+            gameEndedAt={room.gameEndedAt}
+            assassinationStartedAt={room.assassinationStartedAt} />}
         </div>
       </div>
 

@@ -30,7 +30,10 @@ export default function VoteHistoryHeader({ title, viewingHistoryIndex, setViewi
         <div className="flex items-center justify-between px-5 pt-12 pb-3">
           <h1 className="text-lg font-bold tracking-tight text-zinc-100">{title}</h1>
           <div className="flex items-center gap-2">
-            {room.gameStartedAt && <GameTimer gameStartedAt={room.gameStartedAt} gameEndedAt={room.gameEndedAt} />}
+            {room.gameStartedAt && <GameTimer
+              gameStartedAt={room.gameStartedAt}
+              gameEndedAt={room.gameEndedAt}
+              assassinationStartedAt={room.assassinationStartedAt} />}
             {onViewRole && (
               <button
                 onClick={onViewRole}

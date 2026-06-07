@@ -198,6 +198,23 @@ export const translations = {
     'Loss': 'Loss',
     'Back to History': 'Back to History',
     'players': 'players',
+
+    // Lady of the Lake
+    'Game Settings': 'Game Settings',
+    'Lady of the Lake': 'Lady of the Lake',
+    'Enable the Lady of the Lake mechanic (for 9+ players)': 'Enable the Lady of the Lake mechanic (for 9+ players)',
+    'Lady of the Lake is not supported in games with bots': 'Lady of the Lake is not supported in games with bots',
+    'Lady of the Lake Phase': 'Lady of the Lake Phase',
+    'Lady of the Lake Reveal': 'Lady of the Lake Reveal',
+    'Good Alignment': 'Good Alignment',
+    'Evil Alignment': 'Evil Alignment',
+    'is verifying another player\'s alignment': 'is verifying another player\'s alignment',
+    'checked': 'checked',
+    'Verify': 'Verify',
+    'Used': 'Used',
+    'You hold the Lady of the Lake. Select a player to check.': 'You hold the Lady of the Lake. Select a player to check.',
+    'Waiting for Lady of the Lake check...': 'Waiting for Lady of the Lake check...',
+    'Players who have held Lady of the Lake cannot be checked again': 'Players who have held Lady of the Lake cannot be checked again',
   },
   zh: {
     // Roles
@@ -396,6 +413,23 @@ export const translations = {
     'Loss': '失败',
     'Back to History': '返回历史',
     'players': '人',
+
+    // Lady of the Lake
+    'Game Settings': '游戏设置',
+    'Lady of the Lake': '湖中仙女',
+    'Enable the Lady of the Lake mechanic (for 9+ players)': '开启“湖中仙女”规则（仅在9人或以上游戏生效）',
+    'Lady of the Lake is not supported in games with bots': '存在机器人时无法开启“湖中仙女”规则',
+    'Lady of the Lake Phase': '湖中仙女阶段',
+    'Lady of the Lake Reveal': '湖中仙女查验结果',
+    'Good Alignment': '正义阵营 (蓝队)',
+    'Evil Alignment': '邪恶阵营 (红队)',
+    'is verifying another player\'s alignment': '正在查验另一名玩家的阵营',
+    'checked': '查验了',
+    'Verify': '查验',
+    'Used': '已持牌',
+    'You hold the Lady of the Lake. Select a player to check.': '你持有“湖中仙女”，请选择一名玩家查验。',
+    'Waiting for Lady of the Lake check...': '等待“湖中仙女”查验...',
+    'Players who have held Lady of the Lake cannot be checked again': '当过“湖中仙女”的玩家不可再次被查验',
   }
 };
 

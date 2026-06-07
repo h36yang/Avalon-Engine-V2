@@ -3,6 +3,9 @@ name: Continuous Integration and Deployment
 on:
   push:
     branches: [ "main" ]
+  
+permissions:
+  contents: 'read'
 
 jobs:
   build:

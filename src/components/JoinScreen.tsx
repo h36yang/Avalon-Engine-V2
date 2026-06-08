@@ -3,6 +3,7 @@ import { useGameStore } from "../store";
 import { KeyRound, User, Users, LogOut, Trophy, Swords, RefreshCw, Crown, Loader2, ScrollText } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { supabase } from "../utils/supabase";
+import { generateSecureRandomNumber } from "../utils/gameLogic";
 import GameHistoryScreen from "./GameHistoryScreen";
 
 const GOLD = '#D4AF37';
@@ -35,7 +36,7 @@ export default function JoinScreen() {
   };
 
   const handleJoinRoom = (id: string) => {
-    const playerName = name || profile?.username || `Player_${Math.floor(Math.random() * 1000)}`;
+    const playerName = name || profile?.username || `Player_${Math.floor(generateSecureRandomNumber() * 1000)}`;
     connect(id, playerName);
   };
 

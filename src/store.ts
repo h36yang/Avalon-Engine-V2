@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
 import { User } from '@supabase/supabase-js';
-import { Role, Player } from './utils/gameLogic';
+import { Role, Player, generateSecureRandomNumber } from './utils/gameLogic';
 import { supabase } from './utils/supabase';
 
 export interface Quest {
@@ -165,7 +165,7 @@ interface GameState {
 }
 
 const generateSessionId = () => {
-  return Math.random().toString(36).substring(2, 15);
+  return generateSecureRandomNumber().toString(36).substring(2, 15);
 };
 
 const TIMEOUT_MS = 5000; // 5 seconds

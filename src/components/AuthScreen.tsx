@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGameStore } from '../store';
 import { supabase, recreateSupabaseClient } from '../utils/supabase';
 import { Loader2, WifiOff, Mail, Lock, User, KeyRound } from 'lucide-react';
+import { generateSecureRandomNumber } from "../utils/gameLogic";
 
 const GOLD = '#D4AF37';
 const GOLD_DIM = 'rgba(212,175,55,0.25)';
@@ -319,8 +320,8 @@ export default function AuthScreen() {
             <button
               type="button"
               onClick={() => {
-                const mockUserId = `offline_${Math.random().toString(36).substring(2, 9)}`;
-                const mockUsername = username.trim() || `Player_${Math.floor(Math.random() * 1000)}`;
+                const mockUserId = `offline_${generateSecureRandomNumber().toString(36).substring(2, 9)}`;
+                const mockUsername = username.trim() || `Player_${Math.floor(generateSecureRandomNumber() * 1000)}`;
                 setAuth(
                   { id: mockUserId } as any,
                   { id: mockUserId, username: mockUsername, wins: 0, losses: 0, total_games: 0 }

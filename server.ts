@@ -5,12 +5,11 @@ import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { encode } from '@toon-format/toon';
-import { Role, Player, getQuestConfig, assignRoles, EVIL_ROLES } from './src/utils/gameLogic';
+import { Role, Player, getQuestConfig, assignRoles, EVIL_ROLES, generateSecureRandomNumber } from './src/utils/gameLogic';
 import { MindLogEntry, Room as ClientRoom, LadeOfTheLakeCheck } from './src/store';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { p } from 'motion/react-client';
 
 // Resolve project root directory (works with both ESM and CJS)
 const projectRootUrl = fileURLToPath(import.meta.url);
@@ -151,14 +150,15 @@ async function saveGameHistory(room: Room) {
 
   const rows = humanPlayers.map(p => {
     const isEvil = EVIL_ROLES.has(p.role!);
-    const didWin = (room.gameState.winner === 'evil' && isEvil) ||
-                   (room.gameState.winner === 'good' && !isEvil);
+    const didWin =
+      (room.gameState.winner === 'evil' && isEvil) ||
+      (room.gameState.winner === 'good' && !isEvil);
     return {
-      user_id:       p.userId,
-      my_role:       p.role as string,
-      did_win:       didWin,
-      player_count:  room.players.length,
-      duration_ms:   durationMs,
+      user_id: p.userId,
+      my_role: p.role as string,
+      did_win: didWin,
+      player_count: room.players.length,
+      duration_ms: durationMs,
       room_snapshot: buildGameOverSnapshot(room, p.sessionId),
     };
   });
@@ -1180,7 +1180,7 @@ async function aiTeamBuilding(room: Room, bot: Player, teamSize: number, io: Ser
 
   // Fallback: include self + random others
   const team = [bot.sessionId];
-  const others = room.players.filter(p => p.sessionId !== bot.sessionId).sort(() => Math.random() - 0.5);
+  const others = room.players.filter(p => p.sessionId !== bot.sessionId).sort(() => generateSecureRandomNumber() - 0.5);
   while (team.length < teamSize && others.length > 0) {
     team.push(others.shift()!.sessionId);
   }
@@ -1217,7 +1217,7 @@ async function aiTeamVote(room: Room, bot: Player): Promise<boolean> {
     addMindLog(room, bot.sessionId, 'team_vote', userPrompt, `Error: ${err?.message || err}`, 'fallback: approve');
 
     // Fallback: approve on last vote, otherwise 50/50
-    return room.gameState.voteTrack === 4 || Math.random() > 0.5;
+    return room.gameState.voteTrack === 4 || generateSecureRandomNumber() > 0.5;
   }
 }
 
@@ -1306,7 +1306,7 @@ async function aiAssassinate(room: Room, bot: Player): Promise<string> {
   }
 
   // Fallback: random good player
-  return goodPlayers[Math.floor(Math.random() * goodPlayers.length)].sessionId;
+  return goodPlayers[Math.floor(generateSecureRandomNumber() * goodPlayers.length)].sessionId;
 }
 
 function handleBotActions(room: Room, io: Server) {
@@ -1361,7 +1361,7 @@ function handleBotActions(room: Room, io: Server) {
               if (otherEvil.length > 0) {
                 team.push(otherEvil[0].sessionId);
               }
-            } else if (room.gameState.currentQuestIndex === 0 && Math.random() < 0.3) {
+            } else if (room.gameState.currentQuestIndex === 0 && generateSecureRandomNumber() < 0.3) {
               // Occasional strategic bluff: Propose an all-good team on Quest 1 to build trust
               const goodPlayers = sortedPlayers.filter(p => memory.knownRoles[p.sessionId] === 'Good');
               team.push(...goodPlayers.slice(0, currentQuest.teamSize).map(p => p.sessionId));
@@ -1369,7 +1369,7 @@ function handleBotActions(room: Room, io: Server) {
               // Standard evil: Include self, maybe one other evil if team size > 2
               team.push(leader.sessionId);
               const otherEvil = sortedPlayers.filter(p => p.sessionId !== leader.sessionId && memory.knownRoles[p.sessionId] === 'Evil');
-              if (currentQuest.teamSize > 2 && otherEvil.length > 0 && Math.random() > 0.4) {
+              if (currentQuest.teamSize > 2 && otherEvil.length > 0 && generateSecureRandomNumber() > 0.4) {
                 team.push(otherEvil[0].sessionId);
               }
             }
@@ -1379,7 +1379,7 @@ function handleBotActions(room: Room, io: Server) {
             const otherEvil = sortedPlayers.filter(p => p.sessionId !== leader.sessionId && memory.knownRoles[p.sessionId] === 'Evil');
 
             // Randomly decide if we want to bring another evil (if team size > 2)
-            if (currentQuest.teamSize > 2 && otherEvil.length > 0 && Math.random() > 0.5) {
+            if (currentQuest.teamSize > 2 && otherEvil.length > 0 && generateSecureRandomNumber() > 0.5) {
               team.push(otherEvil[0].sessionId);
             }
           }
@@ -1409,11 +1409,11 @@ function handleBotActions(room: Room, io: Server) {
           // Baiting: On quest 0 only, small chance to include exactly one known evil player to hide identity
           // Hard mode does this slightly more effectively, avoiding players with high failAssociation
           const baitChance = difficulty === 'hard' ? 0.2 : 0.15;
-          if (room.gameState.currentQuestIndex === 0 && Math.random() < baitChance) {
+          if (room.gameState.currentQuestIndex === 0 && generateSecureRandomNumber() < baitChance) {
             const knownEvil = room.players.filter(p => memory.knownRoles[p.sessionId] === 'Evil' && memory.failAssociation[p.sessionId] === 0);
             if (knownEvil.length > 0) {
               // Replace the least trusted good player in the team (excluding self) with a random evil player
-              const evilToBait = knownEvil[Math.floor(Math.random() * knownEvil.length)].sessionId;
+              const evilToBait = knownEvil[Math.floor(generateSecureRandomNumber() * knownEvil.length)].sessionId;
               const nonMerlinTeamMembers = team.filter(id => id !== leader.sessionId);
               if (nonMerlinTeamMembers.length > 0) {
                 const playerToReplace = nonMerlinTeamMembers[nonMerlinTeamMembers.length - 1]; // Last one is least trusted
@@ -1495,7 +1495,7 @@ function handleBotActions(room: Room, io: Server) {
               approve = true;
             } else {
               // Sometimes randomly approve all-good teams to blend in
-              approve = Math.random() > 0.8;
+              approve = generateSecureRandomNumber() > 0.8;
             }
           } else if (bot.role === 'Merlin') {
             // Good logic (Merlin): Usually reject evil, but occasionally approve to hide identity
@@ -1509,7 +1509,7 @@ function handleBotActions(room: Room, io: Server) {
               } else {
                 // Reject, but with some noise on later quests to avoid a perfect rejection pattern
                 const rejectChance = room.gameState.currentQuestIndex < 2 ? 0.85 : 0.70;
-                approve = Math.random() > rejectChance;
+                approve = generateSecureRandomNumber() > rejectChance;
               }
             } else {
               // If no known evil, approve
@@ -1609,7 +1609,7 @@ function handleBotActions(room: Room, io: Server) {
                 currentQuest.votes[bot.sessionId] = false;
               }
               // If it's quest 1 and team size 2, maybe succeed to build trust
-              else if (room.gameState.currentQuestIndex === 0 && currentQuest.teamSize === 2 && Math.random() < 0.5) {
+              else if (room.gameState.currentQuestIndex === 0 && currentQuest.teamSize === 2 && generateSecureRandomNumber() < 0.5) {
                 currentQuest.votes[bot.sessionId] = true;
               }
               // If multiple evil on team and requiresTwoFails, BOTH must fail
@@ -1646,7 +1646,7 @@ function handleBotActions(room: Room, io: Server) {
                 }
               } else {
                 // Single evil bot or requires two fails: usually fail, but sometimes succeed on quest 1 to build trust
-                if (room.gameState.currentQuestIndex === 0 && Math.random() > 0.5) {
+                if (room.gameState.currentQuestIndex === 0 && generateSecureRandomNumber() > 0.5) {
                   currentQuest.votes[bot.sessionId] = true;
                 } else {
                   currentQuest.votes[bot.sessionId] = false;
@@ -1882,7 +1882,7 @@ function setupSocket(io: Server) {
         const resolvedBotClass = botClass || (difficulty ? difficulty : 'normal');
         const room = rooms[roomId];
         if (room && room.status === 'lobby' && room.players.length < 10) {
-          const botId = 'bot_' + Math.random().toString(36).substring(2, 9);
+          const botId = 'bot_' + generateSecureRandomNumber().toString(36).substring(2, 9);
           const isAI = resolvedBotClass === 'ai';
           const newBot: Player = {
             id: botId,
@@ -1982,7 +1982,7 @@ function setupSocket(io: Server) {
             } else {
               const humanEvils = room.players.filter(p => !p.isBot && EVIL_ROLES.has(p.role as Role));
               if (humanEvils.length > 0) {
-                const randomEvil = humanEvils[Math.floor(Math.random() * humanEvils.length)];
+                const randomEvil = humanEvils[Math.floor(generateSecureRandomNumber() * humanEvils.length)];
                 strikeHolderSessionId = randomEvil.sessionId;
               }
             }
@@ -2002,7 +2002,7 @@ function setupSocket(io: Server) {
           room.gameState.ladyOfTheLakeHistory = [];
           room.gameState.ladyOfTheLakeChecks = [];
 
-          room.gameState.leaderIndex = Math.floor(Math.random() * room.players.length);
+          room.gameState.leaderIndex = Math.floor(generateSecureRandomNumber() * room.players.length);
 
           if (room.settings.ladyOfTheLake) {
             const firstLeaderIndex = room.gameState.leaderIndex;
@@ -2019,6 +2019,8 @@ function setupSocket(io: Server) {
           });
           room.status = 'role_reveal';
           room.gameStartedAt = Date.now();
+          room.gameEndedAt = undefined;
+          room.assassinationStartedAt = undefined;
           initializeBotMemories(room);
           broadcastRoom(room, io);
           handleBotActions(room, io);
@@ -2326,6 +2328,9 @@ function setupSocket(io: Server) {
               ladyOfTheLakeHistory: [],
               ladyOfTheLakeChecks: []
             };
+            room.gameStartedAt = Date.now();
+            room.gameEndedAt = undefined;
+            room.assassinationStartedAt = undefined;
             broadcastRoom(room, io);
           }
         }

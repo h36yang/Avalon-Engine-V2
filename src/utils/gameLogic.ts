@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 export type Role = 'Merlin' | 'Assassin' | 'Percival' | 'Morgana' | 'Mordred' | 'Oberon' | 'Loyal Servant' | 'Minion';
 
 export const EVIL_ROLES: ReadonlySet<Role> = new Set(['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon']);
@@ -100,14 +102,9 @@ export function assignRoles(players: Player[], requestedRoles?: Record<string, R
     });
   }
 
-  // Shuffle players once (so that player seats are random)
+  // Shuffle players and remaining roles
   shuffle(players);
-
-  // Shuffle remaining roles x times, where x is a random number between 1 and # of players.
-  const x = Math.floor(Math.random() * players.length) + 1;
-  for (let i = 0; i < x; i++) {
-    shuffle(roles);
-  }
+  shuffle(roles);
 
   // Assign remaining roles
   for (const p of players) {
@@ -120,9 +117,22 @@ export function assignRoles(players: Player[], requestedRoles?: Record<string, R
   }
 }
 
+/** Generates a secure random number between 0 and 1. */
+export function generateSecureRandomNumber(): number {
+  const buffer = new Uint32Array(1);
+  if (typeof window !== 'undefined' && window.crypto) {
+    // We are in the browser
+    window.crypto.getRandomValues(buffer);
+  } else {
+    // We are in Node.js
+    crypto.getRandomValues(buffer);
+  }
+  return buffer[0] * Math.pow(2, -32);
+}
+
 function shuffle<T>(array: T[]): void {
   for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(generateSecureRandomNumber() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
 }

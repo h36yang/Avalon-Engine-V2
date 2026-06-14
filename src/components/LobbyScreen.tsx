@@ -251,7 +251,7 @@ export default function LobbyScreen() {
                             : { color: 'rgba(255,255,255,0.3)' }
                         }>
                           {p.difficulty === 'hard' ? t('Hard Bot') : t('Normal Bot')}
-                          {p.hasApiKey && <Sparkles size={10} className="inline ml-1" />}
+                          {!!p.apiKey && <Sparkles size={10} className="inline ml-1" />}
                         </p>
                       )}
                     </div>

@@ -582,7 +582,6 @@ function setupSocket(io: Server) {
             const bot = room.players.find(p => p.sessionId === targetSessionId && p.isBot);
             if (bot) {
               bot.apiKey = apiKey;
-              bot.hasApiKey = !!apiKey;
               bot.provider = provider ?? 'gemini';
               bot.model = model || undefined;
               touchRoom(room);

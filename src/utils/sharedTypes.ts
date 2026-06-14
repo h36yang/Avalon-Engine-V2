@@ -12,7 +12,6 @@ export interface Player {
   isHost: boolean;
   isBot?: boolean;
   apiKey?: string;
-  hasApiKey?: boolean;
   provider?: 'gemini' | 'openrouter' | 'groq' | 'nvidia';
   model?: string;
   difficulty?: 'normal' | 'hard'; // Bot difficulty level

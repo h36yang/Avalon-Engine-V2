@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useGameStore } from '../store';
+import { useGameStore, generateSecureRandomNumber } from '../store';
 import { supabase, recreateSupabaseClient } from '../utils/supabase';
 import { Loader2, WifiOff, Mail, Lock, User, KeyRound } from 'lucide-react';
-import { generateSecureRandomNumber } from "../utils/gameLogic";
 
 const GOLD = '#D4AF37';
 const GOLD_DIM = 'rgba(212,175,55,0.25)';

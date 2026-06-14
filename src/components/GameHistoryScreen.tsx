@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useGameStore, GameHistoryRecord } from "../store";
+import { EVIL_ROLES, Role } from "../utils/sharedTypes";
 import { Crown, Skull, Users, Clock, Loader2, ScrollText, ChevronRight } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
-import { EVIL_ROLES, Role } from "../utils/gameLogic";
 import { formatElapsed } from "./GameTimer";
 
 const GOLD = '#D4AF37';

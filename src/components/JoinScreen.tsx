@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useGameStore } from "../store";
+import { useGameStore, generateSecureRandomNumber } from "../store";
 import { KeyRound, User, Users, LogOut, Trophy, Swords, RefreshCw, Crown, Loader2, ScrollText } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { supabase } from "../utils/supabase";
-import { generateSecureRandomNumber } from "../utils/gameLogic";
 import GameHistoryScreen from "./GameHistoryScreen";
 
 const GOLD = '#D4AF37';

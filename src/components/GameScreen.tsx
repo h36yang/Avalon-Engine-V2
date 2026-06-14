@@ -3,9 +3,9 @@ import { useGameStore } from "../store";
 import { Check, X, Crown, Users, Target, ShieldAlert, Eye, Shield, Skull, MessageSquare, Bot, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
+import { EVIL_ROLES, Role } from "../utils/sharedTypes";
 import VoteHistoryHeader from "./VoteHistoryHeader";
 import VoteHistoryDetails from "./VoteHistoryDetails";
-import { EVIL_ROLES, Role } from "../utils/gameLogic";
 
 const BOT_LOADING_WORDS = [
   "Scheming", "Pondering", "Conspiring", "Buffering",
@@ -278,7 +278,7 @@ export default function GameScreen() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {p.isBot && p.hasApiKey && <Sparkles size={12} className="text-indigo-400" />}
+                        {p.isBot && !!p.apiKey && <Sparkles size={12} className="text-indigo-400" />}
                         {isCurrentLeader && <Crown size={14} className="text-amber-400" />}
 
                         {gameState.ladyOfTheLakeHolder === p.sessionId && (
@@ -310,7 +310,7 @@ export default function GameScreen() {
                         )}
 
                         {/* Voting states */}
-                        {status === "team_voting" && p.isBot && p.hasApiKey && !(p.sessionId in gameState.teamVotes) && (
+                        {status === "team_voting" && p.isBot && !!p.apiKey && !(p.sessionId in gameState.teamVotes) && (
                           <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full flex items-center gap-1 border border-zinc-700">
                             <Loader2 size={9} className="animate-spin" />{BOT_LOADING_WORDS[loadingWordIndex]}
                           </span>
@@ -331,7 +331,7 @@ export default function GameScreen() {
                             {viewingVote.votes[p.sessionId] ? t("Approve") : t("Reject")}
                           </div>
                         )}
-                        {status === "quest_voting" && p.isBot && p.hasApiKey && gameState.proposedTeam.includes(p.sessionId) && !(p.sessionId in currentQuest.votes) && (
+                        {status === "quest_voting" && p.isBot && !!p.apiKey && gameState.proposedTeam.includes(p.sessionId) && !(p.sessionId in currentQuest.votes) && (
                           <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full flex items-center gap-1 border border-zinc-700">
                             <Loader2 size={9} className="animate-spin" />{BOT_LOADING_WORDS[loadingWordIndex]}
                           </span>

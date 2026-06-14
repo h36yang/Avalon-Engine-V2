@@ -3,7 +3,8 @@ import { encode } from '@toon-format/toon';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { Role, Player, EVIL_ROLES, generateSecureRandomNumber } from './src/utils/gameLogic';
+import { generateSecureRandomNumber } from './src/utils/gameLogic';
+import { Role, Player, EVIL_ROLES } from "./src/utils/sharedTypes";
 import { MindLogEntry, Room as ClientRoom } from './src/store';
 import { Server } from 'socket.io';
 
@@ -74,10 +75,10 @@ export function getBotSystemPrompt(role: string): string {
 // ─── Model Defaults ───────────────────────────────────────────────────────────
 
 export const DEFAULT_MODELS: Record<string, string> = {
-  gemini: 'gemini-2.0-flash-lite',
-  openrouter: 'google/gemini-2.0-flash-exp:free',
+  gemini: 'gemini-3.1-flash-lite',
+  openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
   groq: 'llama-3.3-70b-versatile',
-  nvidia: 'meta/llama-3.3-70b-instruct',
+  nvidia: 'minimaxai/minimax-m2.7',
 };
 
 // ─── Low-level LLM Helpers ────────────────────────────────────────────────────
@@ -318,257 +319,10 @@ export function getNextBotName(room: Room, isAI: boolean): string {
 
 // ─── AI Game Context Builder ──────────────────────────────────────────────────
 
-// === AI Bot LLM Decision Functions ===
-
-function buildAIGameContext(room: Room, bot: Player): string {
-  const memory = room.gameState.botMemories[bot.sessionId];
-  const isEvil = EVIL_ROLES.has(bot.role as Role);
-
-  let context = `你是 "${bot.name}"，你的秘密角色是 ${bot.role}（${isEvil ? '邪恶阵营' : '好人阵营'}）。\n\n`;
-
-  // Role-specific knowledge
-  if (bot.role === 'Merlin') {
-    const evilPlayers = room.players.filter(p => {
-      const r = p.role as string;
-      return ['Assassin', 'Morgana', 'Minion', 'Oberon'].includes(r); // Merlin can't see Mordred
-    });
-    context += `你能看到的坏人: ${evilPlayers.map(p => p.name).join(', ') || '无'}\n`;
-  } else if (bot.role === 'Percival' && memory.percivalCandidates) {
-    const nameA = room.players.find(p => p.sessionId === memory.percivalCandidates!.a)?.name;
-    const nameB = room.players.find(p => p.sessionId === memory.percivalCandidates!.b)?.name;
-    context += `你的拇指牌（梅林或莫甘娜）: ${nameA}, ${nameB}\n`;
-  } else if (isEvil && bot.role !== 'Oberon') {
-    const evilTeammates = room.players.filter(p =>
-      p.sessionId !== bot.sessionId &&
-      ['Assassin', 'Morgana', 'Mordred', 'Minion'].includes(p.role as string)
-    );
-    context += `你的邪恶队友: ${evilTeammates.map(p => p.name).join(', ') || '无'}\n`;
-  }
-
-  // Player list
-  context += `\n所有玩家: ${room.players.map(p => p.name).join(', ')}\n`;
-
-  // Quest results
-  const questResults = room.gameState.quests.map((q, i) => {
-    if (q.status === 'pending') return `任务${i + 1}: 未开始`;
-    const teamNames = q.team.map(id => room.players.find(p => p.sessionId === id)?.name).join(', ');
-    const fails = Object.values(q.votes).filter(v => !v).length;
-    return `任务${i + 1}: ${q.status === 'success' ? '成功' : `失败(${fails}张失败票)`} 队伍:[${teamNames}]`;
-  }).join('\n');
-  context += `\n任务结果:\n${questResults}\n`;
-
-  // Vote history
-  if (room.gameState.voteHistory.length > 0) {
-    const recentVotes = room.gameState.voteHistory.slice(-5).map(h => {
-      const leaderName = room.players[h.leaderIndex]?.name;
-      const teamNames = h.proposedTeam.map(id => room.players.find(p => p.sessionId === id)?.name).join(', ');
-      const voteDetails = Object.entries(h.votes).map(([sid, approved]) => {
-        const name = room.players.find(p => p.sessionId === sid)?.name;
-        return `${name}:${approved ? '赞成' : '反对'}`;
-      }).join(', ');
-      return `任务${h.questIndex + 1} 第${h.voteTrack + 1}次投票 队长:${leaderName} 队伍:[${teamNames}] ${h.approved ? '通过' : '否决'} 投票:${voteDetails}`;
-    }).join('\n');
-    context += `\n最近投票历史:\n${recentVotes}\n`;
-  }
-
-  context += `\n当前任务: 第${room.gameState.currentQuestIndex + 1}个任务\n`;
-  context += `投票失败次数: ${room.gameState.voteTrack}/5\n`;
-
-  return context;
-}
-
-// ─── AI Decision Functions ────────────────────────────────────────────────────
-
-export async function aiTeamBuilding(room: Room, bot: Player, teamSize: number, io: Server): Promise<string[]> {
-  const rolePrompt = getBotSystemPrompt(bot.role as string);
-  const gameContext = buildAIGameContext(room, bot);
-  const playerNames = room.players.map(p => p.name);
-
-  const userPrompt = `${gameContext}
-
-你现在是队长，需要选择 ${teamSize} 名队员组队执行任务。
-
-可选队员: ${playerNames.join(', ')}
-
-请根据你的角色策略和当前局势选择队伍。
-
-请严格按以下格式回答（不要加任何其他内容）:
-思考: [你的分析，1-3句话]
-队伍: [用逗号分隔的玩家名字]`;
-
-  try {
-    const response = await callAIForDecision(bot, rolePrompt, userPrompt);
-    addMindLog(room, bot.sessionId, 'team_building', userPrompt, response, '');
-
-    // Parse team from response
-    const teamMatch = response.match(/队伍[:：]\s*(.+)/);
-    if (teamMatch) {
-      const names = teamMatch[1].split(/[,，、]/).map(n => n.trim()).filter(Boolean);
-      const team: string[] = [];
-      for (const name of names) {
-        const player = room.players.find(p => p.name === name);
-        if (player && !team.includes(player.sessionId)) {
-          team.push(player.sessionId);
-        }
-        if (team.length >= teamSize) break;
-      }
-
-      // Fill remaining slots if AI didn't pick enough
-      if (team.length < teamSize) {
-        // Always include self
-        if (!team.includes(bot.sessionId)) team.push(bot.sessionId);
-        const remaining = room.players.filter(p => !team.includes(p.sessionId));
-        while (team.length < teamSize && remaining.length > 0) {
-          team.push(remaining.shift()!.sessionId);
-        }
-      }
-
-      // Update mind log with final decision
-      const lastLog = room.gameState.botMindLogs[bot.sessionId];
-      if (lastLog.length > 0) lastLog[lastLog.length - 1].decision = `Team: ${team.map(id => room.players.find(p => p.sessionId === id)?.name).join(', ')}`;
-
-      return team.slice(0, teamSize);
-    }
-  } catch (err: any) {
-    console.error(`AI team building error for ${bot.name}:`, err?.message || err);
-    addMindLog(room, bot.sessionId, 'team_building', userPrompt, `Error: ${err?.message || err}`, 'fallback');
-  }
-
-  // Fallback: include self + random others
-  const team = [bot.sessionId];
-  const others = room.players.filter(p => p.sessionId !== bot.sessionId).sort(() => generateSecureRandomNumber() - 0.5);
-  while (team.length < teamSize && others.length > 0) {
-    team.push(others.shift()!.sessionId);
-  }
-  return team;
-}
-
-export async function aiTeamVote(room: Room, bot: Player): Promise<boolean> {
-  const rolePrompt = getBotSystemPrompt(bot.role as string);
-  const gameContext = buildAIGameContext(room, bot);
-  const leaderName = room.players[room.gameState.leaderIndex]?.name;
-  const teamNames = room.gameState.proposedTeam.map(id => room.players.find(p => p.sessionId === id)?.name).join(', ');
-
-  const userPrompt = `${gameContext}
-
-队长 ${leaderName} 提议了以下队伍: [${teamNames}]
-这是第 ${room.gameState.voteTrack + 1}/5 次投票。${room.gameState.voteTrack === 4 ? '（注意：如果这次否决，邪恶阵营将直接获胜！）' : ''}
-
-请根据你的角色策略决定是否赞成这个队伍。
-
-请严格按以下格式回答:
-思考: [你的分析，1-3句话]
-投票: 赞成 或 反对`;
-
-  try {
-    const response = await callAIForDecision(bot, rolePrompt, userPrompt);
-    const approve = response.includes('赞成') && !response.match(/投票[:：]\s*反对/);
-    const voteDecision = response.match(/投票[:：]\s*(赞成|反对)/);
-    const finalApprove = voteDecision ? voteDecision[1] === '赞成' : approve;
-
-    addMindLog(room, bot.sessionId, 'team_vote', userPrompt, response, finalApprove ? '赞成' : '反对');
-    return finalApprove;
-  } catch (err: any) {
-    console.error(`AI team vote error for ${bot.name}:`, err?.message || err);
-    addMindLog(room, bot.sessionId, 'team_vote', userPrompt, `Error: ${err?.message || err}`, 'fallback: approve');
-
-    // Fallback: approve on last vote, otherwise 50/50
-    return room.gameState.voteTrack === 4 || generateSecureRandomNumber() > 0.5;
-  }
-}
-
-export async function aiQuestVote(room: Room, bot: Player): Promise<boolean> {
-  const rolePrompt = getBotSystemPrompt(bot.role as string);
-  const gameContext = buildAIGameContext(room, bot);
-  const isEvil = EVIL_ROLES.has(bot.role as Role);
-  const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
-  const teamNames = room.gameState.proposedTeam.map(id => room.players.find(p => p.sessionId === id)?.name).join(', ');
-
-  const userPrompt = `${gameContext}
-
-你在任务队伍中: [${teamNames}]
-${currentQuest.requiresTwoFails ? '（这个任务需要2张失败票才会失败）' : ''}
-
-你必须选择: 成功 或 失败
-${isEvil ? '作为邪恶阵营，你可以选择投失败来破坏任务，也可以投成功来隐藏身份。' : '作为好人阵营，你应该投成功。'}
-
-请严格按以下格式回答:
-思考: [你的分析，1-3句话]
-任务投票: 成功 或 失败`;
-
-  try {
-    const response = await callAIForDecision(bot, rolePrompt, userPrompt);
-    const voteMatch = response.match(/任务投票[:：]\s*(成功|失败)/);
-    let success: boolean;
-
-    if (voteMatch) {
-      success = voteMatch[1] === '成功';
-    } else {
-      // Good players always succeed, evil defaults to fail
-      success = !isEvil;
-    }
-
-    addMindLog(room, bot.sessionId, 'quest_vote', userPrompt, response, success ? '成功' : '失败');
-    return success;
-  } catch (err: any) {
-    console.error(`AI quest vote error for ${bot.name}:`, err?.message || err);
-    addMindLog(room, bot.sessionId, 'quest_vote', userPrompt, `Error: ${err?.message || err}`, `fallback: ${isEvil ? '失败' : '成功'}`);
-
-    // Fallback: good always success, evil always fail
-    return !isEvil;
-  }
-}
-
-export async function aiAssassinate(room: Room, bot: Player): Promise<string> {
-  const rolePrompt = getBotSystemPrompt(bot.role as string);
-  const gameContext = buildAIGameContext(room, bot);
-  const goodPlayers = room.players.filter(p => !EVIL_ROLES.has(p.role as Role));
-
-  const userPrompt = `${gameContext}
-
-好人完成了3个任务！作为刺客，你现在必须选择一名玩家刺杀。如果你选中梅林，邪恶阵营获胜！
-
-可刺杀的好人玩家: ${goodPlayers.map(p => p.name).join(', ')}
-
-综合分析整场游戏的投票记录、组队历史和发言，找出最可能是梅林的玩家。
-
-请严格按以下格式回答:
-分析: [你对每个好人的分析，2-4句话]
-刺杀目标: [一个玩家名字]`;
-
-  try {
-    const response = await callAIForDecision(bot, rolePrompt, userPrompt);
-    const targetMatch = response.match(/刺杀目标[:：]\s*(.+)/);
-
-    if (targetMatch) {
-      const targetName = targetMatch[1].trim();
-      const target = goodPlayers.find(p => p.name === targetName);
-      if (target) {
-        addMindLog(room, bot.sessionId, 'assassination', userPrompt, response, `Target: ${target.name}`);
-        return target.sessionId;
-      }
-    }
-
-    // Try fuzzy match
-    for (const p of goodPlayers) {
-      if (response.includes(p.name)) {
-        addMindLog(room, bot.sessionId, 'assassination', userPrompt, response, `Target (fuzzy): ${p.name}`);
-        return p.sessionId;
-      }
-    }
-  } catch (err: any) {
-    console.error(`AI assassination error for ${bot.name}:`, err?.message || err);
-    addMindLog(room, bot.sessionId, 'assassination', userPrompt, `Error: ${err?.message || err}`, 'fallback: random');
-  }
-
-  // Fallback: random good player
-  return goodPlayers[Math.floor(generateSecureRandomNumber() * goodPlayers.length)].sessionId;
-}
-
 // ─── Bot Opinions (LLM) ───────────────────────────────────────────────────────
 
 export async function triggerBotOpinions(room: Room, io: Server, broadcastRoom: (room: Room, io: Server) => void) {
-  const botsWithKeys = room.players.filter(p => p.isBot && p.botClass === 'ai' && p.apiKey);
+  const botsWithKeys = room.players.filter(p => p.isBot && p.apiKey);
   if (botsWithKeys.length === 0) return;
 
   room.gameState.botOpinions ??= [];
@@ -953,21 +707,6 @@ export function handleBotActions(
   if (room.status === 'team_building') {
     const leader = room.players[room.gameState.leaderIndex];
     if (leader.isBot) {
-      // AI bot: use LLM for team building
-      if (leader.botClass === 'ai' && leader.apiKey) {
-        setTimeout(async () => {
-          if (room.status !== 'team_building') return;
-          const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
-          const team = await aiTeamBuilding(room, leader, currentQuest.teamSize, io);
-          if (room.status !== 'team_building') return;
-          room.gameState.proposedTeam = team;
-          room.status = 'team_proposed';
-          room.gameState.teamVotes = {};
-          broadcastRoom(room, io);
-          handleBotActions(room, io, broadcastRoom, recordGameStats);
-        }, 3000);
-        return;
-      }
       setTimeout(() => {
         if (room.status !== 'team_building') return;
         const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
@@ -1090,23 +829,8 @@ export function handleBotActions(
     }
   } else if (room.status === 'team_voting') {
     const unvotedBots = room.players.filter(p => p.isBot && !(p.sessionId in room.gameState.teamVotes));
-    // Handle AI bots separately (async LLM calls)
-    const aiBots = unvotedBots.filter(b => b.botClass === 'ai' && b.apiKey);
-    const ruleBots = unvotedBots.filter(b => b.botClass !== 'ai' || !b.apiKey);
 
-    if (aiBots.length > 0) {
-      setTimeout(async () => {
-        if (room.status !== 'team_voting') return;
-        await Promise.all(aiBots.map(async (bot) => {
-          const approve = await aiTeamVote(room, bot);
-          room.gameState.teamVotes[bot.sessionId] = approve;
-        }));
-        // After AI bots vote, check if all votes are in
-        checkTeamVotesBot(room, io, broadcastRoom, recordGameStats);
-      }, 3000);
-    }
-
-    if (ruleBots.length > 0) {
+    if (unvotedBots.length > 0) {
       setTimeout(() => {
         if (room.status !== 'team_voting') return;
 
@@ -1114,7 +838,7 @@ export function handleBotActions(
         const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
         const proposedTeam = room.gameState.proposedTeam;
 
-        ruleBots.forEach(bot => {
+        unvotedBots.forEach(bot => {
           const memory = room.gameState.botMemories[bot.sessionId];
           const difficulty = bot.difficulty || 'normal';
           const isEvil = EVIL_ROLES.has(bot.role!);
@@ -1214,29 +938,14 @@ export function handleBotActions(
     const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
     const unvotedBots = room.players.filter(p => p.isBot && room.gameState.proposedTeam.includes(p.sessionId) && !(p.sessionId in currentQuest.votes));
 
-    // Handle AI bots separately (async LLM calls)
-    const aiQuestBots = unvotedBots.filter(b => b.botClass === 'ai' && b.apiKey);
-    const ruleQuestBots = unvotedBots.filter(b => b.botClass !== 'ai' || !b.apiKey);
-
-    if (aiQuestBots.length > 0) {
-      setTimeout(async () => {
-        if (room.status !== 'quest_voting') return;
-        await Promise.all(aiQuestBots.map(async (bot) => {
-          const success = await aiQuestVote(room, bot);
-          currentQuest.votes[bot.sessionId] = success;
-        }));
-        checkQuestVotesBot(room, io, broadcastRoom, recordGameStats);
-      }, 3000);
-    }
-
-    if (ruleQuestBots.length > 0) {
+    if (unvotedBots.length > 0) {
       setTimeout(() => {
         if (room.status !== 'quest_voting') return;
 
         // Coordinate evil votes to avoid double fails if possible
-        const evilBotsOnTeam = ruleQuestBots.filter(p => EVIL_ROLES.has(p.role as Role));
+        const evilBotsOnTeam = unvotedBots.filter(p => EVIL_ROLES.has(p.role as Role));
 
-        ruleQuestBots.forEach(bot => {
+        unvotedBots.forEach(bot => {
           const difficulty = bot.difficulty || 'normal';
           const isEvil = EVIL_ROLES.has(bot.role as Role);
           if (isEvil) {
@@ -1315,20 +1024,6 @@ export function handleBotActions(
     const hasHumanEvil = evilPlayers.some(p => !p.isBot);
 
     if (assassin?.isBot && !hasHumanEvil && !room.gameState.assassinationTarget) {
-      // AI assassin: use LLM for assassination
-      if (assassin.botClass === 'ai' && assassin.apiKey) {
-        setTimeout(async () => {
-          if (room.status !== 'assassin') return;
-          const targetId = await aiAssassinate(room, assassin);
-          const targetPlayer = room.players.find(p => p.sessionId === targetId);
-          room.gameState.assassinationTarget = targetId;
-          room.gameState.winner = targetPlayer?.role === 'Merlin' ? 'evil' : 'good';
-          room.status = 'game_over'; room.gameEndedAt = Date.now();
-          recordGameStats(room);
-          broadcastRoom(room, io);
-        }, 4000);
-        return;
-      }
       setTimeout(() => {
         if (room.status !== 'assassin') return;
 

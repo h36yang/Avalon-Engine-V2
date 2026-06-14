@@ -1,9 +1,25 @@
 import { useState } from "react";
-import { useGameStore, Room } from "../store";
-import { Crown, Skull, Shield, RefreshCw, Check, X, ChevronDown, ChevronUp, ShieldAlert, Users, Target, Brain, Copy, CheckCheck, ArrowLeft } from "lucide-react";
+import {
+  Crown,
+  Skull,
+  Shield,
+  RefreshCw,
+  Check,
+  X,
+  ChevronDown,
+  ChevronUp,
+  ShieldAlert,
+  Users,
+  Target,
+  Brain,
+  Copy,
+  CheckCheck,
+  ArrowLeft,
+} from "lucide-react";
+import { Room, useGameStore } from "../store";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
-import { EVIL_ROLES, Role } from "../utils/gameLogic";
+import { EVIL_ROLES, Role } from "../utils/sharedTypes";
 import GameTimer from "./GameTimer";
 
 export default function GameOverScreen() {

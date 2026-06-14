@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useGameStore } from "../store";
+import { EVIL_ROLES, Role } from "../utils/sharedTypes";
 import { Skull, Target, ShieldAlert } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
 import VoteHistoryDetails from "./VoteHistoryDetails";
-import { EVIL_ROLES, Role } from "../utils/gameLogic";
 import GameTimer from "./GameTimer";
 
 export default function AssassinScreen() {

@@ -3,7 +3,8 @@ import { createServer as createViteServer } from 'vite';
 import { createServer, ServerResponse } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
-import { Role, Player, getQuestConfig, assignRoles, EVIL_ROLES, generateSecureRandomNumber } from './src/utils/gameLogic';
+import { getQuestConfig, assignRoles, generateSecureRandomNumber } from './src/utils/gameLogic';
+import { EVIL_ROLES, Role, Player } from './src/utils/sharedTypes';
 import { LadeOfTheLakeCheck } from './src/store';
 import {
   Room,
@@ -548,22 +549,19 @@ function setupSocket(io: Server) {
       }
     });
 
-    socket.on('add_bot', ({ roomId, botClass, difficulty }) => {
+    socket.on('add_bot', ({ roomId, difficulty }) => {
       try {
-        const resolvedBotClass = botClass || (difficulty ? difficulty : 'normal');
         const room = rooms[roomId];
         if (room && room.status === 'lobby' && room.players.length < 10) {
           const botId = 'bot_' + generateSecureRandomNumber().toString(36).substring(2, 9);
-          const isAI = resolvedBotClass === 'ai';
           const newBot: Player = {
             id: botId,
             sessionId: botId,
-            name: getNextBotName(room, isAI),
+            name: getNextBotName(room, false),
             isConnected: true,
             isBot: true,
             isHost: false,
-            botClass: resolvedBotClass,
-            difficulty: isAI ? 'hard' : (resolvedBotClass as 'normal' | 'hard'),
+            difficulty: difficulty,
           };
           room.players.push(newBot);
 
@@ -584,7 +582,6 @@ function setupSocket(io: Server) {
             const bot = room.players.find(p => p.sessionId === targetSessionId && p.isBot);
             if (bot) {
               bot.apiKey = apiKey;
-              bot.hasApiKey = !!apiKey;
               bot.provider = provider ?? 'gemini';
               bot.model = model || undefined;
               touchRoom(room);
@@ -685,8 +682,8 @@ function setupSocket(io: Server) {
           }
 
           room.gameState.botMindLogs = {};
-          // Initialize mind logs for AI bots
-          room.players.filter(p => p.isBot && p.botClass === 'ai').forEach(bot => {
+          // Initialize mind logs for bots
+          room.players.filter(p => p.isBot).forEach(bot => {
             room.gameState.botMindLogs[bot.sessionId] = [];
           });
           room.status = 'role_reveal';

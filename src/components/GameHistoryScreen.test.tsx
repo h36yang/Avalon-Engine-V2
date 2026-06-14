@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
-import GameHistoryScreen from './GameHistoryScreen';
 import { useGameStore } from '../store';
+import GameHistoryScreen from './GameHistoryScreen';
 
 // Mock the game store
 vi.mock('../store', () => ({
   useGameStore: vi.fn(),
+  EVIL_ROLES: {
+    has: vi.fn(),
+  },
 }));
 
 // Mock internationalization

@@ -1,25 +1,22 @@
 import { useGameStore } from "../store";
-import { Role } from "../utils/gameLogic";
-import { Users, Play, LogOut, Bot, Brain, Sparkles, ChevronDown } from "lucide-react";
+import { Users, Play, LogOut, Bot, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { useState } from "react";
 import { cn } from "../utils/cn";
+import { Role } from "../utils/sharedTypes";
 
 const GOLD = '#D4AF37';
-const GOLD_DIM = 'rgba(212,175,55,0.22)';
 
 type Provider = 'gemini' | 'openrouter' | 'groq' | 'nvidia';
 
 const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
   gemini: [
-    { label: 'Gemini 2.0 Flash Lite (free)', value: 'gemini-2.0-flash-lite' },
-    { label: 'Gemini 2.0 Flash (free)', value: 'gemini-2.0-flash' },
-    { label: 'Gemini 1.5 Flash (free)', value: 'gemini-1.5-flash' },
-    { label: 'Gemini 1.5 Flash 8B (free)', value: 'gemini-1.5-flash-8b' },
-    { label: 'Gemini 2.5 Flash Preview', value: 'gemini-2.5-flash-preview-04-17' },
+    { label: 'Gemini 3.1 Flash Lite (free)', value: 'gemini-3.1-flash-lite' },
+    { label: 'Gemini 3.5 Flash (free)', value: 'gemini-3.5-flash' },
+    { label: 'Gemini 3 Flash Preview (free)', value: 'gemini-3-flash-preview' },
+    { label: 'Gemini 3.1 Pro Preview', value: 'gemini-3.1-pro-preview' },
   ],
   openrouter: [
-    { label: 'Gemini 2.0 Flash Exp (free)', value: 'google/gemini-2.0-flash-exp:free' },
     { label: 'Llama 3.3 70B (free)', value: 'meta-llama/llama-3.3-70b-instruct:free' },
     { label: 'DeepSeek Chat V3 (free)', value: 'deepseek/deepseek-chat-v3-0324:free' },
     { label: 'DeepSeek R1 (free)', value: 'deepseek/deepseek-r1:free' },
@@ -33,10 +30,11 @@ const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
     { label: 'Mixtral 8x7B', value: 'mixtral-8x7b-32768' },
   ],
   nvidia: [
+    { label: 'MiniMax M2.7', value: 'minimaxai/minimax-m2.7' },
+    { label: 'MiniMax M3', value: 'minimaxai/minimax-m3' },
     { label: 'Llama 3.3 70B Instruct', value: 'meta/llama-3.3-70b-instruct' },
     { label: 'Nemotron Super 49B', value: 'nvidia/llama-3.3-nemotron-super-49b-v1.5' },
     { label: 'DeepSeek R1 (0528)', value: 'deepseek-ai/deepseek-r1-0528' },
-    { label: 'MiniMax M2.5', value: 'minimaxai/minimax-m2.5' },
     { label: 'Mixtral 8x7B Instruct', value: 'mistralai/mixtral-8x7b-instruct-v0.1' },
   ],
 };
@@ -212,12 +210,6 @@ export default function LobbyScreen() {
                 >
                   {t("+ Hard")}
                 </button>
-                <button
-                  onClick={() => addBot('ai')}
-                  className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors avalon-glass-control avalon-glass-control--ai"
-                >
-                  {t("+ AI")}
-                </button>
               </div>
             )}
           </div>
@@ -234,19 +226,15 @@ export default function LobbyScreen() {
                     <div className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center border shrink-0 text-xs font-bold",
                     )} style={
-                      p.isBot && p.botClass === 'ai'
-                        ? { background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.35)', color: '#818cf8' }
-                        : p.isBot && p.botClass === 'hard'
-                          ? { background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: '#f59e0b' }
-                          : p.isBot
-                            ? { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.4)' }
-                            : { background: 'rgba(212,175,55,0.08)', border: `1px solid rgba(212,175,55,0.3)`, color: GOLD }
-                    }>
-                      {p.isBot && p.botClass === 'ai'
-                        ? <Brain size={14} />
+                      p.isBot && p.difficulty === 'hard'
+                        ? { background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: '#f59e0b' }
                         : p.isBot
-                          ? <Bot size={14} />
-                          : p.name.charAt(0).toUpperCase()}
+                          ? { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.4)' }
+                          : { background: 'rgba(212,175,55,0.08)', border: `1px solid rgba(212,175,55,0.3)`, color: GOLD }
+                    }>
+                      {p.isBot
+                        ? <Bot size={14} />
+                        : p.name.charAt(0).toUpperCase()}
                     </div>
 
                     <div className="min-w-0">
@@ -258,13 +246,11 @@ export default function LobbyScreen() {
                       </p>
                       {p.isBot && (
                         <p className="text-xs font-medium" style={
-                          p.botClass === 'ai'
-                            ? { color: '#6366f1' }
-                            : p.botClass === 'hard'
-                              ? { color: '#d97706' }
-                              : { color: 'rgba(255,255,255,0.3)' }
+                          p.difficulty === 'hard'
+                            ? { color: '#d97706' }
+                            : { color: 'rgba(255,255,255,0.3)' }
                         }>
-                          {p.botClass === 'ai' ? t('AI Bot') : p.botClass === 'hard' ? t('Hard Bot') : t('Normal Bot')}
+                          {p.difficulty === 'hard' ? t('Hard Bot') : t('Normal Bot')}
                           {p.hasApiKey && <Sparkles size={10} className="inline ml-1" />}
                         </p>
                       )}
@@ -285,7 +271,7 @@ export default function LobbyScreen() {
                         {t("Offline")}
                       </span>
                     )}
-                    {p.isBot && p.botClass === 'ai' && isHost && (
+                    {p.isBot && isHost && (
                       <button
                         onClick={() => setExpandedBot(expandedBot === p.sessionId ? null : p.sessionId)}
                         className="p-1.5 transition-colors"
@@ -307,8 +293,8 @@ export default function LobbyScreen() {
                   </div>
                 </div>
 
-                {/* AI Bot Config Panel */}
-                {p.isBot && p.botClass === 'ai' && isHost && expandedBot === p.sessionId && (
+                {/* Bot Config Panel */}
+                {p.isBot && isHost && expandedBot === p.sessionId && (
                   <div
                     className="px-4 pb-4 pt-3 space-y-2.5"
                     style={{ borderTop: `1px solid rgba(212,175,55,0.08)`, background: 'rgba(0,0,0,0.25)' }}

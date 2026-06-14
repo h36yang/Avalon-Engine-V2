@@ -1,25 +1,5 @@
 import crypto from 'crypto';
-
-export type Role = 'Merlin' | 'Assassin' | 'Percival' | 'Morgana' | 'Mordred' | 'Oberon' | 'Loyal Servant' | 'Minion';
-
-export const EVIL_ROLES: ReadonlySet<Role> = new Set(['Assassin', 'Morgana', 'Mordred', 'Minion', 'Oberon']);
-
-export interface Player {
-  id: string; // socket id
-  sessionId: string; // persistent id
-  userId?: string; // Supabase auth user id
-  name: string;
-  role?: Role;
-  isConnected: boolean;
-  isHost: boolean;
-  isBot?: boolean;
-  botClass?: 'normal' | 'hard' | 'ai'; // Bot class: normal/hard are rule-based, ai uses LLM
-  apiKey?: string;
-  hasApiKey?: boolean;
-  provider?: 'gemini' | 'openrouter' | 'groq' | 'nvidia';
-  model?: string;
-  difficulty?: 'normal' | 'hard'; // Bot difficulty level
-}
+import { Player, Role, EVIL_ROLES } from './sharedTypes';
 
 export function getQuestConfig(playerCount: number) {
   const configs: Record<number, { sizes: number[], twoFails: boolean[] }> = {
@@ -117,16 +97,14 @@ export function assignRoles(players: Player[], requestedRoles?: Record<string, R
   }
 }
 
-/** Generates a secure random number between 0 and 1. */
+/**
+ * Generates a secure random number between 0 and 1.
+ * 
+ * This function is for server-side use only because it depends on Node.js `crypto` lib.
+ */
 export function generateSecureRandomNumber(): number {
   const buffer = new Uint32Array(1);
-  if (typeof window !== 'undefined' && window.crypto) {
-    // We are in the browser
-    window.crypto.getRandomValues(buffer);
-  } else {
-    // We are in Node.js
-    crypto.getRandomValues(buffer);
-  }
+  crypto.getRandomValues(buffer);
   return buffer[0] * Math.pow(2, -32);
 }
 

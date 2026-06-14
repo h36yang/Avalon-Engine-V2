@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
 import { User } from '@supabase/supabase-js';
-import { Role, Player, generateSecureRandomNumber } from './utils/gameLogic';
 import { supabase } from './utils/supabase';
+import { Player, Role } from "./utils/sharedTypes";
 
 export interface Quest {
   teamSize: number;
@@ -135,7 +135,7 @@ interface GameState {
   updateSettings: (settings: Partial<Room["settings"]>) => void;
   updateBotApiKey: (botSessionId: string, apiKey: string, provider?: 'gemini' | 'openrouter' | 'groq' | 'nvidia', model?: string) => void;
   testBotApiKey: (provider: 'gemini' | 'openrouter' | 'groq' | 'nvidia', apiKey: string, model?: string) => Promise<{ success: boolean; message: string }>;
-  addBot: (botClass?: 'normal' | 'hard' | 'ai') => void;
+  addBot: (difficulty?: 'normal' | 'hard') => void;
   startGame: (requestedRoles?: Record<string, Role>) => void;
   leaveRoom: () => void;
   kickPlayer: (targetSessionId: string) => void;
@@ -312,12 +312,12 @@ export const useGameStore = create<GameState>()(
         });
       },
 
-      addBot: (botClass?: 'normal' | 'hard' | 'ai') => {
+      addBot: (difficulty?: 'normal' | 'hard') => {
         const { socket, room } = get();
         if (!socket || !room) return;
 
         const roomId = room.id;
-        socket?.emit("add_bot", { roomId, botClass: botClass || 'normal' });
+        socket?.emit("add_bot", { roomId, difficulty: difficulty || 'normal' });
       },
 
       startGame: (requestedRoles) => {
@@ -463,3 +463,14 @@ export const useGameStore = create<GameState>()(
     }
   )
 );
+
+/**
+ * Generates a secure random number between 0 and 1.
+ * 
+ * This function is for client-side use only because it depends on `window.crypto`.
+ */
+export function generateSecureRandomNumber(): number {
+  const buffer = new Uint32Array(1);
+  window.crypto.getRandomValues(buffer);
+  return buffer[0] * Math.pow(2, -32);
+}

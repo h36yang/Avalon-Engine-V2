@@ -3,9 +3,9 @@ import { useGameStore } from "../store";
 import { Check, X, Crown, Users, Target, ShieldAlert, Eye, Shield, Skull, MessageSquare, Bot, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
+import { EVIL_ROLES, Role } from "../utils/sharedTypes";
 import VoteHistoryHeader from "./VoteHistoryHeader";
 import VoteHistoryDetails from "./VoteHistoryDetails";
-import { EVIL_ROLES, Role } from "../utils/gameLogic";
 
 const BOT_LOADING_WORDS = [
   "Scheming", "Pondering", "Conspiring", "Buffering",

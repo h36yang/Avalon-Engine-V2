@@ -3,7 +3,7 @@ import { useGameStore } from "../store";
 import { EyeOff, Play } from "lucide-react";
 import { ROLE_IMAGES } from "../assets/roleImages";
 import { useTranslation } from "../utils/i18n";
-import { EVIL_ROLES, Role } from "../utils/gameLogic";
+import { EVIL_ROLES, Role } from "../utils/sharedTypes";
 
 export default function RoleRevealScreen() {
   const room = useGameStore((state) => state.room);
@@ -48,13 +48,12 @@ export default function RoleRevealScreen() {
 
         {/* Card */}
         <div
-          className={`relative overflow-hidden rounded-2xl border transition-all duration-500 cursor-pointer shadow-2xl aspect-[3/4] w-full max-w-[280px] mx-auto ${
-            revealed
+          className={`relative overflow-hidden rounded-2xl border transition-all duration-500 cursor-pointer shadow-2xl aspect-[3/4] w-full max-w-[280px] mx-auto ${revealed
               ? isEvil
                 ? "border-red-800/50 shadow-red-950/30"
                 : "border-blue-800/50 shadow-blue-950/30"
               : "border-zinc-800 hover:border-zinc-600"
-          }`}
+            }`}
           onClick={() => setRevealed(!revealed)}
         >
           <div

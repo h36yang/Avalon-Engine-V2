@@ -92,6 +92,7 @@ export interface GameHistoryRecord {
   did_win: boolean;
   player_count: number;
   duration_ms?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   room_snapshot: any;
 }
 
@@ -112,7 +113,7 @@ export interface AvailableRoom {
   isRejoinable: boolean;
 }
 
-interface GameState {
+export interface GameState {
   user: User | null;
   profile: UserProfile | null;
   setAuth: (user: User | null, profile: UserProfile | null) => void;
@@ -221,16 +222,18 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        const socketUrl =
-          (import.meta as any).env.VITE_APP_URL || window.location.origin;
+        const socketUrl = import.meta?.env.VITE_APP_URL || window.location.origin;
         const socket = io(socketUrl);
 
         // Timeout safeguard: if socket doesn't connect in 5 seconds, show error
-        let connectTimeout: ReturnType<typeof setTimeout> | undefined;
-        connectTimeout = setTimeout(() => {
+        const connectTimeout: ReturnType<typeof setTimeout> = setTimeout(() => {
           if (!socket.connected) {
             set({ connecting: false, error: 'Connection timed out. Please try again.' });
-            try { socket.disconnect(); } catch { };
+            try {
+              socket.disconnect();
+            } catch {
+              // Ignore disconnect errors
+            };
           }
         }, TIMEOUT_MS);
 
@@ -240,10 +243,14 @@ export const useGameStore = create<GameState>()(
           socket.emit("join_room", { roomId, sessionId, name, token });
         });
 
-        socket.on("connect_error", (err: any) => {
+        socket.on("connect_error", (err: Error) => {
           if (connectTimeout) clearTimeout(connectTimeout);
-          set({ connecting: false, error: err?.message || 'Connection error' });
-          try { socket.disconnect(); } catch { };
+          set({ connecting: false, error: err.message || 'Connection error' });
+          try {
+            socket.disconnect();
+          } catch {
+            // Ignore disconnect errors
+          };
         });
 
         socket.on("room_update", (room: Room) => {
@@ -419,7 +426,7 @@ export const useGameStore = create<GameState>()(
       fetchRooms: async () => {
         try {
           const { sessionId } = get();
-          const baseUrl = (import.meta as any).env.VITE_APP_URL || window.location.origin;
+          const baseUrl = import.meta?.env.VITE_APP_URL || window.location.origin;
           const res = await fetch(`${baseUrl}/api/rooms?sessionId=${sessionId}`);
           const data = await res.json();
           set({ availableRooms: data });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, LogOut, AlertTriangle, X } from "lucide-react";
+import { Eye, LogOut, AlertTriangle } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import { useGameStore } from "../store";

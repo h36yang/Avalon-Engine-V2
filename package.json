@@ -9,8 +9,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit && npx eslint server.ts src/",
-    "lint:fix": "npx eslint --fix server.ts src/",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint server.ts src/",
+    "lint:fix": "npm run lint -- --fix",
     "test": "vitest",
     "test:once": "vitest run"
   },

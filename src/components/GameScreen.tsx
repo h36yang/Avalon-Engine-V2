@@ -64,15 +64,6 @@ export default function GameScreen() {
     info = room.players.filter(p => ["Assassin", "Morgana", "Mordred", "Minion"].includes(p.role as string) && p.sessionId !== sessionId).map(p => p.name);
   }
 
-  const togglePlayer = (id: string) => {
-    if (status !== "team_building" || !isLeader) return;
-    if (selectedTeam.includes(id)) {
-      setSelectedTeam(selectedTeam.filter(p => p !== id));
-    } else if (selectedTeam.length < currentQuest.teamSize) {
-      setSelectedTeam([...selectedTeam, id]);
-    }
-  };
-
   const handlePropose = () => {
     if (selectedTeam.length === currentQuest.teamSize) {
       proposeTeam(selectedTeam);

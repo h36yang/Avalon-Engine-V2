@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { useGameStore } from '../store';
+import { useGameStore, GameState } from '../store';
 import GameHistoryScreen from './GameHistoryScreen';
 
 // Mock the game store
@@ -34,14 +34,14 @@ describe('GameHistoryScreen', () => {
   });
 
   const setupStoreMock = (overrides = {}) => {
-    vi.mocked(useGameStore).mockImplementation((selector: any) =>
+    vi.mocked(useGameStore).mockImplementation((selector) =>
       selector({
         gameHistory: [],
         gameHistoryLoading: false,
         fetchGameHistory: mockFetchGameHistory,
         viewHistoryRecord: mockViewHistoryRecord,
         ...overrides,
-      })
+      } as unknown as GameState)
     );
   };
 

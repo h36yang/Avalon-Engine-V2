@@ -4,13 +4,12 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { generateSecureRandomNumber } from './gameLogic';
-import { Role, Player, EVIL_ROLES } from "../utils/sharedTypes";
+import { Role, EVIL_ROLES } from "../utils/sharedTypes";
 import { MindLogEntry, Room as ClientRoom } from '../store';
 import { Server } from 'socket.io';
 
 // Resolve project root directory (works with both ESM and CJS)
 const projectRootUrl = fileURLToPath(import.meta.url);
-// @ts-ignore - __dirname exists at runtime in tsx/CJS
 const __projectDir = typeof __dirname !== 'undefined' ? __dirname : dirname(projectRootUrl);
 
 // ─── Re-export the Room / BotMemory types ────────────────────────────────────
@@ -102,40 +101,12 @@ export async function callOpenAICompatible(
     }),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-  const data = await response.json() as any;
+  const data = await response.json() as {
+    choices?: {
+      message?: { content?: string },
+    }[],
+  };
   return data.choices?.[0]?.message?.content ?? '';
-}
-
-async function callAIForDecision(bot: Player, systemPrompt: string, userPrompt: string): Promise<string> {
-  const provider = bot.provider ?? 'gemini';
-  const model = bot.model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
-  const AI_TIMEOUT_MS = 60000;
-
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error(`AI decision timeout after ${AI_TIMEOUT_MS}ms`)), AI_TIMEOUT_MS)
-  );
-
-  let apiPromise: Promise<string>;
-  if (provider === 'gemini') {
-    const genAI = new GoogleGenAI({ apiKey: bot.apiKey! });
-    apiPromise = genAI.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction: systemPrompt,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
-      },
-    }).then(response => response.text || '');
-  } else {
-    const BASE_URLS: Record<string, string> = {
-      openrouter: 'https://openrouter.ai/api/v1',
-      groq: 'https://api.groq.com/openai/v1',
-      nvidia: 'https://integrate.api.nvidia.com/v1',
-    };
-    apiPromise = callOpenAICompatible(BASE_URLS[provider], bot.apiKey!, model, systemPrompt, userPrompt);
-  }
-
-  return Promise.race([apiPromise, timeoutPromise]);
 }
 
 // ─── Mind Log ─────────────────────────────────────────────────────────────────
@@ -412,8 +383,8 @@ ${conditionalRoleInstructionClause}` : '');
       addMindLog(room, bot.sessionId, 'opinion', prompt, text, text.slice(0, 100));
       room.gameState.botOpinions.push({ botId: bot.sessionId, text });
       broadcastRoom(room, io);
-    } catch (err: any) {
-      const raw = err?.message || String(err);
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : String(err);
       console.error(`Error generating opinion for ${bot.name}:`, raw);
       const httpMatch = raw.match(/HTTP (\d+)/);
       let userMsg: string;

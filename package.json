@@ -1,7 +1,7 @@
 {
   "name": "avalon-engine-v2",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -18,11 +18,11 @@
     "@supabase/supabase-js": "^2.108.1",
     "@tailwindcss/vite": "^4.3.0",
     "@toon-format/toon": "^2.1.0",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "express": "^4.22.2",
-    "lucide-react": "^0.577.0",
+    "lucide-react": "^1.18.0",
     "motion": "^12.23.24",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -42,7 +42,7 @@
     "supabase": "^2.105.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.22.0",
-    "typescript": "~5.8.2",
+    "typescript": "~5.9.3",
     "vitest": "^4.1.8"
   }
 }

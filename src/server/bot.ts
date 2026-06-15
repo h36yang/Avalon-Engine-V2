@@ -3,9 +3,9 @@ import { encode } from '@toon-format/toon';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { generateSecureRandomNumber } from './src/utils/gameLogic';
-import { Role, Player, EVIL_ROLES } from "./src/utils/sharedTypes";
-import { MindLogEntry, Room as ClientRoom } from './src/store';
+import { generateSecureRandomNumber } from './gameLogic';
+import { Role, Player, EVIL_ROLES } from "../utils/sharedTypes";
+import { MindLogEntry, Room as ClientRoom } from '../store';
 import { Server } from 'socket.io';
 
 // Resolve project root directory (works with both ESM and CJS)

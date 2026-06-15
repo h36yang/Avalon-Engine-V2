@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabasePublishableKey) {
 }
 
 export let supabase: any;
-export let isAuthBypassEnabled = !supabaseUrl || !supabasePublishableKey;
+export const isAuthBypassEnabled = !supabaseUrl || !supabasePublishableKey;
 
 export const recreateSupabaseClient = () => {
   let client: any = null;

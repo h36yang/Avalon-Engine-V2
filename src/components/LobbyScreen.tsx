@@ -77,7 +77,7 @@ export default function LobbyScreen() {
     patch: Partial<{ provider: Provider; apiKey: string; model: string; customModel: string }>
   ) => {
     const current = getBotConfig(sid);
-    let next = { ...current, ...patch };
+    const next = { ...current, ...patch };
     if (patch.provider && patch.provider !== current.provider) {
       next.model = PROVIDER_MODELS[patch.provider][0].value;
       next.customModel = '';

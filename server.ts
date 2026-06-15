@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import { createServer, ServerResponse } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
-import { getQuestConfig, assignRoles, generateSecureRandomNumber } from './src/utils/gameLogic';
+import { getQuestConfig, assignRoles, generateSecureRandomNumber } from './src/server/gameLogic';
 import { EVIL_ROLES, Role, Player } from './src/utils/sharedTypes';
 import { LadeOfTheLakeCheck } from './src/store';
 import {
@@ -16,7 +16,7 @@ import {
   updateBotMemoriesAfterTeamVote,
   updateBotMemoriesAfterQuest,
   handleBotActions,
-} from './bot';
+} from './src/server/bot';
 
 const PORT = Number(process.env.PORT) || 3000;
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Player } from './sharedTypes';
+import { Player } from '../utils/sharedTypes';
 import { getQuestConfig, assignRoles } from './gameLogic';
 
 describe('gameLogic', () => {

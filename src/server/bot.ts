@@ -48,17 +48,19 @@ const ROLE_PROMPT_FILES: Record<string, string> = {
   'Oberon': 'oberon.md',
   'Minion': 'minion.md',
 };
+const commonPromptPath = join(__projectDir, 'prompts', 'common_strategy.md');
 try {
-  COMMON_STRATEGY_PROMPT = readFileSync(join(__projectDir, 'server', 'prompts', 'common_strategy.md'), 'utf-8');
+  COMMON_STRATEGY_PROMPT = readFileSync(commonPromptPath, 'utf-8');
 } catch {
-  console.warn('Warning: Could not load shared strategy prompt from server/prompts/common_strategy.md');
+  console.warn(`Warning: Could not load shared strategy prompt from ${commonPromptPath}`);
   COMMON_STRATEGY_PROMPT = '';
 }
 for (const [role, file] of Object.entries(ROLE_PROMPT_FILES)) {
+  const rolePromptPath = join(__projectDir, 'prompts', file);
   try {
-    ROLE_PROMPTS[role] = readFileSync(join(__projectDir, 'server', 'prompts', file), 'utf-8');
+    ROLE_PROMPTS[role] = readFileSync(rolePromptPath, 'utf-8');
   } catch {
-    console.warn(`Warning: Could not load prompt for ${role} from server/prompts/${file}`);
+    console.warn(`Warning: Could not load prompt for ${role} from ${rolePromptPath}`);
     ROLE_PROMPTS[role] = `You are playing Avalon as ${role}. Play strategically.`;
   }
 }

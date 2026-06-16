@@ -222,7 +222,7 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        const socketUrl = import.meta?.env.VITE_APP_URL || window.location.origin;
+        const socketUrl = window.location.origin;
         const socket = io(socketUrl);
 
         // Timeout safeguard: if socket doesn't connect in 5 seconds, show error
@@ -426,7 +426,7 @@ export const useGameStore = create<GameState>()(
       fetchRooms: async () => {
         try {
           const { sessionId } = get();
-          const baseUrl = import.meta?.env.VITE_APP_URL || window.location.origin;
+          const baseUrl = window.location.origin;
           const res = await fetch(`${baseUrl}/api/rooms?sessionId=${sessionId}`);
           const data = await res.json();
           set({ availableRooms: data });

@@ -3,7 +3,6 @@ import { encode } from '@toon-format/toon';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { generateSecureRandomNumber } from './gameLogic';
 import { Role, EVIL_ROLES } from "../utils/sharedTypes";
 import { MindLogEntry, Room as ClientRoom } from '../store';
 import { Server } from 'socket.io';
@@ -706,7 +705,7 @@ export function handleBotActions(
               if (otherEvil.length > 0) {
                 team.push(otherEvil[0].sessionId);
               }
-            } else if (room.gameState.currentQuestIndex === 0 && generateSecureRandomNumber() < 0.3) {
+            } else if (room.gameState.currentQuestIndex === 0 && Math.random() < 0.3) {
               // Occasional strategic bluff: Propose an all-good team on Quest 1 to build trust
               const goodPlayers = sortedPlayers.filter(p => memory.knownRoles[p.sessionId] === 'Good');
               team.push(...goodPlayers.slice(0, currentQuest.teamSize).map(p => p.sessionId));
@@ -714,7 +713,7 @@ export function handleBotActions(
               // Standard evil: Include self, maybe one other evil if team size > 2
               team.push(leader.sessionId);
               const otherEvil = sortedPlayers.filter(p => p.sessionId !== leader.sessionId && memory.knownRoles[p.sessionId] === 'Evil');
-              if (currentQuest.teamSize > 2 && otherEvil.length > 0 && generateSecureRandomNumber() > 0.4) {
+              if (currentQuest.teamSize > 2 && otherEvil.length > 0 && Math.random() > 0.4) {
                 team.push(otherEvil[0].sessionId);
               }
             }
@@ -724,7 +723,7 @@ export function handleBotActions(
             const otherEvil = sortedPlayers.filter(p => p.sessionId !== leader.sessionId && memory.knownRoles[p.sessionId] === 'Evil');
 
             // Randomly decide if we want to bring another evil (if team size > 2)
-            if (currentQuest.teamSize > 2 && otherEvil.length > 0 && generateSecureRandomNumber() > 0.5) {
+            if (currentQuest.teamSize > 2 && otherEvil.length > 0 && Math.random() > 0.5) {
               team.push(otherEvil[0].sessionId);
             }
           }
@@ -754,11 +753,11 @@ export function handleBotActions(
           // Baiting: On quest 0 only, small chance to include exactly one known evil player to hide identity
           // Hard mode does this slightly more effectively, avoiding players with high failAssociation
           const baitChance = difficulty === 'hard' ? 0.2 : 0.15;
-          if (room.gameState.currentQuestIndex === 0 && generateSecureRandomNumber() < baitChance) {
+          if (room.gameState.currentQuestIndex === 0 && Math.random() < baitChance) {
             const knownEvil = room.players.filter(p => memory.knownRoles[p.sessionId] === 'Evil' && memory.failAssociation[p.sessionId] === 0);
             if (knownEvil.length > 0) {
               // Replace the least trusted good player in the team (excluding self) with a random evil player
-              const evilToBait = knownEvil[Math.floor(generateSecureRandomNumber() * knownEvil.length)].sessionId;
+              const evilToBait = knownEvil[Math.floor(Math.random() * knownEvil.length)].sessionId;
               const nonMerlinTeamMembers = team.filter(id => id !== leader.sessionId);
               if (nonMerlinTeamMembers.length > 0) {
                 const playerToReplace = nonMerlinTeamMembers[nonMerlinTeamMembers.length - 1]; // Last one is least trusted
@@ -825,7 +824,7 @@ export function handleBotActions(
               approve = true;
             } else {
               // Sometimes randomly approve all-good teams to blend in
-              approve = generateSecureRandomNumber() > 0.8;
+              approve = Math.random() > 0.8;
             }
           } else if (bot.role === 'Merlin') {
             // Good logic (Merlin): Usually reject evil, but occasionally approve to hide identity
@@ -839,7 +838,7 @@ export function handleBotActions(
               } else {
                 // Reject, but with some noise on later quests to avoid a perfect rejection pattern
                 const rejectChance = room.gameState.currentQuestIndex < 2 ? 0.85 : 0.70;
-                approve = generateSecureRandomNumber() > rejectChance;
+                approve = Math.random() > rejectChance;
               }
             } else {
               // If no known evil, approve
@@ -924,7 +923,7 @@ export function handleBotActions(
                 currentQuest.votes[bot.sessionId] = false;
               }
               // If it's quest 1 and team size 2, maybe succeed to build trust
-              else if (room.gameState.currentQuestIndex === 0 && currentQuest.teamSize === 2 && generateSecureRandomNumber() < 0.5) {
+              else if (room.gameState.currentQuestIndex === 0 && currentQuest.teamSize === 2 && Math.random() < 0.5) {
                 currentQuest.votes[bot.sessionId] = true;
               }
               // If multiple evil on team and requiresTwoFails, BOTH must fail
@@ -961,7 +960,7 @@ export function handleBotActions(
                 }
               } else {
                 // Single evil bot or requires two fails: usually fail, but sometimes succeed on quest 1 to build trust
-                if (room.gameState.currentQuestIndex === 0 && generateSecureRandomNumber() > 0.5) {
+                if (room.gameState.currentQuestIndex === 0 && Math.random() > 0.5) {
                   currentQuest.votes[bot.sessionId] = true;
                 } else {
                   currentQuest.votes[bot.sessionId] = false;

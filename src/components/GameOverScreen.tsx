@@ -146,7 +146,6 @@ export default function GameOverScreen() {
               const pending = quest.status === "pending";
               const failCount = Object.values(quest.votes).filter(v => !v).length;
               const historyForQuest = gameState.voteHistory.filter(h => h.questIndex === qi);
-              const failedBy = Object.entries(quest.votes).filter(([, v]) => !v).map(([sid]) => sid);
 
               return (
                 <div key={qi} className="rounded-xl border border-zinc-800/80 overflow-hidden">

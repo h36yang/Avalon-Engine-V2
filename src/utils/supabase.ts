@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
@@ -8,11 +8,11 @@ if (!supabaseUrl || !supabasePublishableKey) {
   console.warn('Missing Supabase environment variables - using development mock auth');
 }
 
-export let supabase: any;
-export let isAuthBypassEnabled = !supabaseUrl || !supabasePublishableKey;
+export let supabase: SupabaseClient;
+export const isAuthBypassEnabled = !supabaseUrl || !supabasePublishableKey;
 
 export const recreateSupabaseClient = () => {
-  let client: any = null;
+  let client: SupabaseClient | undefined;
   try {
     if (supabaseUrl && supabasePublishableKey) {
       client = createClient(supabaseUrl, supabasePublishableKey);
@@ -23,7 +23,7 @@ export const recreateSupabaseClient = () => {
 
   supabase = client || {
     auth: {
-      getSession: async () => { 
+      getSession: async () => {
         if (isAuthBypassEnabled) {
           // Return a mock session for development
           return {
@@ -41,7 +41,7 @@ export const recreateSupabaseClient = () => {
         throw new Error('Supabase not configured');
       },
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
-      signInWithPassword: async (credentials: any) => {
+      signInWithPassword: async (credentials: { email: string }) => {
         if (isAuthBypassEnabled) {
           localStorage.setItem('devUserId', 'dev-user-001');
           localStorage.setItem('devUserEmail', credentials.email);
@@ -60,7 +60,7 @@ export const recreateSupabaseClient = () => {
         }
         throw new Error('Supabase not configured');
       },
-      signUp: async (credentials: any) => {
+      signUp: async (credentials: { email: string }) => {
         if (isAuthBypassEnabled) {
           localStorage.setItem('devUserId', 'dev-user-' + Date.now());
           localStorage.setItem('devUserEmail', credentials.email);
@@ -79,14 +79,14 @@ export const recreateSupabaseClient = () => {
         }
         throw new Error('Supabase not configured');
       },
-      signOut: async () => { 
+      signOut: async () => {
         localStorage.removeItem('devUserId');
         localStorage.removeItem('devUserEmail');
         return { error: null };
       }
     },
     from: () => { throw new Error('Supabase not configured'); }
-  };
+  } as unknown as SupabaseClient;
 };
 
 // Initialize on load

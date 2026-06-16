@@ -2,8 +2,8 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import { createServer, ServerResponse } from 'http';
 import { Server } from 'socket.io';
-import { createClient } from '@supabase/supabase-js';
-import { getQuestConfig, assignRoles, generateSecureRandomNumber } from './src/utils/gameLogic';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getQuestConfig, assignRoles, generateSecureRandomNumber } from './src/server/gameLogic';
 import { EVIL_ROLES, Role, Player } from './src/utils/sharedTypes';
 import { LadeOfTheLakeCheck } from './src/store';
 import {
@@ -16,7 +16,7 @@ import {
   updateBotMemoriesAfterTeamVote,
   updateBotMemoriesAfterQuest,
   handleBotActions,
-} from './bot';
+} from './src/server/bot';
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -24,7 +24,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseSecretKey = process.env.VITE_SUPABASE_SECRET_KEY || '';
 
-let supabase: any = null;
+let supabase: SupabaseClient | undefined;
 try {
   if (supabaseUrl && supabaseSecretKey) {
     supabase = createClient(supabaseUrl, supabaseSecretKey, {
@@ -83,9 +83,9 @@ async function updatePlayerStats(userId: string, isWinner: boolean) {
 // Re-uses the game_over sanitization path from sanitizeRoomForPlayer: all roles
 // revealed, botMindLogs included, botMemories stripped. We also strip apiKeys.
 function buildGameOverSnapshot(room: Room, viewerSessionId: string): object {
-  const { botMemories, ...safeGameState } = room.gameState as any;
+  const { botMemories: _stripped, ...safeGameState } = room.gameState;
   const sanitizedPlayers = room.players.map(p => {
-    const { apiKey: _stripped, ...safeP } = p as any;
+    const { apiKey: _stripped, ...safeP } = p;
     return safeP;
   });
   return {
@@ -144,7 +144,7 @@ async function startServer() {
   });
 
   // API routes FIRST
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
 
@@ -213,8 +213,14 @@ const socketToSession: Record<string, string> = {};
 function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
   // During game_over, reveal all roles and include AI mind logs
   if (room.status === 'game_over') {
-    const { botMemories, ...safeGameState } = room.gameState as any;
-    return { ...room, gameState: { ...safeGameState, botMindLogs: room.gameState.botMindLogs } };
+    const { botMemories: _stripped, ...safeGameState } = room.gameState;
+    return {
+      ...room,
+      gameState: {
+        ...safeGameState,
+        botMindLogs: room.gameState.botMindLogs,
+      } as typeof room.gameState,
+    };
   }
 
   const viewer = room.players.find(p => p.sessionId === viewerSessionId);
@@ -257,7 +263,7 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
     return { ...safeP, role: undefined }; // Hide role from this viewer
   });
 
-  const { botMemories, botMindLogs, ...safeGameState } = room.gameState as any;
+  const { botMemories: _strippedBotMemories, botMindLogs: _strippedBotMindLogs, ...safeGameState } = room.gameState;
   if (room.gameState.ladyOfTheLakeChecks) {
     safeGameState.ladyOfTheLakeChecks = room.gameState.ladyOfTheLakeChecks.map((check: LadeOfTheLakeCheck) => {
       if (check.checker === viewerSessionId) {
@@ -272,7 +278,7 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
   return {
     ...room,
     players: sanitizedPlayers,
-    gameState: safeGameState,
+    gameState: safeGameState as typeof room.gameState,
   };
 }
 
@@ -615,8 +621,8 @@ function setupSocket(io: Server) {
           reply = await callOpenAICompatible(BASE_URLS[provider], apiKey, resolvedModel, 'You are a test assistant.', 'Say "ok" in one word.');
         }
         callback({ success: true, message: `✅ Connected! Reply: "${reply.slice(0, 40)}"` });
-      } catch (err: any) {
-        const raw = err?.message || String(err);
+      } catch (err: unknown) {
+        const raw = err instanceof Error ? err.message : String(err);
         const httpMatch = raw.match(/HTTP (\d+)/);
         let msg: string;
         if (httpMatch) {

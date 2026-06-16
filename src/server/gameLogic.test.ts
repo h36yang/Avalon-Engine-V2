@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Player } from './sharedTypes';
+import { Player, Role } from '../utils/sharedTypes';
 import { getQuestConfig, assignRoles } from './gameLogic';
 
 describe('gameLogic', () => {
@@ -87,10 +87,10 @@ describe('gameLogic', () => {
 
             // Force session_0 to be Mordred (who isn't normally in a 5 player game)
             // Force session_1 to be Assassin.
-            const requestedRoles = {
+            const requestedRoles: Record<string, Role> = {
                 'session_0': 'Mordred',
                 'session_1': 'Assassin'
-            } as any;
+            };
 
             assignRoles(players, requestedRoles);
 

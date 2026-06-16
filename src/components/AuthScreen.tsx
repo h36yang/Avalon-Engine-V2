@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { HTMLAttributes, useState } from 'react';
+import { Loader2, WifiOff, Mail, Lock, User, KeyRound } from 'lucide-react';
+import { AuthTokenResponsePassword, AuthResponse, User as AuthUser } from '@supabase/supabase-js';
 import { useGameStore, generateSecureRandomNumber } from '../store';
 import { supabase, recreateSupabaseClient } from '../utils/supabase';
-import { Loader2, WifiOff, Mail, Lock, User, KeyRound } from 'lucide-react';
+import { Role } from '../utils/sharedTypes';
 
 const GOLD = '#D4AF37';
 const GOLD_DIM = 'rgba(212,175,55,0.25)';
@@ -26,7 +28,7 @@ export default function AuthScreen() {
   const [devClickCount, setDevClickCount] = useState(0);
   const setAuth = useGameStore((state) => state.setAuth);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -38,7 +40,7 @@ export default function AuthScreen() {
 
       if (isLogin) {
         const loginPromise = supabase.auth.signInWithPassword({ email, password });
-        const { data, error } = await Promise.race([loginPromise, timeout(15000)]) as any;
+        const { data, error } = await Promise.race([loginPromise, timeout(15000)]) as AuthTokenResponsePassword;
         if (error) throw error;
 
         const { data: profile } = await supabase
@@ -50,7 +52,7 @@ export default function AuthScreen() {
         if (betaCode.trim().toLowerCase() !== 'dagong') throw new Error('内测码不正确 / Invalid beta code');
 
         const signUpPromise = supabase.auth.signUp({ email, password });
-        const { data, error } = await Promise.race([signUpPromise, timeout(15000)]) as any;
+        const { data, error } = await Promise.race([signUpPromise, timeout(15000)]) as AuthResponse;
         if (error) throw error;
 
         if (data?.user) {
@@ -67,13 +69,13 @@ export default function AuthScreen() {
           setAuth(data.user, { id: data.user.id, username: username.trim(), wins: 0, losses: 0, total_games: 0 });
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Auth error:', err);
-      const errMessage = err?.message || '';
+      const errMessage = err instanceof Error ? err.message : '';
       if (errMessage.includes('Network timeout') || errMessage.includes('Failed to fetch')) {
         recreateSupabaseClient();
       }
-      setError(err.message || 'An unexpected error occurred');
+      setError(errMessage || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -301,7 +303,7 @@ export default function AuthScreen() {
                 Force Role (Host Only)
               </label>
               <select
-                onChange={(e) => useGameStore.getState().setDevRequestedRole(e.target.value as any || undefined)}
+                onChange={(e) => useGameStore.getState().setDevRequestedRole(e.target.value as Role || undefined)}
                 style={{ ...inputStyle, paddingLeft: 12 }}
                 className="w-full"
               >
@@ -322,7 +324,7 @@ export default function AuthScreen() {
                 const mockUserId = `offline_${generateSecureRandomNumber().toString(36).substring(2, 9)}`;
                 const mockUsername = username.trim() || `Player_${Math.floor(generateSecureRandomNumber() * 1000)}`;
                 setAuth(
-                  { id: mockUserId } as any,
+                  { id: mockUserId } as AuthUser,
                   { id: mockUserId, username: mockUsername, wins: 0, losses: 0, total_games: 0 }
                 );
               }}
@@ -406,7 +408,7 @@ function PremiumField({
         >
           {icon}
         </span>
-        {React.cloneElement(children as React.ReactElement<any>, {
+        {React.cloneElement(children as React.ReactElement<HTMLAttributes<HTMLInputElement>>, {
           style: {
             ...inputStyle,
             borderColor: focused ? 'rgba(212,175,55,0.55)' : 'rgba(212,175,55,0.18)',

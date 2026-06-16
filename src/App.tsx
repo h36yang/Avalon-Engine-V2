@@ -16,7 +16,7 @@ import GameOverScreen from "./components/GameOverScreen";
 import IdleWarningModal from "./components/IdleWarningModal";
 import { LanguageToggle } from "./components/LanguageToggle";
 import { Loader2 } from "lucide-react";
-import { User } from '@supabase/supabase-js';
+import { Subscription } from '@supabase/supabase-js';
 
 export default function App() {
   const room = useGameStore((state) => state.room);
@@ -26,7 +26,7 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    let subscriptionRef: any = null;
+    let subscriptionRef: Subscription | undefined;
 
     const runSetup = async () => {
       const initAuth = async () => {
@@ -66,7 +66,7 @@ export default function App() {
               if (!profileError) {
                 profile = data;
               }
-            } catch (err) {
+            } catch {
               // Supabase not configured - skip profile fetch
               console.debug('Profile fetch skipped (Supabase not configured)');
             }
@@ -84,7 +84,7 @@ export default function App() {
 
       await initAuth();
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: unknown, session: { user: User | null; }) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         try {
           if (session?.user) {
             let { data: profile } = await supabase

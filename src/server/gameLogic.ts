@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { Player, Role, EVIL_ROLES } from './sharedTypes';
+import { Player, Role, EVIL_ROLES } from '../utils/sharedTypes';
 
 export function getQuestConfig(playerCount: number) {
   const configs: Record<number, { sizes: number[], twoFails: boolean[] }> = {

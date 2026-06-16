@@ -3,7 +3,6 @@ import { Users, Play, LogOut, Bot, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { useState } from "react";
 import { cn } from "../utils/cn";
-import { Role } from "../utils/sharedTypes";
 
 const GOLD = '#D4AF37';
 
@@ -77,7 +76,7 @@ export default function LobbyScreen() {
     patch: Partial<{ provider: Provider; apiKey: string; model: string; customModel: string }>
   ) => {
     const current = getBotConfig(sid);
-    let next = { ...current, ...patch };
+    const next = { ...current, ...patch };
     if (patch.provider && patch.provider !== current.provider) {
       next.model = PROVIDER_MODELS[patch.provider][0].value;
       next.customModel = '';
@@ -98,15 +97,6 @@ export default function LobbyScreen() {
   const isHost = room.players.find(p => p.isHost)?.sessionId === sessionId;
   const canStart = room.players.length >= 5 && room.players.length <= 10;
   const canAddBot = isHost && room.players.length < 10;
-
-  const toggleRole = (role: Role) => {
-    if (!isHost) return;
-    const current = room.settings.optionalRoles;
-    const updated = current.includes(role)
-      ? current.filter((r) => r !== role)
-      : [...current, role];
-    updateSettings({ optionalRoles: updated });
-  };
 
   const ROLE_COMPOSITIONS: Record<number, string> = {
     5: "Merlin · Percival · Loyal Servant · Morgana · Assassin",

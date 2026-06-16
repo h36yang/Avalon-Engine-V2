@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useGameStore, generateSecureRandomNumber } from "../store";
-import { KeyRound, User, Users, LogOut, Trophy, Swords, RefreshCw, Crown, Loader2, ScrollText } from "lucide-react";
+import { KeyRound, User, Users, LogOut, Trophy, Swords, RefreshCw, Crown, Loader2 } from "lucide-react";
 import { useTranslation } from "../utils/i18n";
 import { supabase } from "../utils/supabase";
 import GameHistoryScreen from "./GameHistoryScreen";
 
 const GOLD = '#D4AF37';
-const GOLD_DIM = 'rgba(212,175,55,0.25)';
 const GOLD_GLOW = 'rgba(212,175,55,0.12)';
 
 export default function JoinScreen() {
@@ -385,7 +384,7 @@ export default function JoinScreen() {
 
         {/* Footer quote */}
         <p className="text-center font-serif italic" style={{ fontSize: 12, color: 'rgba(212,175,55,0.28)' }}>
-          "The truth is hidden in the mist."
+          &quot;The truth is hidden in the mist.&quot;
         </p>
       </div>
     </div>

@@ -16,10 +16,10 @@
     "test:once": "vitest run"
   },
   "dependencies": {
-    "@google/genai": "^1.47.0",
+    "@google/genai": "^2.8.0",
     "@supabase/supabase-js": "^2.108.1",
     "@tailwindcss/vite": "^4.3.0",
-    "@toon-format/toon": "^2.1.0",
+    "@toon-format/toon": "^2.3.0",
     "@vitejs/plugin-react": "^6.0.2",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",

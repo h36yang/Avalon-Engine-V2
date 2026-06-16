@@ -113,9 +113,9 @@ export async function callOpenAICompatible(
 
 // ─── Mind Log ─────────────────────────────────────────────────────────────────
 
-export function addMindLog(room: Room, botId: string, phase: string, prompt: string, response: string, decision: string) {
+export function addMindLog(room: Room, botId: string, phase: string, prompt: string, response: string) {
   if (!room.gameState.botMindLogs[botId]) room.gameState.botMindLogs[botId] = [];
-  room.gameState.botMindLogs[botId].push({ phase, prompt, response, decision, timestamp: Date.now() });
+  room.gameState.botMindLogs[botId].push({ phase, prompt, response, timestamp: Date.now() });
 }
 
 // ─── Context Mapping Helpers ──────────────────────────────────────────────────
@@ -305,53 +305,46 @@ export async function triggerBotOpinions(room: Room, io: Server, broadcastRoom: 
   for (const bot of botsWithKeys) {
     try {
       const isEvil = EVIL_ROLES.has(bot.role as Role);
-
       const memory = room.gameState.botMemories[bot.sessionId];
       const leaderName = room.players[room.gameState.leaderIndex].name;
 
-      let conditionalRoleInstructionClause: string | undefined;
-      if (bot.role === 'Merlin') {
-        conditionalRoleInstructionClause = `You need to protect your secret identity. Only comment on other players when you have strong evidence based on the quests and team vote history. Otherwise, say you don't have much information.`;
-      } else if (bot.role === 'Percival') {
-        conditionalRoleInstructionClause = `You need to protect Merlin's identity. Only comment on your Merlin candidates when you have strong evidence based on the quests and team vote history. Otherwise, comment on other players.
+      let prompt = `请基于以下信息发言。
 
-Your Merlin candidates:
-${encode(mapPercivalCandidatesToNames(room, memory.percivalCandidates?.merlinLikelihood ?? {}))}`;
-      } else if (isEvil) {
-        conditionalRoleInstructionClause = `Form your opinion as if you are a good player. Rat out your evil teammate if necessary.`;
-      }
+当前队长是: ${leaderName}
 
-      const prompt = `Provide a very short opinion about the game state, addressing the other players, based on the following information.
-
-Your current trust of others (0 is completely distrust, 100 is completely trust):
-${encode(mapTrustScoresToNames(room, memory.trustScores))}
-
-Your known roles:
+已知玩家身份 (秘密信息, 不要直接透露):
 ${encode(mapKnownRolesToNames(room, memory.knownRoles))}
 
-Quest results:
+其他玩家的信任分(0-100) (秘密信息, 不要直接透露):
+${encode(mapTrustScoresToNames(room, memory.trustScores))}
+
+任务结果历史 (公开信息, 可以直接分析):
 ${encode(getQuestResults(room))}
 
-Team vote history:
-${encode(getVoteHistory(room))}
+组队投票历史 (公开信息, 可以直接分析):
+${encode(getVoteHistory(room))}`;
 
-The current leader forming the team is "${leaderName}".`;
+      if (bot.role === 'Percival') {
+        prompt += `
+
+梅林候选人信息 (秘密信息, 不要直接透露):
+${encode(mapPercivalCandidatesToNames(room, memory.percivalCandidates?.merlinLikelihood ?? {}))}`;
+      }
 
       const combinedRolePrompt = getBotSystemPrompt(bot.role as string);
-      const systemInstruction = `${combinedRolePrompt}
-
-你正在以 "${bot.name}" 的身份发言，你的秘密角色是 ${bot.role}（${isEvil ? '邪恶阵营' : '好人阵营'}）。
+      const systemInstruction = `你正在以"${bot.name}"的身份发言, 你的秘密角色是${bot.role} (${isEvil ? '邪恶阵营' : '好人阵营'})。
 
 发言要求:
-- 以人类玩家的口吻发言。
-- 简短随意（2-3句话）。
-- 不要暴露你的秘密角色。
-- 基于任务和投票历史分析，不要直接透露你的已知信息。
-- 对当前队长提出建议。如果你不信任队长，可以直接说。
-- 用中文回答，不要使用markdown格式。` + (conditionalRoleInstructionClause ? `
+- 以人类玩家的口吻发言
+- 简短随意(2-3句话)
+- 不要暴露你的秘密角色
+- 基于任务和投票历史分析, 不要直接透露你的已知信息
+- 对当前队长提出建议, 如果你不信任队长, 可以直接说
+- 用中文回答, 不要使用markdown格式
 
-额外角色指导:
-${conditionalRoleInstructionClause}` : '');
+角色指导:
+
+${combinedRolePrompt}`;
 
       const provider = bot.provider ?? 'gemini';
       const model = bot.model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
@@ -382,7 +375,7 @@ ${conditionalRoleInstructionClause}` : '');
       }
 
       console.log(`Opinion generated successfully for ${bot.name}.`);
-      addMindLog(room, bot.sessionId, 'opinion', prompt, text, text.slice(0, 100));
+      addMindLog(room, bot.sessionId, 'opinion', prompt, text);
       room.gameState.botOpinions.push({ botId: bot.sessionId, text });
       broadcastRoom(room, io);
     } catch (err: unknown) {

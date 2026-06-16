@@ -32,7 +32,6 @@ export interface MindLogEntry {
   phase: string;
   prompt: string;
   response: string;
-  decision: string;
   timestamp: number;
 }
 

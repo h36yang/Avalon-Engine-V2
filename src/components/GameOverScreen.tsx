@@ -304,7 +304,7 @@ export default function GameOverScreen() {
             </p>
             <div className="space-y-2">
               {Object.entries(gameState.botMindLogs).map(([botId, rawLogs]) => {
-                const logs = rawLogs as { phase: string; prompt: string; response: string; decision: string; timestamp: number }[];
+                const logs = rawLogs as { phase: string; prompt: string; response: string; timestamp: number }[];
                 const botPlayer = players.find(p => p.sessionId === botId);
                 if (!botPlayer || !logs || logs.length === 0) return null;
                 const isExpanded = expandedMindLog === botId;
@@ -313,7 +313,7 @@ export default function GameOverScreen() {
                 const formatLogForCopy = () =>
                   `=== ${botPlayer.name} (${t(botPlayer.role as string)}) Mind Log ===\n\n` +
                   logs.map(log =>
-                    `--- ${log.phase} [${new Date(log.timestamp).toLocaleTimeString()}] ---\nPrompt: ${log.prompt}\nResponse: ${log.response}\nDecision: ${log.decision}\n`
+                    `--- ${log.phase} [${new Date(log.timestamp).toLocaleTimeString()}] ---\nPrompt: ${log.prompt}\nResponse: ${log.response}\n`
                   ).join('\n');
 
                 const handleCopy = async () => {
@@ -367,9 +367,6 @@ export default function GameOverScreen() {
                             <div className="text-xs text-zinc-400 bg-zinc-950/50 rounded-lg p-2.5 max-h-28 overflow-y-auto whitespace-pre-wrap leading-relaxed">
                               {log.response}
                             </div>
-                            <p className="text-xs text-zinc-400">
-                              <span className="text-zinc-600 font-medium">Decision: </span>{log.decision}
-                            </p>
                           </div>
                         ))}
                       </div>

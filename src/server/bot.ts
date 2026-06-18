@@ -1,11 +1,12 @@
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import OpenAI from 'openai';
 import { encode } from '@toon-format/toon';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { Server } from 'socket.io';
 import { Role, EVIL_ROLES } from "../utils/sharedTypes";
 import { MindLogEntry, Room as ClientRoom } from '../store';
-import { Server } from 'socket.io';
 
 // Resolve project root directory (works with both ESM and CJS)
 const projectRootUrl = fileURLToPath(import.meta.url);
@@ -76,9 +77,9 @@ export function getBotSystemPrompt(role: string): string {
 
 export const DEFAULT_MODELS: Record<string, string> = {
   gemini: 'gemini-3.1-flash-lite',
+  nvidia: 'nvidia/nvidia-nemotron-nano-9b-v2',
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
-  groq: 'llama-3.3-70b-versatile',
-  nvidia: 'minimaxai/minimax-m2.7',
+  groq: 'groq-default',
 };
 
 // ─── Low-level LLM Helpers ────────────────────────────────────────────────────
@@ -90,24 +91,15 @@ export async function callOpenAICompatible(
   systemPrompt: string,
   userPrompt: string
 ): Promise<string> {
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
+  const openai = new OpenAI({ baseURL: baseUrl, apiKey });
+  const completion = await openai.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-  const data = await response.json() as {
-    choices?: {
-      message?: { content?: string },
-    }[],
-  };
-  return data.choices?.[0]?.message?.content ?? '';
+  return completion.choices[0].message.content ?? '';
 }
 
 // ─── Mind Log ─────────────────────────────────────────────────────────────────

@@ -12,29 +12,18 @@ const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
   gemini: [
     { label: 'Gemini 3.1 Flash Lite (free)', value: 'gemini-3.1-flash-lite' },
     { label: 'Gemini 3.5 Flash (free)', value: 'gemini-3.5-flash' },
-    { label: 'Gemini 3 Flash Preview (free)', value: 'gemini-3-flash-preview' },
     { label: 'Gemini 3.1 Pro Preview', value: 'gemini-3.1-pro-preview' },
+  ],
+  nvidia: [
+    { label: 'Nvidia Nemotron Nano', value: 'nvidia/nvidia-nemotron-nano-9b-v2' },
+    { label: 'Nemotron 3 Ultra', value: 'nvidia/nemotron-3-ultra-550b-a55b' },
+    { label: 'MiniMax M2.7', value: 'minimaxai/minimax-m2.7' },
   ],
   openrouter: [
     { label: 'Llama 3.3 70B (free)', value: 'meta-llama/llama-3.3-70b-instruct:free' },
-    { label: 'DeepSeek Chat V3 (free)', value: 'deepseek/deepseek-chat-v3-0324:free' },
-    { label: 'DeepSeek R1 (free)', value: 'deepseek/deepseek-r1:free' },
-    { label: 'Mistral Small 3.1 (free)', value: 'mistralai/mistral-small-3.1-24b-instruct:free' },
   ],
   groq: [
-    { label: 'Llama 3.3 70B Versatile', value: 'llama-3.3-70b-versatile' },
-    { label: 'Llama 3.1 70B Versatile', value: 'llama-3.1-70b-versatile' },
-    { label: 'Llama 3.1 8B Instant', value: 'llama-3.1-8b-instant' },
-    { label: 'Gemma 2 9B', value: 'gemma2-9b-it' },
-    { label: 'Mixtral 8x7B', value: 'mixtral-8x7b-32768' },
-  ],
-  nvidia: [
-    { label: 'MiniMax M2.7', value: 'minimaxai/minimax-m2.7' },
-    { label: 'MiniMax M3', value: 'minimaxai/minimax-m3' },
-    { label: 'Llama 3.3 70B Instruct', value: 'meta/llama-3.3-70b-instruct' },
-    { label: 'Nemotron Super 49B', value: 'nvidia/llama-3.3-nemotron-super-49b-v1.5' },
-    { label: 'DeepSeek R1 (0528)', value: 'deepseek-ai/deepseek-r1-0528' },
-    { label: 'Mixtral 8x7B Instruct', value: 'mistralai/mixtral-8x7b-instruct-v0.1' },
+    { label: 'Groq — Default (use custom if needed)', value: 'groq-default' },
   ],
 };
 

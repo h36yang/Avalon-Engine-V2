@@ -6,7 +6,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 import { Role, EVIL_ROLES } from "../utils/sharedTypes";
-import { MindLogEntry, Room as ClientRoom } from '../store';
+import { BotMemory, Room as ClientRoom } from '../store';
 
 // Resolve project root directory (works with both ESM and CJS)
 const projectRootUrl = fileURLToPath(import.meta.url);
@@ -15,20 +15,7 @@ const __projectDir = typeof __dirname !== 'undefined' ? __dirname : dirname(proj
 // ─── Re-export the Room / BotMemory types ────────────────────────────────────
 // (Room is defined here because it extends ClientRoom with bot-specific fields)
 
-export interface BotMemory {
-  trustScores: Record<string, number>; // sessionId -> score (0-100)
-  knownRoles: Record<string, Role | 'Good' | 'Evil'>; // sessionId -> known role/alignment
-  merlinSuspicion: Record<string, number>; // sessionId -> score (0-100), used by evil
-  failAssociation: Record<string, number>; // sessionId -> number of failed quests they were on
-  votePatterns: Record<string, { approvedEvil: number; rejectedEvil: number; totalVotes: number }>;
-  percivalCandidates?: { a: string; b: string; merlinLikelihood: Record<string, number> };
-}
-
-export interface Room extends Omit<ClientRoom, 'gameState'> {
-  gameState: ClientRoom['gameState'] & {
-    botMemories: Record<string, BotMemory>; // bot sessionId -> memory
-    botMindLogs: Record<string, MindLogEntry[]>; // override to make required
-  };
+export interface Room extends ClientRoom {
   lastActivityTime: number;
   idleWarningEmitted: boolean;
 }
@@ -105,7 +92,9 @@ export async function callOpenAICompatible(
 // ─── Mind Log ─────────────────────────────────────────────────────────────────
 
 export function addMindLog(room: Room, botId: string, phase: string, prompt: string, response: string) {
-  if (!room.gameState.botMindLogs[botId]) room.gameState.botMindLogs[botId] = [];
+  if (!room.gameState.botMindLogs[botId]) {
+    room.gameState.botMindLogs[botId] = [];
+  }
   room.gameState.botMindLogs[botId].push({ phase, prompt, response, timestamp: Date.now() });
 }
 

@@ -28,6 +28,15 @@ export interface BotOpinion {
   isError?: boolean;
 }
 
+export interface BotMemory {
+  trustScores: Record<string, number>; // sessionId -> score (0-100)
+  knownRoles: Record<string, Role | 'Good' | 'Evil'>; // sessionId -> known role/alignment
+  merlinSuspicion: Record<string, number>; // sessionId -> score (0-100), used by evil
+  failAssociation: Record<string, number>; // sessionId -> number of failed quests they were on
+  votePatterns: Record<string, { approvedEvil: number; rejectedEvil: number; totalVotes: number }>;
+  percivalCandidates?: { a: string; b: string; merlinLikelihood: Record<string, number> };
+}
+
 export interface MindLogEntry {
   phase: string;
   prompt: string;
@@ -70,7 +79,8 @@ export interface Room {
     strikeHolderSessionId?: string;
     voteHistory: TeamVoteHistory[];
     botOpinions?: BotOpinion[];
-    botMindLogs?: Record<string, MindLogEntry[]>;
+    botMindLogs: Record<string, MindLogEntry[]>;
+    botMemories: Record<string, BotMemory>;
     ladyOfTheLakeHolder?: string;
     ladyOfTheLakeHistory: string[];
     ladyOfTheLakeChecks: LadeOfTheLakeCheck[];

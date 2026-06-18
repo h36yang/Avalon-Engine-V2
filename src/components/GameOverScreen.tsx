@@ -16,7 +16,7 @@ import {
   CheckCheck,
   ArrowLeft,
 } from "lucide-react";
-import { Room, useGameStore } from "../store";
+import { BotMemory, Room, useGameStore } from "../store";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import { EVIL_ROLES, Role } from "../utils/sharedTypes";
@@ -31,6 +31,7 @@ export default function GameOverScreen() {
   const { t } = useTranslation();
   const [expandedQuest, setExpandedQuest] = useState<number | null>(null);
   const [expandedMindLog, setExpandedMindLog] = useState<string | null>(null);
+  const [expandedBotMemory, setExpandedBotMemory] = useState<string | null>(null);
   const [copiedLog, setCopiedLog] = useState<string | null>(null);
 
   // Determine data source: history snapshot or live game
@@ -295,8 +296,146 @@ export default function GameOverScreen() {
           </div>
         </section>
 
+        {/* Bot Memories */}
+        {Object.keys(gameState.botMemories).length > 0 && (
+          <section id="bot-memories-section">
+            <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Brain size={11} className="text-violet-400" />
+              {t("Bot Memories")}
+            </p>
+            <div className="space-y-2">
+              {Object.entries(gameState.botMemories).map(([botId, memory]) => {
+                const botPlayer = players.find(p => p.sessionId === botId);
+                if (!botPlayer) return null;
+                const isExpanded = expandedBotMemory === botId;
+
+                // Collect all session IDs referenced across memory fields
+                const allSids = new Set([
+                  ...Object.keys(memory.trustScores),
+                  ...Object.keys(memory.knownRoles),
+                  ...Object.keys(memory.merlinSuspicion),
+                ]);
+
+                const renderBar = (value: number, color: string) => (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex-1 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${color}`}
+                        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-zinc-500 tabular-nums w-6 text-right shrink-0">{value}</span>
+                  </div>
+                );
+
+                return (
+                  <div key={botId} className="rounded-xl border border-violet-900/30 overflow-hidden">
+                    <button
+                      onClick={() => setExpandedBotMemory(isExpanded ? null : botId)}
+                      className="w-full flex items-center justify-between px-4 py-3.5 text-left bg-violet-950/10 hover:bg-violet-950/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Brain size={16} className="text-violet-400 shrink-0" />
+                        <div>
+                          <p className="font-semibold text-sm text-zinc-100">{botPlayer.name}</p>
+                          <p className="text-[11px] font-semibold text-violet-400 uppercase tracking-wider mt-0.5">
+                            {t(botPlayer.role as string)}
+                          </p>
+                        </div>
+                      </div>
+                      {isExpanded ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
+                    </button>
+
+                    {isExpanded && (
+                      <div className="border-t border-violet-900/30 p-4 space-y-4 bg-zinc-950/60">
+                        {/* Trust Scores */}
+                        {Object.keys(memory.trustScores).length > 0 && (
+                          <div>
+                            <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-2">{t("Trust")}</p>
+                            <div className="space-y-2">
+                              {Object.entries(memory.trustScores).map(([sid, score]) => (
+                                <div key={sid} className="grid grid-cols-[1fr_minmax(0,1.5fr)] items-center gap-3">
+                                  <span className={cn(
+                                    "text-xs font-medium truncate",
+                                    isPlayerEvil(sid) ? "text-red-300" : "text-blue-300"
+                                  )}>{getPlayerName(sid)}</span>
+                                  {renderBar(score, score >= 60 ? "bg-emerald-500" : score >= 35 ? "bg-amber-500" : "bg-red-500")}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Known Roles */}
+                        {Object.keys(memory.knownRoles).length > 0 && (
+                          <div>
+                            <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-2">{t("Known Alignments")}</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {Object.entries(memory.knownRoles).map(([sid, knownRole]) => {
+                                const isKnownEvil = knownRole === 'Evil' || EVIL_ROLES.has(knownRole as Role);
+                                return (
+                                  <div key={sid} className={cn(
+                                    "flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-lg border",
+                                    isKnownEvil
+                                      ? "bg-red-950/20 border-red-800/40 text-red-300"
+                                      : "bg-blue-950/20 border-blue-800/40 text-blue-300"
+                                  )}>
+                                    <span>{getPlayerName(sid)}</span>
+                                    <span className="text-zinc-600">·</span>
+                                    <span className={isKnownEvil ? "text-red-400" : "text-blue-400"}>{t(knownRole)}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Merlin Suspicion (evil bots only) */}
+                        {Object.keys(memory.merlinSuspicion).length > 0 && (
+                          <div>
+                            <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                              <Skull size={10} className="text-red-400" />{t("Merlin Suspicion")}
+                            </p>
+                            <div className="space-y-2">
+                              {Object.entries(memory.merlinSuspicion)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([sid, score]) => (
+                                  <div key={sid} className="grid grid-cols-[1fr_minmax(0,1.5fr)] items-center gap-3">
+                                    <span className="text-xs font-medium text-zinc-300 truncate">{getPlayerName(sid)}</span>
+                                    {renderBar(score, score >= 60 ? "bg-red-500" : score >= 35 ? "bg-orange-500" : "bg-zinc-600")}
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Percival Candidates */}
+                        {memory.percivalCandidates && (
+                          <div>
+                            <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-2">{t("Merlin Candidates")}</p>
+                            <div className="space-y-2">
+                              {Object.entries(memory.percivalCandidates.merlinLikelihood)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([sid, likelihood]) => (
+                                  <div key={sid} className="grid grid-cols-[1fr_minmax(0,1.5fr)] items-center gap-3">
+                                    <span className="text-xs font-medium text-amber-300 truncate">{getPlayerName(sid)}</span>
+                                    {renderBar(likelihood, likelihood >= 60 ? "bg-emerald-500" : likelihood >= 35 ? "bg-amber-500" : "bg-red-500")}
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* AI Mind Logs */}
-        {gameState.botMindLogs && Object.keys(gameState.botMindLogs).length > 0 && (
+        {Object.keys(gameState.botMindLogs).length > 0 && (
           <section>
             <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
               <Brain size={11} className="text-indigo-400" />

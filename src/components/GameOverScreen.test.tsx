@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { useGameStore } from "../store";
+import { useGameStore, GameState } from "../store";
 import GameOverScreen from "./GameOverScreen";
 
 // Mock the game store
@@ -32,13 +32,13 @@ describe("GameOverScreen", () => {
   const setupStoreMock = (overrides = {}) => {
     vi.mocked(useGameStore).mockImplementation((selector) =>
       selector({
-        room: null,
+        room: undefined,
         sessionId: "sid-1",
         restartGame: mockRestartGame,
-        viewingHistoryRecord: null,
+        viewingHistoryRecord: undefined,
         closeHistoryView: mockCloseHistoryView,
         ...overrides,
-      } as any)
+      } as unknown as GameState)
     );
   };
 

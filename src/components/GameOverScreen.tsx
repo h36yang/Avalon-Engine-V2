@@ -16,7 +16,7 @@ import {
   CheckCheck,
   ArrowLeft,
 } from "lucide-react";
-import { BotMemory, Room, useGameStore } from "../store";
+import { Room, useGameStore } from "../store";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import { EVIL_ROLES, Role } from "../utils/sharedTypes";
@@ -308,13 +308,6 @@ export default function GameOverScreen() {
                 const botPlayer = players.find(p => p.sessionId === botId);
                 if (!botPlayer) return null;
                 const isExpanded = expandedBotMemory === botId;
-
-                // Collect all session IDs referenced across memory fields
-                const allSids = new Set([
-                  ...Object.keys(memory.trustScores),
-                  ...Object.keys(memory.knownRoles),
-                  ...Object.keys(memory.merlinSuspicion),
-                ]);
 
                 const renderBar = (value: number, color: string) => (
                   <div className="flex items-center gap-2 min-w-0">

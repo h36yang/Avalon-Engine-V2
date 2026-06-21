@@ -83,7 +83,6 @@ async function updatePlayerStats(userId: string, isWinner: boolean) {
 // Re-uses the game_over sanitization path from sanitizeRoomForPlayer: all roles
 // revealed, botMindLogs included, botMemories stripped. We also strip apiKeys.
 function buildGameOverSnapshot(room: Room, viewerSessionId: string): object {
-  const { botMemories: _stripped, ...safeGameState } = room.gameState;
   const sanitizedPlayers = room.players.map(p => {
     const { apiKey: _stripped, ...safeP } = p;
     return safeP;
@@ -91,7 +90,6 @@ function buildGameOverSnapshot(room: Room, viewerSessionId: string): object {
   return {
     ...room,
     players: sanitizedPlayers,
-    gameState: { ...safeGameState, botMindLogs: room.gameState.botMindLogs },
     // Embed the viewer's sessionId so the client can highlight "You" in the replay
     viewerSessionId,
   };
@@ -211,16 +209,9 @@ const socketToSession: Record<string, string> = {};
 // - Percival sees Merlin and Morgana
 // - Evil (except Oberon) sees fellow evil (except Oberon)
 function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
-  // During game_over, reveal all roles and include AI mind logs
   if (room.status === 'game_over') {
-    const { botMemories: _stripped, ...safeGameState } = room.gameState;
-    return {
-      ...room,
-      gameState: {
-        ...safeGameState,
-        botMindLogs: room.gameState.botMindLogs,
-      } as typeof room.gameState,
-    };
+    // If game is over, return room as is. All roles are revealed.
+    return room;
   }
 
   const viewer = room.players.find(p => p.sessionId === viewerSessionId);
@@ -688,10 +679,6 @@ function setupSocket(io: Server) {
           }
 
           room.gameState.botMindLogs = {};
-          // Initialize mind logs for bots
-          room.players.filter(p => p.isBot).forEach(bot => {
-            room.gameState.botMindLogs[bot.sessionId] = [];
-          });
           room.status = 'role_reveal';
           room.gameStartedAt = Date.now();
           room.gameEndedAt = undefined;

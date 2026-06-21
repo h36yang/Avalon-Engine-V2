@@ -189,6 +189,13 @@ export const translations = {
     'AI Mind Log': 'AI Mind Log',
     'Copy Log': 'Copy Log',
     'Copied!': 'Copied!',
+    'Bot Memories': 'Bot Memories',
+    'Trust': 'Trust',
+    'Known Alignments': 'Known Alignments',
+    'Good': 'Good',
+    'Evil': 'Evil',
+    'Merlin Suspicion': 'Merlin Suspicion',
+    'Merlin Candidates': 'Merlin Candidates',
 
     // Game History
     'Game History': 'Game History',
@@ -404,6 +411,13 @@ export const translations = {
     'AI Mind Log': 'AI 思维日志',
     'Copy Log': '复制日志',
     'Copied!': '已复制！',
+    'Bot Memories': '机器人记忆',
+    'Trust': '信任',
+    'Known Alignments': '已知阵营',
+    'Good': '正义',
+    'Evil': '邪恶',
+    'Merlin Suspicion': '梅林怀疑',
+    'Merlin Candidates': '梅林候选人',
 
     // Game History
     'Game History': '历史战绩',

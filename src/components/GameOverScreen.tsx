@@ -297,7 +297,7 @@ export default function GameOverScreen() {
         </section>
 
         {/* Bot Memories */}
-        {Object.keys(gameState.botMemories).length > 0 && (
+        {gameState.botMemories && Object.keys(gameState.botMemories).length > 0 && (
           <section id="bot-memories-section">
             <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
               <Brain size={11} className="text-violet-400" />
@@ -428,7 +428,7 @@ export default function GameOverScreen() {
         )}
 
         {/* AI Mind Logs */}
-        {Object.keys(gameState.botMindLogs).length > 0 && (
+        {gameState.botMindLogs && Object.keys(gameState.botMindLogs).length > 0 && (
           <section>
             <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
               <Brain size={11} className="text-indigo-400" />

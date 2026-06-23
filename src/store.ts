@@ -79,8 +79,8 @@ export interface Room {
     strikeHolderSessionId?: string;
     voteHistory: TeamVoteHistory[];
     botOpinions?: BotOpinion[];
-    botMindLogs: Record<string, MindLogEntry[]>;
-    botMemories: Record<string, BotMemory>;
+    botMindLogs?: Record<string, MindLogEntry[]>;
+    botMemories?: Record<string, BotMemory>;
     ladyOfTheLakeHolder?: string;
     ladyOfTheLakeHistory: string[];
     ladyOfTheLakeChecks: LadeOfTheLakeCheck[];

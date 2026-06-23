@@ -92,6 +92,8 @@ export async function callOpenAICompatible(
 // ─── Mind Log ─────────────────────────────────────────────────────────────────
 
 export function addMindLog(room: Room, botId: string, phase: string, prompt: string, response: string) {
+  room.gameState.botMindLogs ??= {};
+
   if (!room.gameState.botMindLogs[botId]) {
     room.gameState.botMindLogs[botId] = [];
   }
@@ -166,6 +168,7 @@ function mapPercivalCandidatesToNames(room: Room, merlinLikelihood: Record<strin
 // ─── Memory Initialisation ────────────────────────────────────────────────────
 
 export function initializeBotMemories(room: Room) {
+  room.gameState.botMemories ??= {};
   const gameHasMordred = room.players.some(p => p.role === 'Mordred');
 
   for (const bot of room.players) {
@@ -285,7 +288,7 @@ export async function triggerBotOpinions(room: Room, io: Server, broadcastRoom: 
   for (const bot of botsWithKeys) {
     try {
       const isEvil = EVIL_ROLES.has(bot.role as Role);
-      const memory = room.gameState.botMemories[bot.sessionId];
+      const memory = room.gameState.botMemories![bot.sessionId];
       const leaderName = room.players[room.gameState.leaderIndex].name;
 
       let prompt = `请基于以下信息发言。
@@ -385,6 +388,7 @@ ${combinedRolePrompt}`;
 
 export function updateBotMemoriesAfterTeamVote(room: Room) {
   const goodPlayersCount = room.players.filter(p => !EVIL_ROLES.has(p.role!)).length;
+  room.gameState.botMemories ??= {};
 
   for (const bot of room.players) {
     if (!bot.isBot) continue;
@@ -395,7 +399,7 @@ export function updateBotMemoriesAfterTeamVote(room: Room) {
     const trustDelta = difficulty === 'hard' ? 15 : 5;
     const suspicionDelta = difficulty === 'hard' ? 15 : 5;
 
-    const memory = room.gameState.botMemories[bot.sessionId];
+    const memory: BotMemory = room.gameState.botMemories[bot.sessionId];
     const isBotEvil = EVIL_ROLES.has(bot.role!);
 
     let teamHadKnownEvil = room.gameState.proposedTeam.some(id =>
@@ -485,13 +489,14 @@ export function updateBotMemoriesAfterTeamVote(room: Room) {
 export function updateBotMemoriesAfterQuest(room: Room) {
   const quest = room.gameState.quests[room.gameState.currentQuestIndex];
   const failed = quest.status === 'fail';
+  room.gameState.botMemories ??= {};
 
   // Track fail association for everyone on the team
   if (failed) {
     for (const memberId of quest.team) {
       for (const bot of room.players) {
         if (!bot.isBot) continue;
-        const memory = room.gameState.botMemories[bot.sessionId];
+        const memory: BotMemory = room.gameState.botMemories[bot.sessionId];
         memory.failAssociation[memberId]++;
       }
     }
@@ -502,7 +507,7 @@ export function updateBotMemoriesAfterQuest(room: Room) {
     if (!bot.isBot) continue;
 
     const difficulty = bot.difficulty || 'normal';
-    const memory = room.gameState.botMemories[bot.sessionId];
+    const memory: BotMemory = room.gameState.botMemories[bot.sessionId];
     const isBotEvil = EVIL_ROLES.has(bot.role!);
 
     if (!isBotEvil) {
@@ -656,7 +661,7 @@ export function handleBotActions(
       setTimeout(() => {
         if (room.status !== 'team_building') return;
         const currentQuest = room.gameState.quests[room.gameState.currentQuestIndex];
-        const memory = room.gameState.botMemories[leader.sessionId];
+        const memory = room.gameState.botMemories![leader.sessionId];
 
         const difficulty = leader.difficulty || 'normal';
 
@@ -785,7 +790,7 @@ export function handleBotActions(
         const proposedTeam = room.gameState.proposedTeam;
 
         unvotedBots.forEach(bot => {
-          const memory = room.gameState.botMemories[bot.sessionId];
+          const memory = room.gameState.botMemories![bot.sessionId];
           const difficulty = bot.difficulty || 'normal';
           const isEvil = EVIL_ROLES.has(bot.role!);
           const isBotInProposedTeam = proposedTeam.includes(bot.sessionId);
@@ -973,7 +978,7 @@ export function handleBotActions(
       setTimeout(() => {
         if (room.status !== 'assassin') return;
 
-        const memory = room.gameState.botMemories[assassin.sessionId];
+        const memory = room.gameState.botMemories![assassin.sessionId];
         const goodPlayers = room.players.filter(p => !EVIL_ROLES.has(p.role as Role));
 
         // --- Improvement C: Smarter Assassin ---

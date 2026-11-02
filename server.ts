@@ -9,6 +9,7 @@ import { LadeOfTheLakeCheck } from './src/store';
 import {
   Room,
   DEFAULT_MODELS,
+  BASE_URLS,
   callOpenAICompatible,
   initializeBotMemories,
   getNextBotName,
@@ -594,23 +595,8 @@ function setupSocket(io: Server) {
     socket.on('test_api_key', async ({ provider, apiKey, model }, callback) => {
       try {
         const resolvedModel = model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
-        let reply: string;
-        if (provider === 'gemini') {
-          const { GoogleGenAI } = await import('@google/genai');
-          const genAI = new GoogleGenAI({ apiKey });
-          const response = await genAI.models.generateContent({
-            model: resolvedModel,
-            contents: 'Say "ok" in one word.',
-          });
-          reply = response.text || '';
-        } else {
-          const BASE_URLS: Record<string, string> = {
-            openrouter: 'https://openrouter.ai/api/v1',
-            groq: 'https://api.groq.com/openai/v1',
-            nvidia: 'https://integrate.api.nvidia.com/v1',
-          };
-          reply = await callOpenAICompatible(BASE_URLS[provider], apiKey, resolvedModel, 'You are a test assistant.', 'Say "ok" in one word.');
-        }
+        const baseUrl = BASE_URLS[provider] || BASE_URLS.gemini;
+        const reply = await callOpenAICompatible(baseUrl, apiKey, resolvedModel, 'You are a test assistant.', 'Say "ok" in one word.');
         callback({ success: true, message: `✅ Connected! Reply: "${reply.slice(0, 40)}"` });
       } catch (err: unknown) {
         const raw = err instanceof Error ? err.message : String(err);

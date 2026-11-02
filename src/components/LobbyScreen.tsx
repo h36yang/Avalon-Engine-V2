@@ -10,20 +10,23 @@ type Provider = 'gemini' | 'openrouter' | 'groq' | 'nvidia';
 
 const PROVIDER_MODELS: Record<Provider, { label: string; value: string }[]> = {
   gemini: [
-    { label: 'Gemini 3.1 Flash Lite (free)', value: 'gemini-3.1-flash-lite' },
-    { label: 'Gemini 3.5 Flash (free)', value: 'gemini-3.5-flash' },
-    { label: 'Gemini 3.1 Pro Preview', value: 'gemini-3.1-pro-preview' },
+    { label: 'Gemini 3.5 Flash Lite (free)', value: 'gemini-3.5-flash-lite' },
+    { label: 'Gemini 3.8 Flash (free)', value: 'gemini-3.8-flash' },
+    { label: 'Gemini 4 Argon', value: 'gemini-4-argon' },
   ],
   nvidia: [
-    { label: 'Nvidia Nemotron Nano', value: 'nvidia/nvidia-nemotron-nano-9b-v2' },
     { label: 'Nemotron 3 Ultra', value: 'nvidia/nemotron-3-ultra-550b-a55b' },
-    { label: 'MiniMax M2.7', value: 'minimaxai/minimax-m2.7' },
+    { label: 'Nemotron 3.5 Bolt', value: 'nvidia/nemotron-3.5-bolt-e4b' },
+    { label: 'Nemotron 3.5 Super VL', value: 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
+    { label: 'MiniMax M3.1 Flash', value: 'minimaxai/minimax-m3.1-flash' },
   ],
   openrouter: [
     { label: 'Llama 3.3 70B (free)', value: 'meta-llama/llama-3.3-70b-instruct:free' },
+    { label: 'OpenRouter Free Auto-Router', value: 'openrouter/free' },
   ],
   groq: [
-    { label: 'Groq — Default (use custom if needed)', value: 'groq-default' },
+    { label: 'Llama 3.3 70B Versatile', value: 'llama-3.3-70b-versatile' },
+    { label: 'Llama 3.1 8B Instant', value: 'llama-3.1-8b-instant' },
   ],
 };
 

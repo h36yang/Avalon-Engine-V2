@@ -16,7 +16,6 @@
     "test:once": "vitest run"
   },
   "dependencies": {
-    "@google/genai": "^2.11.0",
     "@supabase/supabase-js": "^2.110.2",
     "@tailwindcss/vite": "^4.3.2",
     "@toon-format/toon": "^2.3.0",
@@ -26,7 +25,7 @@
     "express": "^5.2.1",
     "lucide-react": "^1.24.0",
     "motion": "^12.42.2",
-    "openai": "^6.46.0",
+    "openai": "^7.47.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "socket.io": "^4.8.3",

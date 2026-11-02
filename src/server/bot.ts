@@ -1,4 +1,3 @@
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import OpenAI from 'openai';
 import { encode } from '@toon-format/toon';
 import { readFileSync } from 'fs';
@@ -63,10 +62,19 @@ export function getBotSystemPrompt(role: string): string {
 // ─── Model Defaults ───────────────────────────────────────────────────────────
 
 export const DEFAULT_MODELS: Record<string, string> = {
-  gemini: 'gemini-3.1-flash-lite',
-  nvidia: 'nvidia/nvidia-nemotron-nano-9b-v2',
+  gemini: 'gemini-3.5-flash-lite',
+  nvidia: 'nvidia/nemotron-3-ultra-550b-a55b',
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
-  groq: 'groq-default',
+  groq: 'llama-3.3-70b-versatile',
+};
+
+// ─── Provider Base URLs ───────────────────────────────────────────────────────
+
+export const BASE_URLS: Record<string, string> = {
+  gemini: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+  openrouter: 'https://openrouter.ai/api/v1',
+  groq: 'https://api.groq.com/openai/v1',
+  nvidia: 'https://integrate.api.nvidia.com/v1',
 };
 
 // ─── Low-level LLM Helpers ────────────────────────────────────────────────────
@@ -331,31 +339,9 @@ ${combinedRolePrompt}`;
 
       const provider = bot.provider ?? 'gemini';
       const model = bot.model || DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
+      const baseUrl = BASE_URLS[provider] || BASE_URLS.gemini;
 
-      let text: string;
-      if (provider === 'gemini') {
-        const genAI = new GoogleGenAI({ apiKey: bot.apiKey! });
-        const response = await genAI.models.generateContent({
-          model,
-          contents: prompt,
-          config: {
-            systemInstruction,
-            thinkingConfig: {
-              // High thinking level for dynamic thinking and maximizing reasoning depth.
-              // https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
-              thinkingLevel: ThinkingLevel.HIGH,
-            },
-          },
-        });
-        text = response.text || '';
-      } else {
-        const BASE_URLS: Record<string, string> = {
-          openrouter: 'https://openrouter.ai/api/v1',
-          groq: 'https://api.groq.com/openai/v1',
-          nvidia: 'https://integrate.api.nvidia.com/v1',
-        };
-        text = await callOpenAICompatible(BASE_URLS[provider], bot.apiKey!, model, systemInstruction, prompt);
-      }
+      const text = await callOpenAICompatible(baseUrl, bot.apiKey!, model, systemInstruction, prompt);
 
       console.log(`Opinion generated successfully for ${bot.name}.`);
       addMindLog(room, bot.sessionId, 'opinion', prompt, text);

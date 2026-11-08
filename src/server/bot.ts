@@ -17,6 +17,8 @@ const __projectDir = typeof __dirname !== 'undefined' ? __dirname : dirname(proj
 export interface Room extends ClientRoom {
   lastActivityTime: number;
   idleWarningEmitted: boolean;
+  /** Server clock (ms since epoch). Never sent to clients; they receive startingCountdownRemainingMs. */
+  startingCountdownEnd?: number;
 }
 
 // ─── Prompt Loading ───────────────────────────────────────────────────────────

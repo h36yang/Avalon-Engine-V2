@@ -49,6 +49,7 @@ export interface Room {
   players: Player[];
   status:
   | "lobby"
+  | "starting_countdown"
   | "role_reveal"
   | "team_building"
   | "team_proposed"
@@ -64,6 +65,9 @@ export interface Room {
     optionalRoles: Role[];
     ladyOfTheLake?: boolean;
   };
+  startingCountdownRemainingMs?: number; // computed per broadcast; clock-skew safe
+  evilChooserSessionId?: string;
+  availableEvilRoles?: Role[];
   gameStartedAt?: number;
   gameEndedAt?: number;
   assassinationStartedAt?: number;
@@ -147,6 +151,7 @@ export interface GameState {
   testBotApiKey: (provider: 'gemini' | 'openrouter' | 'groq' | 'nvidia', apiKey: string, model?: string) => Promise<{ success: boolean; message: string }>;
   addBot: (difficulty?: 'normal' | 'hard') => void;
   startGame: (requestedRoles?: Record<string, Role>) => void;
+  chooseEvilRole: (role: Role) => void;
   leaveRoom: () => void;
   kickPlayer: (targetSessionId: string) => void;
   endGame: () => void;
@@ -339,6 +344,11 @@ export const useGameStore = create<GameState>()(
       startGame: (requestedRoles) => {
         const { socket, roomId } = get();
         socket?.emit("start_game", { roomId, requestedRoles });
+      },
+
+      chooseEvilRole: (role) => {
+        const { socket, roomId } = get();
+        socket?.emit("choose_evil_role", { roomId, role });
       },
 
       leaveRoom: () => {

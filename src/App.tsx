@@ -9,6 +9,7 @@ import { supabase, recreateSupabaseClient } from "./utils/supabase";
 import AuthScreen from "./components/AuthScreen";
 import JoinScreen from "./components/JoinScreen";
 import LobbyScreen from "./components/LobbyScreen";
+import StartingCountdownScreen from "./components/StartingCountdownScreen";
 import RoleRevealScreen from "./components/RoleRevealScreen";
 import GameScreen from "./components/GameScreen";
 import AssassinScreen from "./components/AssassinScreen";
@@ -144,6 +145,8 @@ export default function App() {
     switch (room.status) {
       case "lobby":
         return <LobbyScreen />;
+      case "starting_countdown":
+        return <StartingCountdownScreen />;
       case "role_reveal":
         return <RoleRevealScreen />;
       case "team_building":

@@ -114,3 +114,60 @@ function shuffle<T>(array: T[]): void {
     [array[i], array[j]] = [array[j], array[i]];
   }
 }
+
+export interface LoneHumanEvilStatus {
+  isLoneHumanEvil: boolean;
+  chooserSessionId?: string;
+  currentRole?: Role;
+  availableRoles: Role[];
+}
+
+export function getLoneHumanEvilStatus(players: Player[]): LoneHumanEvilStatus {
+  const evilPlayers = players.filter(p => p.role && EVIL_ROLES.has(p.role));
+  const humanEvils = evilPlayers.filter(p => !p.isBot);
+  const botEvils = evilPlayers.filter(p => p.isBot);
+
+  if (humanEvils.length === 1 && botEvils.length > 0) {
+    const human = humanEvils[0];
+    const availableRoles = Array.from(new Set(evilPlayers.map(p => p.role!).filter(Boolean)));
+    return {
+      isLoneHumanEvil: true,
+      chooserSessionId: human.sessionId,
+      currentRole: human.role,
+      availableRoles,
+    };
+  }
+
+  return {
+    isLoneHumanEvil: false,
+    availableRoles: [],
+  };
+}
+
+export function swapEvilRole(players: Player[], humanSessionId: string, targetRole: Role): boolean {
+  if (!EVIL_ROLES.has(targetRole)) {
+    return false;
+  }
+
+  const human = players.find(p => p.sessionId === humanSessionId && !p.isBot);
+  if (!human || !human.role || !EVIL_ROLES.has(human.role)) {
+    return false;
+  }
+
+  // Already has this role - no-op success (stay with current role)
+  if (human.role === targetRole) {
+    return true;
+  }
+
+  // Find the bot on the evil team holding targetRole
+  const bot = players.find(p => p.isBot && p.role === targetRole);
+  if (!bot) {
+    return false;
+  }
+
+  // Swap roles
+  const previousRole = human.role;
+  human.role = targetRole;
+  bot.role = previousRole;
+  return true;
+}

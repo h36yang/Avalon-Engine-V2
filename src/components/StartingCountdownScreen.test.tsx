@@ -51,7 +51,7 @@ describe('StartingCountdownScreen', () => {
       room: {
         id: 'test_room',
         status: 'starting_countdown',
-        startingCountdownEnd: 1010000, // 10 seconds ahead
+        startingCountdownRemainingMs: 10000,
         evilChooserSessionId: undefined, // Not a lone evil game or sanitized out
         players: [
           { sessionId: 'user_good', name: 'Merlin Player', isConnected: true, isHost: true, isBot: false, role: 'Merlin' },
@@ -73,7 +73,7 @@ describe('StartingCountdownScreen', () => {
       room: {
         id: 'test_room',
         status: 'starting_countdown',
-        startingCountdownEnd: 1008000, // 8 seconds ahead
+        startingCountdownRemainingMs: 8000,
         evilChooserSessionId: 'other_user',
         players: [
           { sessionId: 'user_good', name: 'Percival Player', isConnected: true, isHost: false, isBot: false, role: 'Percival' },
@@ -94,7 +94,7 @@ describe('StartingCountdownScreen', () => {
       room: {
         id: 'test_room',
         status: 'starting_countdown',
-        startingCountdownEnd: 1010000,
+        startingCountdownRemainingMs: 10000,
         evilChooserSessionId: 'user_evil',
         availableEvilRoles: ['Morgana', 'Assassin'],
         players: [
@@ -119,7 +119,7 @@ describe('StartingCountdownScreen', () => {
       room: {
         id: 'test_room',
         status: 'starting_countdown',
-        startingCountdownEnd: 1010000,
+        startingCountdownRemainingMs: 10000,
         evilChooserSessionId: 'user_evil',
         availableEvilRoles: ['Morgana', 'Assassin'],
         players: [

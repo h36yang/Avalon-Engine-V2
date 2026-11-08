@@ -65,7 +65,7 @@ export interface Room {
     optionalRoles: Role[];
     ladyOfTheLake?: boolean;
   };
-  startingCountdownEnd?: number;
+  startingCountdownRemainingMs?: number; // computed per broadcast; clock-skew safe
   evilChooserSessionId?: string;
   availableEvilRoles?: Role[];
   gameStartedAt?: number;

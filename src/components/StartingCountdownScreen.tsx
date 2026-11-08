@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGameStore } from "../store";
 import { ROLE_IMAGES } from "../assets/roleImages";
 import { useTranslation } from "../utils/i18n";
-import { Role } from "../utils/sharedTypes";
 import { Swords, ShieldAlert, Check } from "lucide-react";
 
 export default function StartingCountdownScreen() {
@@ -13,6 +12,18 @@ export default function StartingCountdownScreen() {
 
   const [now, setNow] = useState(Date.now());
 
+  // Anchor the server-provided remaining time to the local clock at receipt,
+  // so the countdown is independent of client/server clock skew.
+  const remainingMsFromServer = room?.startingCountdownRemainingMs;
+  const deadlineRef = useRef<number | undefined>(undefined);
+  const lastRemainingRef = useRef<number | undefined>(undefined);
+  if (remainingMsFromServer !== lastRemainingRef.current || deadlineRef.current === undefined) {
+    lastRemainingRef.current = remainingMsFromServer;
+    deadlineRef.current = remainingMsFromServer !== undefined
+      ? Date.now() + remainingMsFromServer
+      : undefined;
+  }
+
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(Date.now());
@@ -22,8 +33,8 @@ export default function StartingCountdownScreen() {
 
   if (!room) return null;
 
-  const remainingSeconds = room.startingCountdownEnd
-    ? Math.max(0, Math.ceil((room.startingCountdownEnd - now) / 1000))
+  const remainingSeconds = deadlineRef.current !== undefined
+    ? Math.max(0, Math.ceil((deadlineRef.current - now) / 1000))
     : 10;
 
   const isChooser = Boolean(room.evilChooserSessionId && room.evilChooserSessionId === sessionId);
@@ -108,11 +119,10 @@ export default function StartingCountdownScreen() {
                 key={role}
                 type="button"
                 onClick={() => chooseEvilRole(role)}
-                className={`relative group rounded-xl overflow-hidden border transition-all duration-200 text-left flex flex-col aspect-[3/4] p-2.5 justify-between ${
-                  isSelected
+                className={`relative group rounded-xl overflow-hidden border transition-all duration-200 text-left flex flex-col aspect-[3/4] p-2.5 justify-between ${isSelected
                     ? "border-red-500 ring-2 ring-red-500/50 shadow-lg shadow-red-950/60 scale-102"
                     : "border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 hover:bg-zinc-900 opacity-75 hover:opacity-100"
-                }`}
+                  }`}
               >
                 {/* Background Role Art */}
                 <div

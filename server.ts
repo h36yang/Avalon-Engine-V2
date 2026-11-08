@@ -202,6 +202,7 @@ function touchRoom(room: Room) {
 
 const rooms: Record<string, Room> = {};
 const startingTimers: Record<string, NodeJS.Timeout> = {};
+const STARTING_COUNTDOWN_MS = 10_000;
 
 function clearStartingTimer(roomId: string) {
   if (startingTimers[roomId]) {
@@ -282,8 +283,14 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
       };
     });
   }
+  // startingCountdownEnd is server-clock only: strip it and send remaining time instead,
+  // so clients don't depend on clock sync with the server.
+  const { startingCountdownEnd, ...roomForClient } = room;
   return {
-    ...room,
+    ...roomForClient,
+    startingCountdownRemainingMs: startingCountdownEnd !== undefined
+      ? Math.max(0, startingCountdownEnd - Date.now())
+      : undefined,
     evilChooserSessionId: room.evilChooserSessionId === viewerSessionId ? room.evilChooserSessionId : undefined,
     availableEvilRoles: room.evilChooserSessionId === viewerSessionId ? room.availableEvilRoles : undefined,
     players: sanitizedPlayers,
@@ -670,7 +677,7 @@ function setupSocket(io: Server) {
 
           const loneEvilStatus = getLoneHumanEvilStatus(room.players);
           room.status = 'starting_countdown';
-          room.startingCountdownEnd = Date.now() + 10000;
+          room.startingCountdownEnd = Date.now() + STARTING_COUNTDOWN_MS;
           room.evilChooserSessionId = loneEvilStatus.isLoneHumanEvil ? loneEvilStatus.chooserSessionId : undefined;
           room.availableEvilRoles = loneEvilStatus.isLoneHumanEvil ? loneEvilStatus.availableRoles : undefined;
           room.gameStartedAt = Date.now();
@@ -710,7 +717,7 @@ function setupSocket(io: Server) {
             initializeBotMemories(currentRoom);
             broadcastRoom(currentRoom, io);
             handleBotActions(currentRoom, io, broadcastRoom, recordGameStats);
-          }, 10000);
+          }, STARTING_COUNTDOWN_MS);
         }
       } catch (err) {
         console.error('Error in start_game:', err);

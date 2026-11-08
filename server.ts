@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import { createServer, ServerResponse } from 'http';
 import { Server } from 'socket.io';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { getQuestConfig, assignRoles, generateSecureRandomNumber } from './src/server/gameLogic';
+import { getQuestConfig, assignRoles, generateSecureRandomNumber, getLoneHumanEvilStatus, swapEvilRole } from './src/server/gameLogic';
 import { EVIL_ROLES, Role, Player } from './src/utils/sharedTypes';
 import { LadeOfTheLakeCheck } from './src/store';
 import {
@@ -90,6 +90,8 @@ function buildGameOverSnapshot(room: Room, viewerSessionId: string): object {
   });
   return {
     ...room,
+    evilChooserSessionId: room.evilChooserSessionId === viewerSessionId ? room.evilChooserSessionId : undefined,
+    availableEvilRoles: room.evilChooserSessionId === viewerSessionId ? room.availableEvilRoles : undefined,
     players: sanitizedPlayers,
     // Embed the viewer's sessionId so the client can highlight "You" in the replay
     viewerSessionId,
@@ -199,6 +201,14 @@ function touchRoom(room: Room) {
 }
 
 const rooms: Record<string, Room> = {};
+const startingTimers: Record<string, NodeJS.Timeout> = {};
+
+function clearStartingTimer(roomId: string) {
+  if (startingTimers[roomId]) {
+    clearTimeout(startingTimers[roomId]);
+    delete startingTimers[roomId];
+  }
+}
 
 // === SECURITY: Socket identity mapping ===
 // Maps socket.id → sessionId so we never trust client-sent sessionId
@@ -229,6 +239,11 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
 
     const targetRole = safeP.role;
     if (!targetRole) return { ...safeP, role: undefined };
+
+    // In starting_countdown phase, hide all other players' roles
+    if (room.status === 'starting_countdown') {
+      return { ...safeP, role: undefined };
+    }
 
     const isTargetEvil = EVIL_ROLES.has(targetRole);
 
@@ -269,6 +284,8 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
   }
   return {
     ...room,
+    evilChooserSessionId: room.evilChooserSessionId === viewerSessionId ? room.evilChooserSessionId : undefined,
+    availableEvilRoles: room.evilChooserSessionId === viewerSessionId ? room.availableEvilRoles : undefined,
     players: sanitizedPlayers,
     gameState: safeGameState as typeof room.gameState,
   };
@@ -442,6 +459,7 @@ function setupSocket(io: Server) {
       if (elapsed >= IDLE_TIMEOUT_MS + IDLE_WARNING_COUNTDOWN_S * 1000) {
         // Time's up — auto-close
         console.log(`Room ${roomId} auto-closed due to inactivity.`);
+        clearStartingTimer(roomId);
         io.to(roomId).emit('game_ended', { reason: 'idle_timeout' });
         delete rooms[roomId];
       } else if (elapsed >= IDLE_TIMEOUT_MS && !room.idleWarningEmitted) {
@@ -625,22 +643,6 @@ function setupSocket(io: Server) {
           touchRoom(room);
           assignRoles(room.players, requestedRoles);
 
-          // Find the assassin player to initialize strikeHolderSessionId
-          const assassin = room.players.find(p => p.role === 'Assassin');
-          let strikeHolderSessionId: string | undefined = undefined;
-          if (assassin) {
-            if (!assassin.isBot) {
-              strikeHolderSessionId = assassin.sessionId;
-            } else {
-              const humanEvils = room.players.filter(p => !p.isBot && EVIL_ROLES.has(p.role as Role));
-              if (humanEvils.length > 0) {
-                const randomEvil = humanEvils[Math.floor(generateSecureRandomNumber() * humanEvils.length)];
-                strikeHolderSessionId = randomEvil.sessionId;
-              }
-            }
-          }
-          room.gameState.strikeHolderSessionId = strikeHolderSessionId;
-
           const config = getQuestConfig(room.players.length);
           room.gameState.quests = config.sizes.map((size, i) => ({
             teamSize: size,
@@ -665,16 +667,70 @@ function setupSocket(io: Server) {
           }
 
           room.gameState.botMindLogs = {};
-          room.status = 'role_reveal';
+
+          const loneEvilStatus = getLoneHumanEvilStatus(room.players);
+          room.status = 'starting_countdown';
+          room.startingCountdownEnd = Date.now() + 10000;
+          room.evilChooserSessionId = loneEvilStatus.isLoneHumanEvil ? loneEvilStatus.chooserSessionId : undefined;
+          room.availableEvilRoles = loneEvilStatus.isLoneHumanEvil ? loneEvilStatus.availableRoles : undefined;
           room.gameStartedAt = Date.now();
           room.gameEndedAt = undefined;
           room.assassinationStartedAt = undefined;
-          initializeBotMemories(room);
+
+          clearStartingTimer(roomId);
+
           broadcastRoom(room, io);
-          handleBotActions(room, io, broadcastRoom, recordGameStats);
+
+          startingTimers[roomId] = setTimeout(() => {
+            delete startingTimers[roomId];
+            const currentRoom = rooms[roomId];
+            if (!currentRoom || currentRoom.status !== 'starting_countdown') return;
+
+            // Finalize strikeHolderSessionId based on the final roles
+            const assassin = currentRoom.players.find(p => p.role === 'Assassin');
+            let strikeHolderSessionId: string | undefined = undefined;
+            if (assassin) {
+              if (!assassin.isBot) {
+                strikeHolderSessionId = assassin.sessionId;
+              } else {
+                const humanEvils = currentRoom.players.filter(p => !p.isBot && EVIL_ROLES.has(p.role as Role));
+                if (humanEvils.length > 0) {
+                  const randomEvil = humanEvils[Math.floor(generateSecureRandomNumber() * humanEvils.length)];
+                  strikeHolderSessionId = randomEvil.sessionId;
+                }
+              }
+            }
+            currentRoom.gameState.strikeHolderSessionId = strikeHolderSessionId;
+
+            currentRoom.status = 'role_reveal';
+            currentRoom.startingCountdownEnd = undefined;
+            currentRoom.evilChooserSessionId = undefined;
+            currentRoom.availableEvilRoles = undefined;
+
+            initializeBotMemories(currentRoom);
+            broadcastRoom(currentRoom, io);
+            handleBotActions(currentRoom, io, broadcastRoom, recordGameStats);
+          }, 10000);
         }
       } catch (err) {
         console.error('Error in start_game:', err);
+      }
+    });
+
+    socket.on('choose_evil_role', ({ roomId, role }) => {
+      try {
+        const sessionId = socketToSession[socket.id];
+        if (!sessionId) return;
+        const room = rooms[roomId];
+        if (room && room.status === 'starting_countdown' && room.evilChooserSessionId === sessionId) {
+          touchRoom(room);
+          const swapped = swapEvilRole(room.players, sessionId, role);
+          if (swapped) {
+            broadcastRoom(room, io);
+          }
+        }
+      } catch (err) {
+        console.error('Error in choose_evil_role:', err);
       }
     });
 
@@ -939,6 +995,7 @@ function setupSocket(io: Server) {
         if (room) {
           const sender = room.players.find(p => p.id === socket.id);
           if (sender && sender.isHost) {
+            clearStartingTimer(roomId);
             io.to(roomId).emit('game_ended');
             delete rooms[roomId];
           }
@@ -955,6 +1012,7 @@ function setupSocket(io: Server) {
           // Only host can restart
           const sender = room.players.find(p => p.id === socket.id);
           if (sender && sender.isHost) {
+            clearStartingTimer(roomId);
             // Remove bots, keep human players
             room.players = room.players.filter(p => !p.isBot);
             // Reset all player roles

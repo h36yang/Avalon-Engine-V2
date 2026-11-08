@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Player, Role } from '../utils/sharedTypes';
-import { getQuestConfig, assignRoles } from './gameLogic';
+import { getQuestConfig, assignRoles, getLoneHumanEvilStatus, swapEvilRole } from './gameLogic';
 
 describe('gameLogic', () => {
     describe('getQuestConfig', () => {
@@ -107,6 +107,145 @@ describe('gameLogic', () => {
 
             // Remaining 3 should be good
             expect(assignedRoles.filter(r => ['Merlin', 'Percival', 'Loyal Servant'].includes(r as string)).length).toBe(3);
+        });
+    });
+
+    describe('getLoneHumanEvilStatus', () => {
+        it('returns isLoneHumanEvil true when evil has exactly 1 human and 1 bot in 5-player', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human 1', isConnected: true, isHost: true, isBot: false, role: 'Morgana' },
+                { id: '2', sessionId: 's2', name: 'Bot 1', isConnected: true, isHost: false, isBot: true, role: 'Assassin' },
+                { id: '3', sessionId: 's3', name: 'Bot 2', isConnected: true, isHost: false, isBot: true, role: 'Merlin' },
+                { id: '4', sessionId: 's4', name: 'Bot 3', isConnected: true, isHost: false, isBot: true, role: 'Percival' },
+                { id: '5', sessionId: 's5', name: 'Bot 4', isConnected: true, isHost: false, isBot: true, role: 'Loyal Servant' },
+            ];
+
+            const status = getLoneHumanEvilStatus(players);
+            expect(status.isLoneHumanEvil).toBe(true);
+            expect(status.chooserSessionId).toBe('s1');
+            expect(status.currentRole).toBe('Morgana');
+            expect(status.availableRoles).toEqual(expect.arrayContaining(['Morgana', 'Assassin']));
+        });
+
+        it('returns isLoneHumanEvil true for 7-player game with 1 human evil and 2 bot evils', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Good', isConnected: true, isHost: true, isBot: false, role: 'Merlin' },
+                { id: '2', sessionId: 's2', name: 'Human Evil', isConnected: true, isHost: false, isBot: false, role: 'Oberon' },
+                { id: '3', sessionId: 's3', name: 'Bot Evil 1', isConnected: true, isHost: false, isBot: true, role: 'Morgana' },
+                { id: '4', sessionId: 's4', name: 'Bot Evil 2', isConnected: true, isHost: false, isBot: true, role: 'Assassin' },
+                { id: '5', sessionId: 's5', name: 'Bot Good 1', isConnected: true, isHost: false, isBot: true, role: 'Percival' },
+                { id: '6', sessionId: 's6', name: 'Bot Good 2', isConnected: true, isHost: false, isBot: true, role: 'Loyal Servant' },
+                { id: '7', sessionId: 's7', name: 'Bot Good 3', isConnected: true, isHost: false, isBot: true, role: 'Loyal Servant' },
+            ];
+
+            const status = getLoneHumanEvilStatus(players);
+            expect(status.isLoneHumanEvil).toBe(true);
+            expect(status.chooserSessionId).toBe('s2');
+            expect(status.currentRole).toBe('Oberon');
+            expect(status.availableRoles).toEqual(expect.arrayContaining(['Oberon', 'Morgana', 'Assassin']));
+        });
+
+        it('returns isLoneHumanEvil false when evil has 2 human players', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Evil 1', isConnected: true, isHost: true, isBot: false, role: 'Morgana' },
+                { id: '2', sessionId: 's2', name: 'Human Evil 2', isConnected: true, isHost: false, isBot: false, role: 'Assassin' },
+                { id: '3', sessionId: 's3', name: 'Bot 1', isConnected: true, isHost: false, isBot: true, role: 'Merlin' },
+                { id: '4', sessionId: 's4', name: 'Bot 2', isConnected: true, isHost: false, isBot: true, role: 'Percival' },
+                { id: '5', sessionId: 's5', name: 'Bot 3', isConnected: true, isHost: false, isBot: true, role: 'Loyal Servant' },
+            ];
+
+            const status = getLoneHumanEvilStatus(players);
+            expect(status.isLoneHumanEvil).toBe(false);
+            expect(status.availableRoles).toEqual([]);
+        });
+
+        it('returns isLoneHumanEvil false when all evil players are bots', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Good 1', isConnected: true, isHost: true, isBot: false, role: 'Merlin' },
+                { id: '2', sessionId: 's2', name: 'Human Good 2', isConnected: true, isHost: false, isBot: false, role: 'Percival' },
+                { id: '3', sessionId: 's3', name: 'Bot Evil 1', isConnected: true, isHost: false, isBot: true, role: 'Morgana' },
+                { id: '4', sessionId: 's4', name: 'Bot Evil 2', isConnected: true, isHost: false, isBot: true, role: 'Assassin' },
+                { id: '5', sessionId: 's5', name: 'Bot Good', isConnected: true, isHost: false, isBot: true, role: 'Loyal Servant' },
+            ];
+
+            const status = getLoneHumanEvilStatus(players);
+            expect(status.isLoneHumanEvil).toBe(false);
+        });
+
+        it('returns isLoneHumanEvil false when all players are human', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'H1', isConnected: true, isHost: true, isBot: false, role: 'Merlin' },
+                { id: '2', sessionId: 's2', name: 'H2', isConnected: true, isHost: false, isBot: false, role: 'Percival' },
+                { id: '3', sessionId: 's3', name: 'H3', isConnected: true, isHost: false, isBot: false, role: 'Loyal Servant' },
+                { id: '4', sessionId: 's4', name: 'H4', isConnected: true, isHost: false, isBot: false, role: 'Morgana' },
+                { id: '5', sessionId: 's5', name: 'H5', isConnected: true, isHost: false, isBot: false, role: 'Assassin' },
+            ];
+
+            const status = getLoneHumanEvilStatus(players);
+            expect(status.isLoneHumanEvil).toBe(false);
+        });
+    });
+
+    describe('swapEvilRole', () => {
+        it('swaps role with the bot holding the target role', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Evil', isConnected: true, isHost: true, isBot: false, role: 'Morgana' },
+                { id: '2', sessionId: 's2', name: 'Bot Evil', isConnected: true, isHost: false, isBot: true, role: 'Assassin' },
+                { id: '3', sessionId: 's3', name: 'Bot Good', isConnected: true, isHost: false, isBot: true, role: 'Merlin' },
+            ];
+
+            const success = swapEvilRole(players, 's1', 'Assassin');
+            expect(success).toBe(true);
+            expect(players.find(p => p.sessionId === 's1')?.role).toBe('Assassin');
+            expect(players.find(p => p.sessionId === 's2')?.role).toBe('Morgana');
+        });
+
+        it('allows swapping back to original role', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Evil', isConnected: true, isHost: true, isBot: false, role: 'Morgana' },
+                { id: '2', sessionId: 's2', name: 'Bot Evil', isConnected: true, isHost: false, isBot: true, role: 'Assassin' },
+            ];
+
+            swapEvilRole(players, 's1', 'Assassin');
+            expect(players.find(p => p.sessionId === 's1')?.role).toBe('Assassin');
+
+            const swappedBack = swapEvilRole(players, 's1', 'Morgana');
+            expect(swappedBack).toBe(true);
+            expect(players.find(p => p.sessionId === 's1')?.role).toBe('Morgana');
+            expect(players.find(p => p.sessionId === 's2')?.role).toBe('Assassin');
+        });
+
+        it('returns true when selecting current role (stay with current role)', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Evil', isConnected: true, isHost: true, isBot: false, role: 'Morgana' },
+                { id: '2', sessionId: 's2', name: 'Bot Evil', isConnected: true, isHost: false, isBot: true, role: 'Assassin' },
+            ];
+
+            const success = swapEvilRole(players, 's1', 'Morgana');
+            expect(success).toBe(true);
+            expect(players.find(p => p.sessionId === 's1')?.role).toBe('Morgana');
+            expect(players.find(p => p.sessionId === 's2')?.role).toBe('Assassin');
+        });
+
+        it('rejects swapping to a non-evil role', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Evil', isConnected: true, isHost: true, isBot: false, role: 'Morgana' },
+                { id: '2', sessionId: 's2', name: 'Bot Good', isConnected: true, isHost: false, isBot: true, role: 'Merlin' },
+            ];
+
+            const success = swapEvilRole(players, 's1', 'Merlin');
+            expect(success).toBe(false);
+            expect(players.find(p => p.sessionId === 's1')?.role).toBe('Morgana');
+        });
+
+        it('rejects swap requests from good players or bots', () => {
+            const players: Player[] = [
+                { id: '1', sessionId: 's1', name: 'Human Good', isConnected: true, isHost: true, isBot: false, role: 'Merlin' },
+                { id: '2', sessionId: 's2', name: 'Bot Evil', isConnected: true, isHost: false, isBot: true, role: 'Assassin' },
+            ];
+
+            expect(swapEvilRole(players, 's1', 'Assassin')).toBe(false);
+            expect(swapEvilRole(players, 's2', 'Morgana')).toBe(false); // bot cannot call swap
         });
     });
 });

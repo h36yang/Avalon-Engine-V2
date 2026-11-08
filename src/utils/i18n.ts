@@ -43,6 +43,17 @@ export const translations = {
     'Bot': 'Bot',
     'Roles in Play': 'Roles in Play',
 
+    // Starting Countdown & Lone Evil Selection
+    'The game is starting in': 'The game is starting in',
+    'Preparing the battlefield...': 'Preparing the battlefield...',
+    'Lone Evil Operative': 'Lone Evil Operative',
+    'All other evil players are bots. You can choose a different evil role:': 'All other evil players are bots. You can choose a different evil role:',
+    'Current Role': 'Current Role',
+    'Selected': 'Selected',
+    'Switch Role': 'Switch Role',
+    'Locks in:': 'Locks in:',
+    's': 's',
+
     // Role Reveal
     'Role': 'Role',
     'Your Role': 'Your Role',
@@ -264,6 +275,17 @@ export const translations = {
     'Host': '房主',
     'Bot': '机器人',
     'Roles in Play': '本局角色',
+
+    // Starting Countdown & Lone Evil Selection
+    'The game is starting in': '游戏将在以下时间后开始：',
+    'Preparing the battlefield...': '战场正在准备中...',
+    'Lone Evil Operative': '独行邪恶阵营',
+    'All other evil players are bots. You can choose a different evil role:': '你的其他邪恶阵营队友均为机器人，你可以在对局开始前更换你的邪恶角色：',
+    'Current Role': '当前角色',
+    'Selected': '已选择',
+    'Switch Role': '更换为此角色',
+    'Locks in:': '锁定倒计时：',
+    's': '秒',
 
     // Role Reveal
     'Role': '角色',

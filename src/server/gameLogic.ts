@@ -127,7 +127,7 @@ export function getLoneHumanEvilStatus(players: Player[]): LoneHumanEvilStatus {
   const humanEvils = evilPlayers.filter(p => !p.isBot);
   const botEvils = evilPlayers.filter(p => p.isBot);
 
-  if (humanEvils.length === 1 && botEvils.length > 0 && humanEvils.length + botEvils.length === evilPlayers.length) {
+  if (humanEvils.length === 1 && botEvils.length > 0) {
     const human = humanEvils[0];
     const availableRoles = Array.from(new Set(evilPlayers.map(p => p.role!).filter(Boolean)));
     return {

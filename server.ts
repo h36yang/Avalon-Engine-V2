@@ -944,6 +944,10 @@ function setupSocket(io: Server) {
         if (!sessionId) return;
         const room = rooms[roomId];
         if (room) {
+          if (room.status === 'starting_countdown') {
+            return; // Prevent leaving during starting countdown
+          }
+
           // Remove player from room
           const isLeavingHost = room.players.find(p => p.sessionId === sessionId)?.isHost;
           room.players = room.players.filter(p => p.sessionId !== sessionId);
@@ -972,6 +976,10 @@ function setupSocket(io: Server) {
       try {
         const room = rooms[roomId];
         if (room) {
+          if (room.status === 'starting_countdown') {
+            return; // Prevent kicking during starting countdown
+          }
+
           const sender = room.players.find(p => p.id === socket.id);
           if (sender && sender.isHost) {
             const targetPlayer = room.players.find(p => p.sessionId === targetSessionId);

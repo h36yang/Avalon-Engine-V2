@@ -75,12 +75,6 @@ export default function StartingCountdownScreen() {
 
   // View B: Lone Evil Operative Role Selection
   const availableRoles = room.availableEvilRoles || (myRole ? [myRole] : []);
-  let selectedRole = myRole;
-
-  function selectRole(role: Role) {
-    selectedRole = role;
-    chooseEvilRole(role);
-  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden select-none">
@@ -107,14 +101,15 @@ export default function StartingCountdownScreen() {
         <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
           {availableRoles.map((role) => {
             const imageUrl = ROLE_IMAGES[role] || ROLE_IMAGES["CardBack"];
+            const isSelected = myRole === role;
 
             return (
               <button
                 key={role}
                 type="button"
-                onClick={() => selectRole(role)}
+                onClick={() => chooseEvilRole(role)}
                 className={`relative group rounded-xl overflow-hidden border transition-all duration-200 text-left flex flex-col aspect-[3/4] p-2.5 justify-between ${
-                  selectedRole === role
+                  isSelected
                     ? "border-red-500 ring-2 ring-red-500/50 shadow-lg shadow-red-950/60 scale-102"
                     : "border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 hover:bg-zinc-900 opacity-75 hover:opacity-100"
                 }`}
@@ -128,7 +123,7 @@ export default function StartingCountdownScreen() {
 
                 {/* Badge top */}
                 <div className="relative z-10 flex justify-end">
-                  {selectedRole === role && (
+                  {isSelected && (
                     <span className="flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
                       <Check size={11} strokeWidth={3} />
                       {t("Selected")}
@@ -142,7 +137,7 @@ export default function StartingCountdownScreen() {
                     {t(role)}
                   </h3>
                   <p className="text-[10px] text-zinc-400 uppercase tracking-wider">
-                    {selectedRole === role ? t("Current Role") : t("Switch Role")}
+                    {isSelected ? t("Current Role") : t("Switch Role")}
                   </p>
                 </div>
               </button>

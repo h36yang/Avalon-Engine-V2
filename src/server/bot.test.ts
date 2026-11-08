@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DEFAULT_MODELS, BASE_URLS, callOpenAICompatible } from './bot';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { DEFAULT_MODELS, BASE_URLS, callOpenAICompatible, handleBotActions } from './bot';
 
 vi.mock('openai', () => {
   return {
@@ -35,6 +35,64 @@ vi.mock('openai', () => {
 describe('Bot LLM Configuration & OpenRouter/OpenAI-compatible helpers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  describe('hard-mode evil team voting', () => {
+
+    function fakeTeamVotingRoom(currentQuestIndex: number, voteTrack = 0) {
+      const botId = 'evil-bot';
+      const quests = Array.from({ length: 3 }, () => ({
+        status: 'pending',
+        team: [],
+        teamSize: 1,
+        votes: {},
+        requiresTwoFails: false,
+      }));
+
+      return {
+        status: 'team_voting',
+        players: [{ sessionId: botId, name: 'Evil Bot', role: 'Assassin', isBot: true, difficulty: 'hard' }],
+        gameState: {
+          leaderIndex: 0,
+          currentQuestIndex,
+          voteTrack,
+          proposedTeam: [botId],
+          teamVotes: {},
+          quests,
+          voteHistory: [],
+          botMemories: {
+            [botId]: {
+              trustScores: { [botId]: 100 },
+              knownRoles: { [botId]: 'Assassin' },
+              merlinSuspicion: { [botId]: 0 },
+              failAssociation: { [botId]: 0 },
+              votePatterns: { [botId]: { approvedEvil: 0, rejectedEvil: 0, totalVotes: 0 } },
+            },
+          },
+        },
+      } as unknown as Parameters<typeof handleBotActions>[0];
+    }
+
+    it.each([
+      { currentQuestIndex: 0, voteTrack: 0, expectedApproval: false },
+      { currentQuestIndex: 1, voteTrack: 0, expectedApproval: false },
+      { currentQuestIndex: 2, voteTrack: 0, expectedApproval: true },
+      { currentQuestIndex: 0, voteTrack: 4, expectedApproval: true },
+    ])('uses the strategic vote for quest $currentQuestIndex on track $voteTrack', ({ currentQuestIndex, voteTrack, expectedApproval }) => {
+      vi.useFakeTimers();
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+
+      const room = fakeTeamVotingRoom(currentQuestIndex, voteTrack);
+      handleBotActions(room, {} as never, () => { }, () => { });
+      vi.advanceTimersByTime(2000);
+
+      expect(room.gameState.teamVotes['evil-bot']).toBe(expectedApproval);
+    });
   });
 
   describe('DEFAULT_MODELS', () => {

@@ -795,7 +795,10 @@ export function handleBotActions(
             // Evil logic: Approve if team has evil, reject if all good
             const hasEvil = proposedTeam.some(id => memory.knownRoles[id] === 'Evil' || id === bot.sessionId);
             if (hasEvil) {
-              approve = true;
+              const rejectEarlyEvilTeam = difficulty === 'hard'
+                && room.gameState.currentQuestIndex < 2
+                && Math.random() < 0.2;
+              approve = !rejectEarlyEvilTeam;
             } else {
               // Sometimes randomly approve all-good teams to blend in
               approve = Math.random() > 0.8;

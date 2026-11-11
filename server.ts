@@ -228,7 +228,21 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
 
   const viewer = room.players.find(p => p.sessionId === viewerSessionId);
   const viewerRole = viewer?.role;
-  const isViewerEvil = viewerRole ? ['Assassin', 'Morgana', 'Mordred', 'Minion'].includes(viewerRole) : false;
+
+  // Evil players all see each other's bot suspicion during the assassin phase while discussing.
+  const isViewerEvil = !!viewerRole && EVIL_ROLES.has(viewerRole);
+  const isViewerEvilExceptOberon = isViewerEvil && viewerRole !== 'Oberon';
+
+  const botMerlinSuspicion: Record<string, Record<string, number>> = {};
+  if (room.status === 'assassin' && isViewerEvil) {
+    for (const p of room.players) {
+      if (!p.isBot || !p.role || !EVIL_ROLES.has(p.role)) continue;
+      const suspicion = room.gameState.botMemories?.[p.sessionId]?.merlinSuspicion;
+      if (suspicion) {
+        botMerlinSuspicion[p.sessionId] = { ...suspicion };
+      }
+    }
+  }
 
   const sanitizedPlayers = room.players.map(p => {
     // Always strip apiKey before sending to any client
@@ -264,14 +278,19 @@ function sanitizeRoomForPlayer(room: Room, viewerSessionId: string): Room {
     }
 
     // Evil (except Oberon) sees fellow evil (except Oberon)
-    if (isViewerEvil && ['Assassin', 'Morgana', 'Mordred', 'Minion'].includes(targetRole)) {
+    if (isViewerEvilExceptOberon && EVIL_ROLES.has(targetRole) && targetRole !== 'Oberon') {
       return safeP;
     }
 
     return { ...safeP, role: undefined }; // Hide role from this viewer
   });
 
-  const { botMemories: _strippedBotMemories, botMindLogs: _strippedBotMindLogs, ...safeGameState } = room.gameState;
+  const safeGameState: Room['gameState'] = {
+    ...room.gameState,
+    botMemories: undefined,
+    botMindLogs: undefined,
+    botMerlinSuspicion: Object.keys(botMerlinSuspicion).length > 0 ? botMerlinSuspicion : undefined,
+  };
   if (room.gameState.ladyOfTheLakeChecks) {
     safeGameState.ladyOfTheLakeChecks = room.gameState.ladyOfTheLakeChecks.map((check: LadeOfTheLakeCheck) => {
       if (check.checker === viewerSessionId) {

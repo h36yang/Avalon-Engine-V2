@@ -85,6 +85,8 @@ export interface Room {
     botOpinions?: BotOpinion[];
     botMindLogs?: Record<string, MindLogEntry[]>;
     botMemories?: Record<string, BotMemory>;
+    /** Evil bots' Merlin suspicion scores, only sent to evil players during the assassin phase. */
+    botMerlinSuspicion?: Record<string, Record<string, number>>;
     ladyOfTheLakeHolder?: string;
     ladyOfTheLakeHistory: string[];
     ladyOfTheLakeChecks: LadeOfTheLakeCheck[];

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGameStore } from "../store";
-import { EVIL_ROLES, Role } from "../utils/sharedTypes";
-import { Skull, Target, ShieldAlert } from "lucide-react";
+import { EVIL_ROLES } from "../utils/sharedTypes";
+import { Skull, Target, ShieldAlert, Brain } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useTranslation } from "../utils/i18n";
 import VoteHistoryHeader from "./VoteHistoryHeader";
@@ -20,9 +20,17 @@ export default function AssassinScreen() {
 
   const me = room.players.find((p) => p.sessionId === sessionId);
   const assassinPlayer = room.players.find((p) => p.role === "Assassin");
-  const isEvil = me ? EVIL_ROLES.has(me.role as Role) : false;
+  const isEvil = me?.role ? EVIL_ROLES.has(me.role) : false;
 
   const canAssassinate = me?.role === "Assassin" || (isEvil && assassinPlayer?.isBot);
+
+  const evilPlayers = room.players.filter((p) => p.role && EVIL_ROLES.has(p.role));
+  const evilSessionIds = new Set(evilPlayers.map((p) => p.sessionId));
+  const evilBots = evilPlayers.filter((p) => p.isBot);
+  const botSuspicion = room.gameState.botMerlinSuspicion ?? {};
+  const hasBotSuspicion = isEvil && Object.keys(botSuspicion).length > 0;
+
+  const playerNumbers = Object.fromEntries(room.players.map((p, i) => [p.sessionId, i + 1])) as Record<string, number>;
 
   const handleAssassinate = () => {
     if (targetId && canAssassinate) {
@@ -89,6 +97,63 @@ export default function AssassinScreen() {
             </div>
           </div>
 
+          {/* Evil bot Merlin suspicion — shown to all evil players during the assassin phase */}
+          {hasBotSuspicion && (
+            <div className="w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 text-left max-w-sm mx-auto">
+              <p className="text-[11px] font-semibold text-orange-400 uppercase tracking-widest mb-1 flex items-center gap-1.5 justify-center">
+                <Brain size={12} className="text-orange-400" /> {t("Bot Merlin Suspicion")}
+              </p>
+              <p className="text-[10px] text-zinc-500 text-center mb-3">
+                {t("Higher scores mean the bot suspects that player is Merlin")}
+              </p>
+              <div className="space-y-4">
+                {evilBots.map((bot) => {
+                  const scores = botSuspicion[bot.sessionId];
+                  if (!scores) return null;
+
+                  const entries = Object.entries(scores)
+                    .filter(([sid]) => !evilSessionIds.has(sid))
+                    .sort(([, a], [, b]) => b - a);
+                  if (entries.length === 0) return null;
+
+                  return (
+                    <div key={bot.sessionId}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-zinc-200">{bot.name}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-950/50 border border-red-900/40 px-2 py-0.5 rounded-full">
+                          {t(bot.role as string)}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {entries.map(([sid, score]) => {
+                          const player = room.players.find((p) => p.sessionId === sid);
+                          if (!player) return null;
+                          return (
+                            <div key={sid} className="flex items-center gap-2">
+                              <span className="text-xs text-zinc-400 truncate w-24 shrink-0">{player.name}</span>
+                              <div className="flex-1 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                                <div
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    score >= 60 ? "bg-red-500" : score >= 35 ? "bg-orange-500" : "bg-zinc-600",
+                                  )}
+                                  style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] text-zinc-500 tabular-nums w-6 text-right shrink-0">
+                                {Math.round(score)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {canAssassinate ? (
             <div className="w-full space-y-4">
               {me?.role !== "Assassin" && (
@@ -101,12 +166,7 @@ export default function AssassinScreen() {
               </h3>
               <div className="space-y-2">
                 {room.players
-                  .filter(
-                    (p) =>
-                      !["Assassin", "Morgana", "Mordred", "Minion"].includes(
-                        p.role as string,
-                      ),
-                  )
+                  .filter((p) => !evilSessionIds.has(p.sessionId))
                   .map((p) => (
                     <button
                       key={p.sessionId}
@@ -130,7 +190,7 @@ export default function AssassinScreen() {
                           {targetId === p.sessionId ? (
                             <Target size={16} />
                           ) : (
-                            <span className="text-xs">{p.name.charAt(0)}</span>
+                            <span className="text-xs">{playerNumbers[p.sessionId]}</span>
                           )}
                         </div>
                         <span className="font-medium">{p.name}</span>

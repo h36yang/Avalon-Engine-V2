@@ -156,6 +156,8 @@ export const translations = {
     // AssassinScreen extras
     'Good completed 3 quests': 'Good has completed 3 quests, but Evil has one last chance. The Assassin must find Merlin.',
     'Bot assassin hint': 'The Assassin is a bot. As a fellow agent of Evil, you must choose the target!',
+    'Bot Merlin Suspicion': 'Bot Merlin Suspicion',
+    'Higher scores mean the bot suspects that player is Merlin': 'Higher scores mean the bot suspects that player is Merlin.',
     'If Merlin is killed': 'If they kill Merlin, Evil wins.',
 
     // GameOverScreen extras
@@ -389,6 +391,8 @@ export const translations = {
     // AssassinScreen extras
     'Good completed 3 quests': '正义阵营已完成3个任务，但邪恶阵营还有最后一次机会。刺客必须找出梅林。',
     'Bot assassin hint': '刺客是机器人。作为邪恶阵营的成员，你必须选择目标！',
+    'Bot Merlin Suspicion': '机器人对梅林的怀疑',
+    'Higher scores mean the bot suspects that player is Merlin': '分数越高，机器人越怀疑该玩家是梅林。',
     'If Merlin is killed': '如果刺客杀死梅林，邪恶阵营获胜。',
 
     // GameOverScreen extras
